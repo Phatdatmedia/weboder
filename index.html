@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Atelier — Studio thiết kế web, profile & slide</title>
+<title>PHATDATAGENCY — Studio thiết kế web, profile & slide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -389,6 +389,32 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 
 @media (max-width: 900px){ .services-grid{ grid-template-columns: 1fr; } }
 
+.service-skeleton{
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  min-height: 240px;
+  position: relative;
+  overflow: hidden;
+}
+.service-skeleton::after{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: skeletonShine 1.4s ease-in-out infinite;
+}
+@keyframes skeletonShine{
+  0%{ transform: translateX(-100%); }
+  100%{ transform: translateX(100%); }
+}
+.services-empty{
+  grid-column: 1/-1;
+  text-align:center;
+  padding: 50px 20px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
 /* ====================== AI SLIDE SECTION ====================== */
 .ai-section{
   background: var(--ink);
@@ -639,6 +665,7 @@ textarea.field{ resize:vertical; min-height:90px; }
   transition: all .16s ease;
 }
 .service-pill.active{ background: var(--ink); border-color:var(--ink); color: var(--white); }
+.payment-hint{ font-size:12px; color: var(--ink-soft); margin-top:8px; min-height:16px; }
 
 .modal-submit-row{ margin-top:24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .modal-error{ color:#A8311A; font-size:13px; display:none; }
@@ -698,7 +725,7 @@ textarea.field{ resize:vertical; min-height:90px; }
 
 <nav class="nav">
   <div class="nav-inner">
-    <div class="logo">Atelier<span class="dot">.</span></div>
+    <div class="logo">Phatdatagency<span class="dot">.</span></div>
     <div class="nav-links">
       <a href="#services">Dịch vụ</a>
       <a href="#ai-slide">AI tạo slide</a>
@@ -724,8 +751,8 @@ textarea.field{ resize:vertical; min-height:90px; }
       </div>
       <div class="hero-meta">
         <div>
-          <div class="stat-num">3</div>
-          <div class="stat-label">DỊCH VỤ CHÍNH</div>
+          <div class="stat-num">Đa dạng</div>
+          <div class="stat-label">DỊCH VỤ THIẾT KẾ</div>
         </div>
         <div>
           <div class="stat-num">24h</div>
@@ -789,41 +816,15 @@ textarea.field{ resize:vertical; min-height:90px; }
     <div class="section-head">
       <div>
         <div class="eyebrow">Dịch vụ</div>
-        <h2>Ba hạng mục,<br>một quy trình rõ ràng.</h2>
+        <h2>Đa dạng dịch vụ,<br>một quy trình rõ ràng.</h2>
       </div>
       <p>Chọn dịch vụ cần đặt — mỗi đơn đều được theo dõi bằng mã riêng và cập nhật tiến trình minh bạch.</p>
     </div>
 
-    <div class="services-grid">
-      <div class="service-card" onclick="openOrderModal('Thiết kế Website')">
-        <span class="corner">01</span>
-        <div class="service-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6" fill="currentColor"/></svg>
-        </div>
-        <h3>Thiết kế Website</h3>
-        <p>Landing page, website giới thiệu công ty hoặc cửa hàng online — responsive, tối ưu tốc độ và chuẩn SEO cơ bản.</p>
-        <div class="price">Từ 2.500.000đ <span class="arrow">→</span></div>
-      </div>
-
-      <div class="service-card" onclick="openOrderModal('Thiết kế Profile')">
-        <span class="corner">02</span>
-        <div class="service-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M14 8h4M14 11h4M7 15h10M7 18h6"/></svg>
-        </div>
-        <h3>Hồ sơ năng lực (Profile)</h3>
-        <p>Profile công ty, CV cá nhân hoặc catalogue sản phẩm dạng PDF — trình bày chuyên nghiệp, dễ in ấn.</p>
-        <div class="price">Từ 800.000đ <span class="arrow">→</span></div>
-      </div>
-
-      <div class="service-card" onclick="openOrderModal('Thiết kế Slide')">
-        <span class="corner">03</span>
-        <div class="service-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
-        </div>
-        <h3>Slide thuyết trình</h3>
-        <p>Slide thuyết trình, báo cáo, pitch deck — có thể dùng AI phân bổ nội dung tự động từ file bạn tải lên.</p>
-        <div class="price">Từ 600.000đ <span class="arrow">→</span></div>
-      </div>
+    <div class="services-grid" id="servicesGrid">
+      <div class="service-skeleton"></div>
+      <div class="service-skeleton"></div>
+      <div class="service-skeleton"></div>
     </div>
   </div>
 </section>
@@ -960,10 +961,11 @@ textarea.field{ resize:vertical; min-height:90px; }
 
 <footer class="footer">
   <div class="container footer-inner">
-    <p>© 2026 Atelier Studio. Thiết kế web, profile & slide.</p>
+    <p>© 2026 PHATDATAGENCY. Thiết kế web, profile & slide.</p>
     <div class="footer-links">
       <a href="#services">Dịch vụ</a>
       <a href="#lookup">Tra cứu đơn</a>
+      <a href="//www.dmca.com/Protection/Status.aspx?ID=add8c5bf-f097-4395-a395-030ffe881508" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca-badge-w200-5x1-11.png?ID=add8c5bf-f097-4395-a395-030ffe881508"  alt="DMCA.com Protection Status" /></a>  <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"> </script>
     </div>
   </div>
 </footer>
@@ -986,11 +988,17 @@ textarea.field{ resize:vertical; min-height:90px; }
         <div class="form-group full" style="margin-bottom:18px;">
           <label>Loại dịch vụ <span class="req">*</span></label>
           <div class="service-pills" id="servicePills">
-            <button type="button" class="service-pill" data-service="Thiết kế Website">Website</button>
-            <button type="button" class="service-pill" data-service="Thiết kế Profile">Profile</button>
-            <button type="button" class="service-pill" data-service="Thiết kế Slide">Slide</button>
-            <button type="button" class="service-pill" data-service="Khác">Khác</button>
+            <span style="font-size:13px; color:var(--ink-soft);">Đang tải danh sách dịch vụ...</span>
           </div>
+        </div>
+
+        <div class="form-group full" style="margin-bottom:18px;">
+          <label>Phương thức thanh toán <span class="req">*</span></label>
+          <div class="service-pills" id="paymentPills">
+            <button type="button" class="service-pill" data-payment="Thanh toán trước">💳 Thanh toán trước</button>
+            <button type="button" class="service-pill" data-payment="Thanh toán sau">🤝 Thanh toán sau</button>
+          </div>
+          <p class="payment-hint" id="paymentHint"></p>
         </div>
 
         <div class="form-grid">
@@ -1023,7 +1031,7 @@ textarea.field{ resize:vertical; min-height:90px; }
         <div class="modal-error" id="formError">Vui lòng điền đầy đủ các trường bắt buộc.</div>
 
         <div class="modal-submit-row">
-          <p style="font-size:12px; color:var(--ink-soft);">Sau khi đặt, bạn sẽ nhận mã đơn và QR thanh toán.</p>
+          <p style="font-size:12px; color:var(--ink-soft);">Sau khi đặt, bạn sẽ nhận được mã đơn hàng.</p>
           <button class="btn btn-primary" id="submitOrderBtn" onclick="handleSubmitOrder()">Xác nhận đặt đơn</button>
         </div>
       </div>
@@ -1044,17 +1052,25 @@ textarea.field{ resize:vertical; min-height:90px; }
           <div class="pc-copy"><a href="javascript:void(0)" onclick="copyOrderCode()" style="text-decoration:underline; color:var(--coral-deep);">Sao chép mã</a></div>
         </div>
 
-        <div class="pay-qr-wrap">
-          <img id="payQrImg" src="" alt="QR thanh toán VietQR">
-          <div class="pay-info">
-            <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
-            <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
-            <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
-            <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
+        <!-- Hiện khi chọn "Thanh toán trước" -->
+        <div id="payQrSection" style="display:none;">
+          <div class="pay-qr-wrap">
+            <img id="payQrImg" src="" alt="QR thanh toán VietQR">
+            <div class="pay-info">
+              <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
+              <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
+              <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
+              <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
+            </div>
           </div>
+          <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán đặt cọc. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
         </div>
 
-        <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán đặt cọc. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
+        <!-- Hiện khi chọn "Thanh toán sau" -->
+        <div id="payLaterSection" style="display:none;">
+          <div class="pay-note">Bạn đã chọn <b>thanh toán sau</b>. Đội ngũ sẽ liên hệ trao đổi chi tiết thanh toán khi xác nhận đơn. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="switchToPayNow()">↻ Đổi phương thức thanh toán</button>
+        </div>
 
         <div class="modal-submit-row" style="justify-content:flex-end;">
           <button class="btn btn-primary" onclick="closeOrderModal()">Hoàn tất</button>
@@ -1077,14 +1093,14 @@ textarea.field{ resize:vertical; min-height:90px; }
 ===================================================================== */
 const CONFIG = {
   // URL Web App lấy được sau khi Deploy Google Apps Script (xem file apps-script-backend.gs)
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbycsdb5z3CxmItXUEX9QWDzytA80cUgiHhkOuQYDEE2tRMELnxCgRNeMnNvnDF1nUtF/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyd9g3QsXK3nTh3RnXNfpdsTGL9jfGZl_5YQP-MT64Ua5AHzLJSdjLm5Dc4ZnFriJzj3A/exec",
 
   // Thông tin nhận thanh toán VietQR
   BANK_ID: "970407",        // Mã ngân hàng VietQR, vd: 970436 = Vietcombank. Tra cứu tại vietqr.io
   BANK_NAME: "Techcombank",
   ACCOUNT_NUMBER: "3838648888",
   ACCOUNT_NAME: "LE PHAT DAT",
-  DEPOSIT_AMOUNT: 500000 // số tiền đặt cọc mặc định hiển thị trên QR (VNĐ)
+  DEPOSIT_AMOUNT: 200000 // số tiền đặt cọc mặc định hiển thị trên QR (VNĐ)
 };
 
 /* =====================================================================
@@ -1103,6 +1119,8 @@ function showToast(msg){
    ORDER MODAL
 ===================================================================== */
 let selectedService = null;
+let selectedPayment = null;
+let cachedServices = [];
 
 function openOrderModal(presetService){
   document.getElementById('orderModalOverlay').classList.add('show');
@@ -1110,9 +1128,7 @@ function openOrderModal(presetService){
   document.getElementById('payView').classList.remove('show');
   document.body.style.overflow = 'hidden';
 
-  if(presetService){
-    selectService(presetService);
-  }
+  loadServicesIntoModal(presetService);
 }
 function closeOrderModal(){
   document.getElementById('orderModalOverlay').classList.remove('show');
@@ -1123,14 +1139,59 @@ document.getElementById('orderModalOverlay').addEventListener('click', (e)=>{
   if(e.target.id === 'orderModalOverlay') closeOrderModal();
 });
 
-document.querySelectorAll('.service-pill').forEach(pill=>{
-  pill.addEventListener('click', ()=> selectService(pill.dataset.service));
-});
+async function loadServicesIntoModal(presetService){
+  const container = document.getElementById('servicePills');
+
+  if(cachedServices.length === 0){
+    try{
+      const result = await callBackendGet({ action: 'listServices', onlyActive: '1' });
+      if(result.ok) cachedServices = result.services || [];
+    } catch(err){
+      // im lặng, xử lý ở dưới bằng cachedServices rỗng
+    }
+  }
+
+  if(cachedServices.length === 0){
+    container.innerHTML = `<span style="font-size:13px; color:var(--ink-soft);">Chưa tải được danh sách dịch vụ. Kiểm tra kết nối hoặc thử lại.</span>`;
+    return;
+  }
+
+  container.innerHTML = cachedServices.map(s =>
+    `<button type="button" class="service-pill" data-service="${escapeHtml(s["Tên dịch vụ"])}">${escapeHtml(s["Tên dịch vụ"])}</button>`
+  ).join('');
+
+  container.querySelectorAll('.service-pill').forEach(pill=>{
+    pill.addEventListener('click', ()=> selectService(pill.dataset.service));
+  });
+
+  if(presetService){
+    selectService(presetService);
+  }
+}
+
 function selectService(service){
   selectedService = service;
-  document.querySelectorAll('.service-pill').forEach(p=>{
+  document.querySelectorAll('#servicePills .service-pill').forEach(p=>{
     p.classList.toggle('active', p.dataset.service === service);
   });
+}
+
+document.querySelectorAll('#paymentPills .service-pill').forEach(pill=>{
+  pill.addEventListener('click', ()=> selectPayment(pill.dataset.payment));
+});
+function selectPayment(method){
+  selectedPayment = method;
+  document.querySelectorAll('#paymentPills .service-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.payment === method);
+  });
+  const hint = document.getElementById('paymentHint');
+  if(method === 'Thanh toán trước'){
+    hint.textContent = "Bạn sẽ thấy mã QR chuyển khoản ngay sau khi đặt đơn.";
+  } else if(method === 'Thanh toán sau'){
+    hint.textContent = "Đội ngũ sẽ trao đổi thanh toán khi xác nhận đơn. Bạn có thể đổi ý bất cứ lúc nào.";
+  } else {
+    hint.textContent = "";
+  }
 }
 
 function resetOrderForm(){
@@ -1138,7 +1199,9 @@ function resetOrderForm(){
     document.getElementById(id).value = '';
   });
   selectedService = null;
+  selectedPayment = null;
   document.querySelectorAll('.service-pill').forEach(p=> p.classList.remove('active'));
+  document.getElementById('paymentHint').textContent = '';
   document.getElementById('formError').classList.remove('show');
 }
 
@@ -1151,8 +1214,8 @@ async function handleSubmitOrder(){
   const desc = document.getElementById('f_desc').value.trim();
   const errBox = document.getElementById('formError');
 
-  if(!selectedService || !name || !phone || !email || !desc){
-    errBox.textContent = "Vui lòng điền đầy đủ các trường bắt buộc (đánh dấu *).";
+  if(!selectedService || !selectedPayment || !name || !phone || !email || !desc){
+    errBox.textContent = "Vui lòng điền đầy đủ các trường bắt buộc (đánh dấu *), bao gồm chọn dịch vụ và phương thức thanh toán.";
     errBox.classList.add('show');
     return;
   }
@@ -1168,13 +1231,14 @@ async function handleSubmitOrder(){
     service: selectedService,
     description: desc,
     budget, deadline,
-    amount: CONFIG.DEPOSIT_AMOUNT
+    amount: CONFIG.DEPOSIT_AMOUNT,
+    paymentMethod: selectedPayment
   };
 
   try{
     const result = await callBackend('createOrder', { data: orderData });
     if(result.ok){
-      showPaymentView(result.code);
+      showPaymentView(result.code, selectedPayment);
     } else {
       errBox.textContent = result.error || "Có lỗi xảy ra, vui lòng thử lại.";
       errBox.classList.add('show');
@@ -1188,11 +1252,25 @@ async function handleSubmitOrder(){
   }
 }
 
-function showPaymentView(code){
+function showPaymentView(code, paymentMethod){
   document.getElementById('formView').style.display = 'none';
   document.getElementById('payView').classList.add('show');
 
   document.getElementById('payOrderCode').textContent = code;
+  window._lastOrderCode = code;
+
+  if(paymentMethod === 'Thanh toán trước'){
+    renderPayNowSection(code);
+  } else {
+    document.getElementById('payQrSection').style.display = 'none';
+    document.getElementById('payLaterSection').style.display = 'block';
+  }
+}
+
+function renderPayNowSection(code){
+  document.getElementById('payQrSection').style.display = 'block';
+  document.getElementById('payLaterSection').style.display = 'none';
+
   document.getElementById('payBankName').textContent = CONFIG.BANK_NAME;
   document.getElementById('payAccNum').textContent = CONFIG.ACCOUNT_NUMBER;
   document.getElementById('payAccName').textContent = CONFIG.ACCOUNT_NAME;
@@ -1200,8 +1278,13 @@ function showPaymentView(code){
 
   const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png?amount=${CONFIG.DEPOSIT_AMOUNT}&addInfo=${encodeURIComponent(code)}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
   document.getElementById('payQrImg').src = qrUrl;
+}
 
-  window._lastOrderCode = code;
+function switchToPayNow(){
+  const code = window._lastOrderCode;
+  if(!code) return;
+  renderPayNowSection(code);
+  showToast("Đã chuyển sang thanh toán trước.");
 }
 
 function copyOrderCode(){
@@ -1534,6 +1617,40 @@ function downloadPptx(){
 }
 
 /* =====================================================================
+   SERVICES GRID (trang chủ)
+===================================================================== */
+const SERVICE_ICONS = [
+  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6" fill="currentColor"/></svg>`,
+  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M14 8h4M14 11h4M7 15h10M7 18h6"/></svg>`,
+  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>`,
+  `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>`
+];
+
+async function loadServicesGrid(){
+  const grid = document.getElementById('servicesGrid');
+  try{
+    const result = await callBackendGet({ action: 'listServices', onlyActive: '1' });
+    if(!result.ok || !(result.services || []).length){
+      grid.innerHTML = `<div class="services-empty">Chưa có dịch vụ nào đang mở bán. Vui lòng quay lại sau.</div>`;
+      return;
+    }
+    cachedServices = result.services;
+
+    grid.innerHTML = result.services.map((s, idx) => `
+      <div class="service-card" onclick="openOrderModal('${escapeHtml(s["Tên dịch vụ"]).replace(/'/g, "\\'")}')">
+        <span class="corner">${String(idx+1).padStart(2,'0')}</span>
+        <div class="service-icon">${SERVICE_ICONS[idx % SERVICE_ICONS.length]}</div>
+        <h3>${escapeHtml(s["Tên dịch vụ"])}</h3>
+        <p>${escapeHtml(s["Mô tả"] || '')}</p>
+        <div class="price">${escapeHtml(s["Giá hiển thị"] || '')} <span class="arrow">→</span></div>
+      </div>
+    `).join('');
+  } catch(err){
+    grid.innerHTML = `<div class="services-empty">Không thể tải danh sách dịch vụ. Kiểm tra lại cấu hình APPS_SCRIPT_URL.</div>`;
+  }
+}
+
+/* =====================================================================
    MISC UX
 ===================================================================== */
 document.addEventListener('keydown', (e)=>{
@@ -1554,6 +1671,8 @@ document.querySelectorAll('.nav-links a[href^="#"], .footer-links a[href^="#"]')
     }
   });
 });
+
+loadServicesGrid();
 </script>
 
 </body>
