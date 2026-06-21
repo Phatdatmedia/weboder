@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier — Studio thiết kế web, profile & slide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{
+  /* ====== TOKENS ====== */
+  --paper:        #F2EEE6;
+  --paper-deep:   #E9E2D4;
+  --ink:          #211C16;
+  --ink-soft:     #5B5347;
+  --line:         #D8D0BF;
+  --coral:        #FF4B2E;
+  --coral-deep:   #D6391E;
+  --coral-tint:   #FFE4DB;
+  --sage:         #6B7A5E;
+  --white:        #FFFCF6;
+
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'Space Mono', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --radius-lg: 22px;
+
+  --shadow-card: 0 1px 2px rgba(33,28,22,0.04), 0 8px 24px -8px rgba(33,28,22,0.10);
+  --shadow-pop:  0 4px 8px rgba(33,28,22,0.06), 0 24px 48px -16px rgba(33,28,22,0.20);
+}
+
+*{ box-sizing: border-box; margin:0; padding:0; }
+html{ scroll-behavior: smooth; }
+body{
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img{ max-width:100%; display:block; }
+button{ font-family: inherit; cursor:pointer; }
+a{ color:inherit; text-decoration:none; }
+input, textarea, select{ font-family: inherit; font-size: inherit; color: inherit; }
+
+::selection{ background: var(--coral); color: var(--white); }
+
+/* focus visibility */
+a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{
+  outline: 2px solid var(--coral);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+.eyebrow{
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral-deep);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.eyebrow::before{
+  content:"";
+  width:6px; height:6px;
+  background: var(--coral);
+  border-radius:50%;
+  display:inline-block;
+}
+
+.container{
+  width:100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+@media (max-width: 640px){
+  .container{ padding: 0 20px; }
+}
+
+h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08; letter-spacing:-0.01em; }
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  font-weight:600;
+  font-size:14.5px;
+  border: 1.5px solid transparent;
+  transition: transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  white-space:nowrap;
+}
+.btn-primary{
+  background: var(--ink);
+  color: var(--white);
+}
+.btn-primary:hover{
+  background: var(--coral);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -8px rgba(255,75,46,0.55);
+}
+.btn-ghost{
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.btn-ghost:hover{
+  background: var(--ink);
+  color: var(--white);
+  transform: translateY(-2px);
+}
+.btn-sm{ padding: 10px 18px; font-size: 13px; }
+.btn:active{ transform: translateY(0); }
+.btn[disabled]{ opacity:.5; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
+
+.tag{
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* ====== SCROLLBAR (subtle) ====== */
+::-webkit-scrollbar{ width:10px; }
+::-webkit-scrollbar-track{ background: var(--paper); }
+::-webkit-scrollbar-thumb{ background: var(--line); border-radius:8px; }
+::-webkit-scrollbar-thumb:hover{ background: var(--ink-soft); }
+
+/* ====================== NAV ====================== */
+.nav{
+  position: sticky;
+  top:0;
+  z-index: 100;
+  background: rgba(242,238,230,0.85);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: 18px 32px;
+  max-width: 1180px;
+  margin:0 auto;
+}
+.logo{
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight:700;
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.logo .dot{ color: var(--coral); }
+.nav-links{
+  display:flex;
+  gap:30px;
+  align-items:center;
+}
+.nav-links a{
+  font-size: 14px;
+  font-weight:500;
+  color: var(--ink-soft);
+  position:relative;
+  padding: 4px 0;
+}
+.nav-links a:hover{ color: var(--ink); }
+.nav-links a::after{
+  content:"";
+  position:absolute;
+  left:0; right:100%; bottom:-2px;
+  height:1.5px;
+  background: var(--coral);
+  transition: right .22s ease;
+}
+.nav-links a:hover::after{ right:0; }
+.nav-cta{ display:flex; gap:10px; align-items:center; }
+.nav-burger{ display:none; }
+
+@media (max-width: 860px){
+  .nav-links{ display:none; }
+  .nav-burger{
+    display:flex; align-items:center; justify-content:center;
+    width:40px; height:40px; border-radius:50%;
+    border:1.5px solid var(--ink);
+    background:none;
+  }
+}
+
+/* ====================== HERO ====================== */
+.hero{
+  padding: 76px 0 60px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 56px;
+  align-items:center;
+}
+.hero h1{
+  font-size: clamp(40px, 5.4vw, 68px);
+  margin-top:18px;
+}
+.hero h1 em{
+  font-style: italic;
+  color: var(--coral-deep);
+  position:relative;
+  white-space:nowrap;
+}
+.hero-sub{
+  margin-top: 22px;
+  font-size: 18px;
+  color: var(--ink-soft);
+  max-width: 480px;
+  line-height:1.6;
+}
+.hero-actions{
+  margin-top: 34px;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.hero-meta{
+  margin-top: 42px;
+  display:flex;
+  gap:32px;
+  flex-wrap:wrap;
+}
+.hero-meta .stat-num{
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight:600;
+}
+.hero-meta .stat-label{
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+}
+
+/* signature element: sketch -> final artboard */
+.hero-art{
+  position:relative;
+  aspect-ratio: 1/1.05;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-pop);
+  overflow:hidden;
+}
+.hero-art-bar{
+  display:flex;
+  gap:6px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.hero-art-bar span{
+  width:9px; height:9px; border-radius:50%;
+  background: var(--line);
+}
+.hero-art-canvas{
+  position:relative;
+  height: calc(100% - 45px);
+}
+.hero-art-canvas svg{ width:100%; height:100%; }
+.sketch-path{
+  fill:none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: draw 3.4s ease forwards infinite;
+}
+.fill-block{
+  opacity:0;
+  animation: fadeBlock 3.4s ease forwards infinite;
+}
+@keyframes draw{
+  0%{ stroke-dashoffset:1400; }
+  45%{ stroke-dashoffset:0; }
+  85%{ stroke-dashoffset:0; }
+  100%{ stroke-dashoffset:0; opacity:0; }
+}
+@keyframes fadeBlock{
+  0%, 40%{ opacity:0; }
+  60%{ opacity:1; }
+  88%{ opacity:1; }
+  100%{ opacity:1; }
+}
+@media (prefers-reduced-motion: reduce){
+  .sketch-path{ animation:none; stroke-dashoffset:0; }
+  .fill-block{ animation:none; opacity:1; }
+}
+
+@media (max-width: 900px){
+  .hero-grid{ grid-template-columns: 1fr; }
+  .hero-art{ order:-1; max-width:420px; margin:0 auto; }
+}
+
+/* ====================== SERVICES (artboard cards) ====================== */
+.section{ padding: 96px 0; }
+.section-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:24px;
+  margin-bottom: 48px;
+  flex-wrap:wrap;
+}
+.section-head h2{ font-size: clamp(30px,3.6vw,42px); margin-top:10px; }
+.section-head p{ color: var(--ink-soft); max-width:380px; font-size:15px; }
+
+.services-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.service-card{
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  position:relative;
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  min-height: 240px;
+}
+.service-card:hover{
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-pop);
+  border-color: var(--ink);
+}
+.service-card .corner{
+  position:absolute; top:18px; right:18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.service-icon{
+  width:46px; height:46px;
+  border-radius: 10px;
+  background: var(--coral-tint);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:22px;
+  color: var(--coral-deep);
+}
+.service-card h3{ font-size:20px; margin-bottom:10px; }
+.service-card p{ font-size:14px; color: var(--ink-soft); flex:1; }
+.service-card .price{
+  margin-top:18px;
+  font-family: var(--font-mono);
+  font-size:13px;
+  color: var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-top:1px dashed var(--line);
+  padding-top:14px;
+}
+.service-card .price .arrow{ transition: transform .18s ease; }
+.service-card:hover .price .arrow{ transform: translateX(4px); }
+
+@media (max-width: 900px){ .services-grid{ grid-template-columns: 1fr; } }
+
+/* ====================== AI SLIDE SECTION ====================== */
+.ai-section{
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--radius-lg);
+  margin: 0 32px;
+  padding: 64px 48px;
+  position:relative;
+  overflow:hidden;
+}
+.ai-section::before{
+  content:"";
+  position:absolute;
+  width:480px; height:480px;
+  background: radial-gradient(circle, rgba(255,75,46,0.35), transparent 70%);
+  top:-180px; right:-140px;
+  pointer-events:none;
+}
+.ai-grid{
+  display:grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap:54px;
+  position:relative;
+  z-index:1;
+}
+.ai-section .eyebrow{ color: var(--coral); }
+.ai-section h2{ color: var(--white); font-size: clamp(28px,3.2vw,38px); margin-top:14px; }
+.ai-section .desc{ color: #C9C2B4; margin-top:16px; font-size:15.5px; max-width:440px; line-height:1.65; }
+.ai-steps{ margin-top:32px; display:flex; flex-direction:column; gap:16px; }
+.ai-step{ display:flex; gap:14px; align-items:flex-start; }
+.ai-step-num{
+  font-family: var(--font-mono);
+  font-size:12px;
+  color: var(--coral);
+  border: 1px solid rgba(255,75,46,0.5);
+  width:26px; height:26px;
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.ai-step-text{ font-size:14px; color:#D8D2C5; padding-top:3px; }
+.ai-step-text b{ color:var(--white); }
+
+.ai-panel{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-md);
+  padding: 26px;
+}
+.dropzone{
+  border: 1.5px dashed rgba(255,255,255,0.3);
+  border-radius: var(--radius-sm);
+  padding: 36px 20px;
+  text-align:center;
+  transition: border-color .2s ease, background .2s ease;
+}
+.dropzone.drag{ border-color: var(--coral); background: rgba(255,75,46,0.08); }
+.dropzone svg{ margin:0 auto 14px; color: var(--coral); }
+.dropzone p{ font-size:13.5px; color:#C9C2B4; }
+.dropzone .filename{ font-family: var(--font-mono); color: var(--white); font-size:13px; margin-top:10px; word-break:break-all; }
+.dropzone input{ display:none; }
+.dz-link{ color: var(--coral); text-decoration:underline; cursor:pointer; }
+
+.ai-panel-actions{ margin-top:18px; display:flex; gap:10px; }
+.ai-progress{ margin-top:20px; display:none; }
+.ai-progress.show{ display:block; }
+.ai-progress-bar{ height:5px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden; }
+.ai-progress-fill{ height:100%; width:0%; background: linear-gradient(90deg, var(--coral), #FF8A6E); transition: width .3s ease; }
+.ai-progress-label{ font-family: var(--font-mono); font-size:11.5px; color:#C9C2B4; margin-top:8px; }
+
+.ai-result{ margin-top:20px; display:none; }
+.ai-result.show{ display:block; }
+.outline-list{ max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-top:14px; padding-right:6px; }
+.outline-item{
+  background: rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:12.5px;
+}
+.outline-item .ot-type{ font-family:var(--font-mono); color: var(--coral); font-size:10px; text-transform:uppercase; }
+.outline-item .ot-title{ color:var(--white); font-weight:600; margin-top:3px; }
+
+@media (max-width: 900px){
+  .ai-section{ margin:0 20px; padding: 44px 24px; }
+  .ai-grid{ grid-template-columns:1fr; }
+}
+
+/* ====================== PROCESS ====================== */
+.process-list{
+  display:grid;
+  grid-template-columns: repeat(4,1fr);
+  gap:1px;
+  background: var(--line);
+  border:1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow:hidden;
+}
+.process-item{
+  background: var(--paper);
+  padding: 30px 24px;
+}
+.process-item .pnum{
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--coral-deep);
+}
+.process-item h4{ font-size:17px; margin-top:14px; margin-bottom:8px; }
+.process-item p{ font-size:13.5px; color: var(--ink-soft); }
+@media (max-width: 900px){ .process-list{ grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px){ .process-list{ grid-template-columns: 1fr; } }
+
+/* ====================== LOOKUP SECTION ====================== */
+.lookup-box{
+  background: var(--white);
+  border:1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 48px;
+  display:grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap:48px;
+  align-items:center;
+}
+.lookup-form{ display:flex; flex-direction:column; gap:14px; }
+.lookup-form .input-row{ display:flex; gap:10px; }
+.field{
+  width:100%;
+  padding: 14px 16px;
+  border:1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  font-size:14.5px;
+  transition: border-color .18s ease, background .18s ease;
+}
+.field:focus{ outline:none; border-color: var(--ink); background: var(--white); }
+.field.mono{ font-family: var(--font-mono); letter-spacing:0.03em; }
+
+.order-result{ display:none; }
+.order-result.show{ display:block; }
+.order-result-card{
+  border:1.5px solid var(--ink);
+  border-radius: var(--radius-md);
+  padding:24px;
+  background: var(--paper);
+}
+.order-result-card .or-code{ font-family: var(--font-mono); font-size:13px; color: var(--ink-soft); }
+.order-result-card .or-status{
+  display:inline-flex;
+  margin-top:10px;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:12.5px;
+  font-weight:600;
+  font-family: var(--font-mono);
+}
+.status-pending{ background:#FFF0DC; color:#9A6300; }
+.status-progress{ background:#DCEBFF; color:#1A53A8; }
+.status-done{ background:#DFF3E1; color:#226B30; }
+.status-cancel{ background:#FBE0DC; color:#A8311A; }
+
+.order-track{ margin-top:24px; display:flex; flex-direction:column; gap:0; }
+.track-row{ display:flex; gap:14px; }
+.track-dot-col{ display:flex; flex-direction:column; align-items:center; }
+.track-dot{ width:12px; height:12px; border-radius:50%; background: var(--line); flex-shrink:0; margin-top:3px; }
+.track-dot.active{ background: var(--coral); }
+.track-line{ width:1.5px; flex:1; background: var(--line); min-height:24px; }
+.track-row:last-child .track-line{ display:none; }
+.track-content{ padding-bottom:22px; }
+.track-content .tc-title{ font-size:14px; font-weight:600; }
+.track-content .tc-title.muted{ color: var(--ink-soft); font-weight:500; }
+
+.lookup-empty{ font-size:14px; color: var(--ink-soft); }
+.lookup-error{ color:#A8311A; font-size:13.5px; margin-top:6px; display:none; }
+.lookup-error.show{ display:block; }
+
+@media (max-width: 900px){
+  .lookup-box{ grid-template-columns:1fr; padding:32px 24px; }
+}
+
+/* ====================== FOOTER ====================== */
+.footer{
+  border-top:1px solid var(--line);
+  padding: 48px 0 30px;
+  margin-top:60px;
+}
+.footer-inner{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+.footer-inner p{ font-size:13px; color:var(--ink-soft); }
+.footer-links{ display:flex; gap:22px; }
+.footer-links a{ font-size:13px; color:var(--ink-soft); }
+.footer-links a:hover{ color:var(--ink); }
+
+/* ====================== ORDER MODAL ====================== */
+.modal-overlay{
+  position:fixed; inset:0;
+  background: rgba(33,28,22,0.55);
+  backdrop-filter: blur(3px);
+  z-index:1000;
+  display:none;
+  align-items:flex-start;
+  justify-content:center;
+  padding: 40px 20px;
+  overflow-y:auto;
+}
+.modal-overlay.show{ display:flex; animation: overlayIn .25s ease; }
+@keyframes overlayIn{ from{ opacity:0; } to{ opacity:1; } }
+
+.modal{
+  background: var(--paper);
+  border-radius: var(--radius-lg);
+  max-width: 620px;
+  width:100%;
+  margin-top: 24px;
+  box-shadow: var(--shadow-pop);
+  animation: modalIn .3s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes modalIn{ from{ opacity:0; transform: translateY(18px) scale(.98); } to{ opacity:1; transform:none; } }
+
+.modal-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-head h3{ font-size:21px; }
+.modal-close{
+  width:34px; height:34px; border-radius:50%;
+  border:1.5px solid var(--line);
+  background:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.modal-close:hover{ background: var(--ink); border-color:var(--ink); color:var(--white); transform: rotate(90deg); }
+
+.modal-body{ padding: 26px 28px 30px; }
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group{ display:flex; flex-direction:column; gap:7px; }
+.form-group.full{ grid-column: 1/-1; }
+.form-group label{ font-size:12.5px; font-weight:600; color: var(--ink-soft); }
+.form-group label .req{ color:var(--coral-deep); }
+textarea.field{ resize:vertical; min-height:90px; }
+
+.service-pills{ display:flex; flex-wrap:wrap; gap:8px; }
+.service-pill{
+  padding: 9px 16px;
+  border-radius:999px;
+  border: 1.5px solid var(--line);
+  font-size:13px;
+  background: var(--white);
+  transition: all .16s ease;
+}
+.service-pill.active{ background: var(--ink); border-color:var(--ink); color: var(--white); }
+
+.modal-submit-row{ margin-top:24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.modal-error{ color:#A8311A; font-size:13px; display:none; }
+.modal-error.show{ display:block; }
+
+/* ----- success / payment view ----- */
+.pay-view{ display:none; }
+.pay-view.show{ display:block; }
+.pay-code-box{
+  text-align:center;
+  padding: 22px;
+  background: var(--white);
+  border: 1.5px dashed var(--coral);
+  border-radius: var(--radius-md);
+}
+.pay-code-box .pc-label{ font-family: var(--font-mono); font-size:11.5px; color: var(--ink-soft); text-transform:uppercase; letter-spacing:0.08em; }
+.pay-code-box .pc-code{ font-family: var(--font-mono); font-size:28px; font-weight:700; color: var(--coral-deep); margin-top:8px; letter-spacing:0.02em; }
+.pay-code-box .pc-copy{ margin-top:10px; font-size:12px; }
+
+.pay-qr-wrap{ display:flex; gap:22px; margin-top:24px; align-items:center; }
+.pay-qr-wrap img{ width:160px; height:160px; border-radius:10px; border:1px solid var(--line); flex-shrink:0; background:#fff; }
+.pay-info{ font-size:13.5px; }
+.pay-info .pi-row{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px dashed var(--line); }
+.pay-info .pi-row span:first-child{ color: var(--ink-soft); }
+.pay-info .pi-row span:last-child{ font-weight:600; font-family: var(--font-mono); }
+
+.pay-note{ margin-top:18px; font-size:12.5px; color: var(--ink-soft); background: var(--paper-deep); padding:14px 16px; border-radius:8px; }
+
+@media (max-width: 560px){
+  .form-grid{ grid-template-columns:1fr; }
+  .pay-qr-wrap{ flex-direction:column; }
+}
+
+/* ====================== TOAST ====================== */
+.toast{
+  position:fixed; bottom:24px; left:50%; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--white);
+  padding: 14px 22px; border-radius: 999px; font-size:13.5px;
+  display:flex; align-items:center; gap:10px;
+  box-shadow: var(--shadow-pop);
+  z-index: 2000;
+  opacity:0; pointer-events:none;
+  transition: all .3s cubic-bezier(.2,.9,.3,1.2);
+}
+.toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
+.toast .t-dot{ width:7px; height:7px; border-radius:50%; background: var(--coral); }
+
+/* spinner */
+.spin{ animation: spin 0.9s linear infinite; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ======================= MAIN PAGE ======================= -->
+<div id="main-page">
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">Atelier<span class="dot">.</span></div>
+    <div class="nav-links">
+      <a href="#services">Dịch vụ</a>
+      <a href="#ai-slide">AI tạo slide</a>
+      <a href="#process">Quy trình</a>
+      <a href="#lookup">Tra cứu đơn</a>
+    </div>
+    <div class="nav-cta">
+      <button class="btn btn-primary btn-sm" onclick="openOrderModal()">Đặt đơn</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">Studio thiết kế · Web / Profile / Slide</div>
+      <h1>Ý tưởng của bạn,<br><em>thành hình</em> rõ ràng.</h1>
+      <p class="hero-sub">Đặt đơn thiết kế website, hồ sơ năng lực hoặc bài thuyết trình chỉ trong vài phút. Theo dõi tiến trình bằng mã đơn, thanh toán bằng QR — mọi thứ minh bạch từ đầu đến cuối.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openOrderModal()">Bắt đầu đặt đơn →</button>
+        <a href="#lookup" class="btn btn-ghost">Tra cứu đơn hàng</a>
+      </div>
+      <div class="hero-meta">
+        <div>
+          <div class="stat-num">3</div>
+          <div class="stat-label">DỊCH VỤ CHÍNH</div>
+        </div>
+        <div>
+          <div class="stat-num">24h</div>
+          <div class="stat-label">PHẢN HỒI BÁO GIÁ</div>
+        </div>
+        <div>
+          <div class="stat-num">AI</div>
+          <div class="stat-label">DÀN SLIDE TỰ ĐỘNG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-art">
+      <div class="hero-art-bar"><span></span><span></span><span></span></div>
+      <div class="hero-art-canvas">
+        <svg viewBox="0 0 360 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- browser frame sketch -->
+          <rect class="sketch-path" x="30" y="30" width="300" height="200" rx="8"/>
+          <rect class="fill-block" x="30" y="30" width="300" height="34" rx="8" fill="var(--paper-deep)" style="animation-delay:0s"/>
+          <circle class="fill-block" cx="48" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.1s"/>
+          <circle class="fill-block" cx="62" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.15s"/>
+          <circle class="fill-block" cx="76" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.2s"/>
+
+          <rect class="sketch-path" x="50" y="86" width="140" height="14" rx="3" style="animation-delay:.3s"/>
+          <rect class="fill-block" x="50" y="86" width="140" height="14" rx="3" fill="var(--ink)" style="animation-delay:1.1s"/>
+          <rect class="sketch-path" x="50" y="110" width="220" height="8" rx="2" style="animation-delay:.4s"/>
+          <rect class="fill-block" x="50" y="110" width="220" height="8" rx="2" fill="var(--line)" style="animation-delay:1.2s"/>
+          <rect class="sketch-path" x="50" y="126" width="180" height="8" rx="2" style="animation-delay:.5s"/>
+          <rect class="fill-block" x="50" y="126" width="180" height="8" rx="2" fill="var(--line)" style="animation-delay:1.3s"/>
+
+          <rect class="sketch-path" x="50" y="152" width="110" height="32" rx="999" style="animation-delay:.6s"/>
+          <rect class="fill-block" x="50" y="152" width="110" height="32" rx="999" fill="var(--coral)" style="animation-delay:1.4s"/>
+          <text class="fill-block" x="65" y="173" font-family="Inter" font-size="11" fill="white" font-weight="600" style="animation-delay:1.6s">Xem dự án</text>
+
+          <!-- floating slide card -->
+          <rect class="sketch-path" x="190" y="190" width="120" height="84" rx="8" fill="var(--white)" style="animation-delay:.9s"/>
+          <rect class="fill-block" x="190" y="190" width="120" height="84" rx="8" fill="var(--white)" stroke="var(--line)" style="animation-delay:1.8s"/>
+          <rect class="fill-block" x="202" y="202" width="50" height="6" rx="2" fill="var(--coral)" style="animation-delay:2s"/>
+          <rect class="fill-block" x="202" y="216" width="96" height="5" rx="2" fill="var(--line)" style="animation-delay:2.1s"/>
+          <rect class="fill-block" x="202" y="227" width="80" height="5" rx="2" fill="var(--line)" style="animation-delay:2.2s"/>
+          <rect class="fill-block" x="202" y="238" width="88" height="5" rx="2" fill="var(--line)" style="animation-delay:2.3s"/>
+          <circle class="fill-block" cx="280" cy="252" r="10" fill="var(--coral-tint)" style="animation-delay:2.4s"/>
+
+          <!-- profile circle card -->
+          <rect class="sketch-path" x="30" y="250" width="130" height="100" rx="8" style="animation-delay:1.1s"/>
+          <rect class="fill-block" x="30" y="250" width="130" height="100" rx="8" fill="var(--white)" stroke="var(--line)" style="animation-delay:2.6s"/>
+          <circle class="fill-block" cx="62" cy="282" r="16" fill="var(--coral-tint)" style="animation-delay:2.7s"/>
+          <rect class="fill-block" x="88" y="276" width="56" height="6" rx="2" fill="var(--ink)" style="animation-delay:2.8s"/>
+          <rect class="fill-block" x="88" y="287" width="40" height="5" rx="2" fill="var(--line)" style="animation-delay:2.9s"/>
+          <rect class="fill-block" x="44" y="312" width="100" height="5" rx="2" fill="var(--line)" style="animation-delay:3s"/>
+          <rect class="fill-block" x="44" y="323" width="80" height="5" rx="2" fill="var(--line)" style="animation-delay:3.1s"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Dịch vụ</div>
+        <h2>Ba hạng mục,<br>một quy trình rõ ràng.</h2>
+      </div>
+      <p>Chọn dịch vụ cần đặt — mỗi đơn đều được theo dõi bằng mã riêng và cập nhật tiến trình minh bạch.</p>
+    </div>
+
+    <div class="services-grid">
+      <div class="service-card" onclick="openOrderModal('Thiết kế Website')">
+        <span class="corner">01</span>
+        <div class="service-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6.5" cy="6.5" r=".6" fill="currentColor"/></svg>
+        </div>
+        <h3>Thiết kế Website</h3>
+        <p>Landing page, website giới thiệu công ty hoặc cửa hàng online — responsive, tối ưu tốc độ và chuẩn SEO cơ bản.</p>
+        <div class="price">Từ 2.500.000đ <span class="arrow">→</span></div>
+      </div>
+
+      <div class="service-card" onclick="openOrderModal('Thiết kế Profile')">
+        <span class="corner">02</span>
+        <div class="service-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M14 8h4M14 11h4M7 15h10M7 18h6"/></svg>
+        </div>
+        <h3>Hồ sơ năng lực (Profile)</h3>
+        <p>Profile công ty, CV cá nhân hoặc catalogue sản phẩm dạng PDF — trình bày chuyên nghiệp, dễ in ấn.</p>
+        <div class="price">Từ 800.000đ <span class="arrow">→</span></div>
+      </div>
+
+      <div class="service-card" onclick="openOrderModal('Thiết kế Slide')">
+        <span class="corner">03</span>
+        <div class="service-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Slide thuyết trình</h3>
+        <p>Slide thuyết trình, báo cáo, pitch deck — có thể dùng AI phân bổ nội dung tự động từ file bạn tải lên.</p>
+        <div class="price">Từ 600.000đ <span class="arrow">→</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI SLIDE -->
+<section class="section" id="ai-slide" style="padding-top:0;">
+  <div class="ai-section">
+    <div class="ai-grid">
+      <div>
+        <div class="eyebrow">AI tạo slide tự động</div>
+        <h2>Tải nội dung lên,<br>AI lo phần dàn dựng.</h2>
+        <p class="desc">Không cần tự sắp xếp từng slide. Tải lên file nội dung (Word, PDF hoặc text), AI sẽ đọc, phân tích và phân bổ thành một bộ dàn ý slide hoàn chỉnh — sẵn sàng tải về dưới dạng PowerPoint.</p>
+        <div class="ai-steps">
+          <div class="ai-step">
+            <div class="ai-step-num">1</div>
+            <div class="ai-step-text"><b>Tải file nội dung</b> — Word (.docx), PDF hoặc văn bản thuần (.txt).</div>
+          </div>
+          <div class="ai-step">
+            <div class="ai-step-num">2</div>
+            <div class="ai-step-text"><b>AI phân tích & phân bổ</b> nội dung thành các slide có cấu trúc rõ ràng.</div>
+          </div>
+          <div class="ai-step">
+            <div class="ai-step-num">3</div>
+            <div class="ai-step-text"><b>Tải file .pptx</b> về máy, chỉnh sửa thêm trong PowerPoint hoặc Google Slides.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-panel">
+        <div class="dropzone" id="dropzone">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <p>Kéo thả file vào đây, hoặc <span class="dz-link" onclick="document.getElementById('fileInput').click()">chọn file</span></p>
+          <p style="margin-top:6px; opacity:.7; font-size:12px;">Hỗ trợ .docx, .pdf, .txt — tối đa 10MB</p>
+          <input type="file" id="fileInput" accept=".docx,.pdf,.txt">
+          <div class="filename" id="fileName"></div>
+        </div>
+
+        <div class="ai-panel-actions">
+          <button class="btn btn-primary btn-sm" id="generateBtn" onclick="handleGenerateSlide()" disabled style="flex:1;">
+            ✦ Tạo slide bằng AI
+          </button>
+        </div>
+
+        <div class="ai-progress" id="aiProgress">
+          <div class="ai-progress-bar"><div class="ai-progress-fill" id="aiProgressFill"></div></div>
+          <div class="ai-progress-label" id="aiProgressLabel">Đang đọc file...</div>
+        </div>
+
+        <div class="ai-result" id="aiResult">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--white); font-size:14px;" id="deckTitleLabel">Dàn ý slide</strong>
+            <span class="tag" id="slideCountTag" style="border-color:rgba(255,255,255,0.2); color:#C9C2B4;">0 slide</span>
+          </div>
+          <div class="outline-list" id="outlineList"></div>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:16px;" onclick="downloadPptx()">↓ Tải file .pptx</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section" id="process">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Quy trình</div>
+        <h2>Từ lúc đặt đơn<br>đến khi nhận file.</h2>
+      </div>
+      <p>Mỗi đơn đi qua 4 mốc rõ ràng, cập nhật trạng thái theo thời gian thực trên trang tra cứu.</p>
+    </div>
+    <div class="process-list">
+      <div class="process-item">
+        <div class="pnum">Bước 1</div>
+        <h4>Đặt đơn</h4>
+        <p>Điền thông tin yêu cầu, nhận mã đơn và quét QR thanh toán đặt cọc.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 2</div>
+        <h4>Xác nhận</h4>
+        <p>Đội ngũ kiểm tra yêu cầu, liên hệ làm rõ chi tiết nếu cần trong vòng 24h.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 3</div>
+        <h4>Thực hiện</h4>
+        <p>Tiến hành thiết kế, cập nhật trạng thái "Đang thực hiện" trên hệ thống tra cứu.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 4</div>
+        <h4>Bàn giao</h4>
+        <p>Gửi file hoàn chỉnh, đơn chuyển trạng thái "Hoàn thành".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOOKUP -->
+<section class="section" id="lookup">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Tra cứu</div>
+        <h2>Theo dõi đơn hàng<br>của bạn.</h2>
+      </div>
+      <p>Nhập mã đơn được cấp khi đặt hàng (ví dụ: DH-260620-1234) để xem trạng thái mới nhất.</p>
+    </div>
+
+    <div class="lookup-box">
+      <div class="lookup-form">
+        <label style="font-size:12.5px; font-weight:600; color:var(--ink-soft);">Mã đơn hàng</label>
+        <div class="input-row">
+          <input type="text" class="field mono" id="lookupCode" placeholder="DH-260620-1234">
+          <button class="btn btn-primary" onclick="handleLookup()" id="lookupBtn">Tra cứu</button>
+        </div>
+        <div class="lookup-error" id="lookupError">Không tìm thấy đơn hàng với mã này. Vui lòng kiểm tra lại.</div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-top:6px;">Mã đơn được gửi ngay sau khi bạn đặt đơn thành công, kèm theo trên màn hình thanh toán.</p>
+      </div>
+
+      <div>
+        <div class="lookup-empty" id="lookupEmpty">Kết quả tra cứu sẽ hiển thị ở đây.</div>
+        <div class="order-result" id="orderResult">
+          <div class="order-result-card">
+            <div class="or-code" id="orCode">DH-260620-1234</div>
+            <h3 style="margin-top:8px; font-size:18px;" id="orService">Thiết kế Website</h3>
+            <div class="or-status status-pending" id="orStatusBadge">Chờ xác nhận</div>
+
+            <div class="order-track" id="orderTrack"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <p>© 2026 Atelier Studio. Thiết kế web, profile & slide.</p>
+    <div class="footer-links">
+      <a href="#services">Dịch vụ</a>
+      <a href="#lookup">Tra cứu đơn</a>
+    </div>
+  </div>
+</footer>
+
+</div> <!-- /#main-page -->
+
+<!-- ======================= ORDER MODAL ======================= -->
+<div class="modal-overlay" id="orderModalOverlay">
+  <div class="modal">
+
+    <!-- FORM VIEW -->
+    <div id="formView">
+      <div class="modal-head">
+        <h3>Đặt đơn thiết kế</h3>
+        <button class="modal-close" onclick="closeOrderModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group full" style="margin-bottom:18px;">
+          <label>Loại dịch vụ <span class="req">*</span></label>
+          <div class="service-pills" id="servicePills">
+            <button type="button" class="service-pill" data-service="Thiết kế Website">Website</button>
+            <button type="button" class="service-pill" data-service="Thiết kế Profile">Profile</button>
+            <button type="button" class="service-pill" data-service="Thiết kế Slide">Slide</button>
+            <button type="button" class="service-pill" data-service="Khác">Khác</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Họ và tên <span class="req">*</span></label>
+            <input type="text" class="field" id="f_name" placeholder="Nguyễn Văn A">
+          </div>
+          <div class="form-group">
+            <label>Số điện thoại <span class="req">*</span></label>
+            <input type="text" class="field" id="f_phone" placeholder="09xx xxx xxx">
+          </div>
+          <div class="form-group">
+            <label>Email <span class="req">*</span></label>
+            <input type="email" class="field" id="f_email" placeholder="ban@email.com">
+          </div>
+          <div class="form-group">
+            <label>Ngân sách dự kiến</label>
+            <input type="text" class="field" id="f_budget" placeholder="VD: 2.000.000đ">
+          </div>
+          <div class="form-group full">
+            <label>Deadline mong muốn</label>
+            <input type="date" class="field" id="f_deadline">
+          </div>
+          <div class="form-group full">
+            <label>Mô tả yêu cầu <span class="req">*</span></label>
+            <textarea class="field" id="f_desc" placeholder="Mô tả ngắn gọn về dự án, phong cách mong muốn, tài liệu tham khảo..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-error" id="formError">Vui lòng điền đầy đủ các trường bắt buộc.</div>
+
+        <div class="modal-submit-row">
+          <p style="font-size:12px; color:var(--ink-soft);">Sau khi đặt, bạn sẽ nhận mã đơn và QR thanh toán.</p>
+          <button class="btn btn-primary" id="submitOrderBtn" onclick="handleSubmitOrder()">Xác nhận đặt đơn</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT / SUCCESS VIEW -->
+    <div class="pay-view" id="payView">
+      <div class="modal-head">
+        <h3>Đặt đơn thành công 🎉</h3>
+        <button class="modal-close" onclick="closeOrderModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pay-code-box">
+          <div class="pc-label">Mã đơn hàng của bạn</div>
+          <div class="pc-code" id="payOrderCode">DH-260620-1234</div>
+          <div class="pc-copy"><a href="javascript:void(0)" onclick="copyOrderCode()" style="text-decoration:underline; color:var(--coral-deep);">Sao chép mã</a></div>
+        </div>
+
+        <div class="pay-qr-wrap">
+          <img id="payQrImg" src="" alt="QR thanh toán VietQR">
+          <div class="pay-info">
+            <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
+            <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
+            <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
+            <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
+          </div>
+        </div>
+
+        <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán đặt cọc. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
+
+        <div class="modal-submit-row" style="justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="closeOrderModal()">Hoàn tất</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="t-dot"></span>
+  <span id="toastMsg">Đã sao chép</span>
+</div>
+
+<script>
+/* =====================================================================
+   CẤU HÌNH — sửa các giá trị dưới đây cho phù hợp với bạn
+===================================================================== */
+const CONFIG = {
+  // URL Web App lấy được sau khi Deploy Google Apps Script (xem file apps-script-backend.gs)
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbycsdb5z3CxmItXUEX9QWDzytA80cUgiHhkOuQYDEE2tRMELnxCgRNeMnNvnDF1nUtF/exec",
+
+  // Thông tin nhận thanh toán VietQR
+  BANK_ID: "970407",        // Mã ngân hàng VietQR, vd: 970436 = Vietcombank. Tra cứu tại vietqr.io
+  BANK_NAME: "Techcombank",
+  ACCOUNT_NUMBER: "3838648888",
+  ACCOUNT_NAME: "LE PHAT DAT",
+  DEPOSIT_AMOUNT: 500000 // số tiền đặt cọc mặc định hiển thị trên QR (VNĐ)
+};
+
+/* =====================================================================
+   TOAST
+===================================================================== */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+/* =====================================================================
+   ORDER MODAL
+===================================================================== */
+let selectedService = null;
+
+function openOrderModal(presetService){
+  document.getElementById('orderModalOverlay').classList.add('show');
+  document.getElementById('formView').style.display = 'block';
+  document.getElementById('payView').classList.remove('show');
+  document.body.style.overflow = 'hidden';
+
+  if(presetService){
+    selectService(presetService);
+  }
+}
+function closeOrderModal(){
+  document.getElementById('orderModalOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  resetOrderForm();
+}
+document.getElementById('orderModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'orderModalOverlay') closeOrderModal();
+});
+
+document.querySelectorAll('.service-pill').forEach(pill=>{
+  pill.addEventListener('click', ()=> selectService(pill.dataset.service));
+});
+function selectService(service){
+  selectedService = service;
+  document.querySelectorAll('.service-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.service === service);
+  });
+}
+
+function resetOrderForm(){
+  ['f_name','f_phone','f_email','f_budget','f_deadline','f_desc'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  selectedService = null;
+  document.querySelectorAll('.service-pill').forEach(p=> p.classList.remove('active'));
+  document.getElementById('formError').classList.remove('show');
+}
+
+async function handleSubmitOrder(){
+  const name = document.getElementById('f_name').value.trim();
+  const phone = document.getElementById('f_phone').value.trim();
+  const email = document.getElementById('f_email').value.trim();
+  const budget = document.getElementById('f_budget').value.trim();
+  const deadline = document.getElementById('f_deadline').value;
+  const desc = document.getElementById('f_desc').value.trim();
+  const errBox = document.getElementById('formError');
+
+  if(!selectedService || !name || !phone || !email || !desc){
+    errBox.textContent = "Vui lòng điền đầy đủ các trường bắt buộc (đánh dấu *).";
+    errBox.classList.add('show');
+    return;
+  }
+  errBox.classList.remove('show');
+
+  const btn = document.getElementById('submitOrderBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Đang gửi...";
+
+  const orderData = {
+    name, phone, email,
+    service: selectedService,
+    description: desc,
+    budget, deadline,
+    amount: CONFIG.DEPOSIT_AMOUNT
+  };
+
+  try{
+    const result = await callBackend('createOrder', { data: orderData });
+    if(result.ok){
+      showPaymentView(result.code);
+    } else {
+      errBox.textContent = result.error || "Có lỗi xảy ra, vui lòng thử lại.";
+      errBox.classList.add('show');
+    }
+  } catch(err){
+    errBox.textContent = "Không thể kết nối tới máy chủ. Kiểm tra lại APPS_SCRIPT_URL trong code.";
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function showPaymentView(code){
+  document.getElementById('formView').style.display = 'none';
+  document.getElementById('payView').classList.add('show');
+
+  document.getElementById('payOrderCode').textContent = code;
+  document.getElementById('payBankName').textContent = CONFIG.BANK_NAME;
+  document.getElementById('payAccNum').textContent = CONFIG.ACCOUNT_NUMBER;
+  document.getElementById('payAccName').textContent = CONFIG.ACCOUNT_NAME;
+  document.getElementById('payTransferNote').textContent = code;
+
+  const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png?amount=${CONFIG.DEPOSIT_AMOUNT}&addInfo=${encodeURIComponent(code)}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
+  document.getElementById('payQrImg').src = qrUrl;
+
+  window._lastOrderCode = code;
+}
+
+function copyOrderCode(){
+  const code = window._lastOrderCode;
+  if(!code) return;
+  navigator.clipboard.writeText(code).then(()=> showToast("Đã sao chép mã đơn: " + code));
+}
+
+/* =====================================================================
+   BACKEND COMMUNICATION (Google Apps Script)
+===================================================================== */
+function isBackendConfigured(){
+  return CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL.indexOf("PASTE_YOUR") !== 0;
+}
+
+async function callBackend(action, payload){
+  if(!isBackendConfigured()){
+    throw new Error("Chưa cấu hình APPS_SCRIPT_URL");
+  }
+  const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // tránh preflight CORS với Apps Script
+    body: JSON.stringify({ action, ...payload })
+  });
+  return await res.json();
+}
+
+async function callBackendGet(params){
+  if(!isBackendConfigured()){
+    throw new Error("Chưa cấu hình APPS_SCRIPT_URL");
+  }
+  const url = new URL(CONFIG.APPS_SCRIPT_URL);
+  Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+  const res = await fetch(url.toString());
+  return await res.json();
+}
+
+/* =====================================================================
+   LOOKUP ORDER
+===================================================================== */
+const STATUS_MAP = {
+  "Chờ xác nhận":     { cls: "status-pending",  step: 0 },
+  "Đã xác nhận":      { cls: "status-progress", step: 1 },
+  "Đang thực hiện":   { cls: "status-progress", step: 2 },
+  "Hoàn thành":       { cls: "status-done",     step: 3 },
+  "Đã huỷ":           { cls: "status-cancel",   step: -1 }
+};
+const TRACK_STEPS = ["Đặt đơn thành công", "Đã xác nhận yêu cầu", "Đang thực hiện thiết kế", "Hoàn thành & bàn giao"];
+
+async function handleLookup(){
+  const codeInput = document.getElementById('lookupCode');
+  const code = codeInput.value.trim();
+  const errBox = document.getElementById('lookupError');
+  const btn = document.getElementById('lookupBtn');
+
+  errBox.classList.remove('show');
+  document.getElementById('orderResult').classList.remove('show');
+
+  if(!code){
+    errBox.textContent = "Vui lòng nhập mã đơn hàng.";
+    errBox.classList.add('show');
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Đang tra cứu...";
+
+  try{
+    const result = await callBackendGet({ action: 'lookup', code });
+    if(result.ok){
+      renderOrderResult(result.order);
+    } else {
+      errBox.textContent = result.error || "Không tìm thấy đơn hàng.";
+      errBox.classList.add('show');
+      document.getElementById('lookupEmpty').style.display = 'block';
+    }
+  } catch(err){
+    errBox.textContent = "Không thể kết nối máy chủ. Kiểm tra lại cấu hình APPS_SCRIPT_URL.";
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function renderOrderResult(order){
+  document.getElementById('lookupEmpty').style.display = 'none';
+  const resultBox = document.getElementById('orderResult');
+  resultBox.classList.add('show');
+
+  document.getElementById('orCode').textContent = order["Mã đơn"];
+  document.getElementById('orService').textContent = order["Loại dịch vụ"] || "—";
+
+  const status = order["Trạng thái"] || "Chờ xác nhận";
+  const meta = STATUS_MAP[status] || { cls: "status-pending", step: 0 };
+  const badge = document.getElementById('orStatusBadge');
+  badge.className = "or-status " + meta.cls;
+  badge.textContent = status;
+
+  const track = document.getElementById('orderTrack');
+  track.innerHTML = '';
+
+  if(meta.step === -1){
+    track.innerHTML = `<div class="track-content"><div class="tc-title">Đơn hàng đã bị huỷ.</div></div>`;
+    return;
+  }
+
+  TRACK_STEPS.forEach((label, idx)=>{
+    const active = idx <= meta.step;
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    row.innerHTML = `
+      <div class="track-dot-col">
+        <div class="track-dot ${active ? 'active' : ''}"></div>
+        <div class="track-line"></div>
+      </div>
+      <div class="track-content">
+        <div class="tc-title ${active ? '' : 'muted'}">${label}</div>
+      </div>`;
+    track.appendChild(row);
+  });
+}
+
+document.getElementById('lookupCode').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') handleLookup();
+});
+
+function escapeHtml(str){
+  if(str === undefined || str === null) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* =====================================================================
+   AI SLIDE GENERATOR
+===================================================================== */
+let uploadedFile = null;
+let uploadedFileText = null;
+let currentOutline = null;
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFileSelected(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e)=>{
+  if(e.target.files.length) handleFileSelected(e.target.files[0]);
+});
+
+function handleFileSelected(file){
+  const validTypes = ['.docx', '.pdf', '.txt'];
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  if(!validTypes.includes(ext)){
+    showToast("Định dạng file không hỗ trợ. Dùng .docx, .pdf hoặc .txt");
+    return;
+  }
+  if(file.size > 10 * 1024 * 1024){
+    showToast("File vượt quá 10MB.");
+    return;
+  }
+  uploadedFile = file;
+  document.getElementById('fileName').textContent = "📄 " + file.name;
+  document.getElementById('generateBtn').disabled = false;
+}
+
+async function extractTextFromFile(file){
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+  if(ext === '.txt'){
+    return await file.text();
+  }
+
+  if(ext === '.docx'){
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  }
+
+  if(ext === '.pdf'){
+    const arrayBuffer = await file.arrayBuffer();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return fullText;
+  }
+
+  throw new Error("Không hỗ trợ định dạng file này.");
+}
+
+function setAiProgress(percent, label){
+  const progBox = document.getElementById('aiProgress');
+  progBox.classList.add('show');
+  document.getElementById('aiProgressFill').style.width = percent + '%';
+  document.getElementById('aiProgressLabel').textContent = label;
+}
+
+async function handleGenerateSlide(){
+  if(!uploadedFile) return;
+
+  if(!isBackendConfigured()){
+    showToast("Chưa cấu hình APPS_SCRIPT_URL — không thể gọi AI.");
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  document.getElementById('aiResult').classList.remove('show');
+  setAiProgress(15, "Đang đọc nội dung file...");
+
+  try{
+    const text = await extractTextFromFile(uploadedFile);
+    uploadedFileText = text;
+
+    if(!text || text.trim().length < 10){
+      showToast("Không trích xuất được nội dung từ file này.");
+      setAiProgress(0, "");
+      document.getElementById('aiProgress').classList.remove('show');
+      btn.disabled = false;
+      return;
+    }
+
+    setAiProgress(45, "AI đang phân tích nội dung...");
+
+    const fileTitle = uploadedFile.name.replace(/\.[^/.]+$/, "");
+    const result = await callBackend('generateSlideOutline', { content: text, title: fileTitle });
+
+    setAiProgress(85, "Đang dựng dàn ý slide...");
+
+    if(result.ok){
+      currentOutline = result.outline;
+      renderOutline(currentOutline);
+      setAiProgress(100, "Hoàn tất!");
+      setTimeout(()=> document.getElementById('aiProgress').classList.remove('show'), 1200);
+    } else {
+      showToast("Lỗi AI: " + (result.error || "không xác định"));
+      document.getElementById('aiProgress').classList.remove('show');
+    }
+  } catch(err){
+    showToast("Có lỗi xảy ra: " + err.message);
+    document.getElementById('aiProgress').classList.remove('show');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderOutline(outline){
+  const resultBox = document.getElementById('aiResult');
+  resultBox.classList.add('show');
+  document.getElementById('deckTitleLabel').textContent = outline.deckTitle || "Dàn ý slide";
+  document.getElementById('slideCountTag').textContent = (outline.slides || []).length + " slide";
+
+  const list = document.getElementById('outlineList');
+  list.innerHTML = '';
+  (outline.slides || []).forEach((s, idx)=>{
+    const item = document.createElement('div');
+    item.className = 'outline-item';
+    const typeLabel = { title: 'Trang bìa', content: 'Nội dung', section: 'Phân đoạn' }[s.type] || s.type;
+    item.innerHTML = `<div class="ot-type">${idx+1} · ${typeLabel}</div><div class="ot-title">${escapeHtml(s.title || '')}</div>`;
+    list.appendChild(item);
+  });
+}
+
+function downloadPptx(){
+  if(!currentOutline){ showToast("Chưa có dàn ý slide để xuất."); return; }
+
+  const pptx = new PptxGenJS();
+  pptx.defineLayout({ name: 'ATELIER_169', width: 10, height: 5.63 });
+  pptx.layout = 'ATELIER_169';
+
+  const COLOR_INK = "211C16";
+  const COLOR_CORAL = "FF4B2E";
+  const COLOR_PAPER = "F2EEE6";
+  const COLOR_SOFT = "5B5347";
+
+  (currentOutline.slides || []).forEach(s=>{
+    const slide = pptx.addSlide();
+
+    if(s.type === 'title'){
+      slide.background = { color: COLOR_INK };
+      slide.addShape(pptx.ShapeType.rect, { x:0, y:2.55, w:1.4, h:0.06, fill:{ color: COLOR_CORAL } });
+      slide.addText(s.title || currentOutline.deckTitle || '', {
+        x:0.6, y:1.9, w:8.8, h:1.2, fontSize:32, bold:true, color:"FFFFFF", fontFace:"Arial", align:'left'
+      });
+      if(s.subtitle){
+        slide.addText(s.subtitle, { x:0.6, y:3.0, w:8.8, h:0.8, fontSize:15, color:"C9C2B4", fontFace:"Arial" });
+      }
+    }
+    else if(s.type === 'section'){
+      slide.background = { color: COLOR_PAPER };
+      slide.addShape(pptx.ShapeType.rect, { x:0.6, y:2.5, w:0.9, h:0.06, fill:{ color: COLOR_CORAL } });
+      slide.addText(s.title || '', {
+        x:0.6, y:2.6, w:8.8, h:1.0, fontSize:28, bold:true, color: COLOR_INK, fontFace:"Arial"
+      });
+    }
+    else {
+      slide.background = { color: "FFFFFF" };
+      slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:10, h:0.85, fill:{ color: COLOR_PAPER } });
+      slide.addText(s.title || '', {
+        x:0.5, y:0.18, w:9, h:0.55, fontSize:20, bold:true, color: COLOR_INK, fontFace:"Arial"
+      });
+
+      const bullets = (s.bullets || []).map(b => ({
+        text: b,
+        options: { bullet: { code: '25A0', color: COLOR_CORAL }, fontSize:15, color:"333333", breakLine:true, paraSpaceAfter:14 }
+      }));
+
+      if(bullets.length){
+        slide.addText(bullets, { x:0.6, y:1.25, w:8.8, h:3.9, fontFace:"Arial", valign:'top' });
+      }
+    }
+
+    slide.addText(`${currentOutline.deckTitle || ''}`, {
+      x:0.4, y:5.32, w:6, h:0.25, fontSize:8, color: COLOR_SOFT, fontFace:"Arial"
+    });
+  });
+
+  const safeFileName = (currentOutline.deckTitle || 'slide').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+  pptx.writeFile({ fileName: `${safeFileName}.pptx` });
+  showToast("Đang tải file .pptx...");
+}
+
+/* =====================================================================
+   MISC UX
+===================================================================== */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    if(document.getElementById('orderModalOverlay').classList.contains('show')){
+      closeOrderModal();
+    }
+  }
+});
+
+// Đóng menu mobile / smooth-scroll cho anchor link trong nav
+document.querySelectorAll('.nav-links a[href^="#"], .footer-links a[href^="#"]').forEach(a=>{
+  a.addEventListener('click', function(e){
+    const target = document.querySelector(this.getAttribute('href'));
+    if(target){
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
