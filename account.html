@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tài khoản</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:      #F2EEE6;
+  --paper-deep: #E9E2D4;
+  --ink:        #211C16;
+  --ink-soft:   #5B5347;
+  --line:       #D8D0BF;
+  --coral:      #FF4B2E;
+  --coral-deep: #D6391E;
+  --coral-tint: #FFE4DB;
+  --white:      #FFFCF6;
+  --sage:       #6B7A5E;
+
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'Space Mono', monospace;
+
+  --r-sm: 4px; --r-md: 10px; --r-lg: 22px;
+  --shadow-pop: 0 4px 8px rgba(33,28,22,0.06), 0 24px 48px -16px rgba(33,28,22,0.20);
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{ font-family:var(--font-body); background:var(--paper); color:var(--ink); -webkit-font-smoothing:antialiased; min-height:100vh; }
+::selection{ background:var(--coral); color:var(--white); }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; cursor:pointer; }
+input, select, textarea{ font-family:inherit; font-size:inherit; color:inherit; }
+h1,h2,h3{ font-family:var(--font-display); font-weight:600; line-height:1.1; }
+a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--coral); outline-offset:2px; }
+
+/* ── UTILITIES ── */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:13px 24px; border-radius:999px; font-weight:600; font-size:14px;
+  border:1.5px solid transparent;
+  transition:transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+  white-space:nowrap;
+}
+.btn-primary{ background:var(--ink); color:var(--white); }
+.btn-primary:hover{ background:var(--coral); transform:translateY(-2px); box-shadow:0 10px 24px -8px rgba(255,75,46,.55); }
+.btn-ghost{ background:transparent; border-color:var(--ink); color:var(--ink); }
+.btn-ghost:hover{ background:var(--ink); color:var(--white); transform:translateY(-2px); }
+.btn-sm{ padding:9px 18px; font-size:13px; }
+.btn[disabled]{ opacity:.5; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
+.btn:active{ transform:translateY(0); }
+.btn-danger{ background:transparent; border-color:#E0826C; color:#A8311A; }
+.btn-danger:hover{ background:#A8311A; color:var(--white); transform:translateY(-2px); }
+
+.field{
+  width:100%; padding:13px 15px; border:1.5px solid var(--line); border-radius:var(--r-sm);
+  background:var(--paper); font-size:14px;
+  transition:border-color .18s ease, background .18s ease;
+}
+.field:focus{ outline:none; border-color:var(--ink); background:var(--white); }
+.field-error{ border-color:#E0826C !important; }
+
+.eyebrow{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:.10em; text-transform:uppercase;
+  color:var(--coral-deep); display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{ content:""; width:6px; height:6px; background:var(--coral); border-radius:50%; }
+
+::-webkit-scrollbar{ width:8px; }
+::-webkit-scrollbar-track{ background:var(--paper); }
+::-webkit-scrollbar-thumb{ background:var(--line); border-radius:6px; }
+
+/* ── NAV ── */
+.nav{
+  position:sticky; top:0; z-index:80;
+  background:rgba(242,238,230,0.88); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav-inner{
+  max-width:1100px; margin:0 auto;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 28px;
+}
+.nav-brand{ font-family:var(--font-display); font-size:19px; font-weight:700; }
+.nav-brand .dot{ color:var(--coral); }
+.nav-right{ display:flex; align-items:center; gap:20px; }
+.nav-right a{ font-size:13.5px; color:var(--ink-soft); font-weight:500; }
+.nav-right a:hover{ color:var(--ink); }
+
+/* ── AUTH SCREENS (login / register) ── */
+.auth-wrap{
+  min-height:calc(100vh - 57px);
+  display:flex; align-items:center; justify-content:center;
+  padding:40px 20px;
+}
+.auth-card{
+  width:100%; max-width:420px;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--r-lg);
+  padding:40px 36px; box-shadow:var(--shadow-pop);
+}
+.auth-card h2{ font-size:24px; margin-bottom:6px; }
+.auth-card .auth-sub{ font-size:14px; color:var(--ink-soft); margin-bottom:28px; }
+.form-group{ margin-bottom:16px; }
+.form-group label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:7px; }
+.form-group label .req{ color:var(--coral-deep); }
+.input-pass-wrap{ position:relative; }
+.input-pass-wrap .field{ padding-right:44px; }
+.input-pass-wrap button{
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:var(--ink-soft); padding:4px;
+}
+.input-pass-wrap button:hover{ color:var(--ink); }
+.field-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:5px; }
+.err-msg{ font-size:13px; color:#A8311A; margin-bottom:14px; display:none; }
+.err-msg.show{ display:block; }
+.ok-msg{ font-size:13px; color:#226B30; margin-bottom:14px; display:none; background:#DFF3E1; padding:10px 14px; border-radius:8px; }
+.ok-msg.show{ display:block; }
+.auth-footer{ margin-top:20px; text-align:center; font-size:13.5px; color:var(--ink-soft); }
+.auth-footer a{ color:var(--coral-deep); font-weight:600; }
+.auth-footer a:hover{ text-decoration:underline; }
+.divider{ display:flex; align-items:center; gap:12px; margin:20px 0; }
+.divider span{ font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+.divider::before,.divider::after{ content:""; flex:1; height:1px; background:var(--line); }
+
+/* ── DASHBOARD LAYOUT ── */
+#dashWrap{ display:none; }
+#dashWrap.show{ display:flex; min-height:calc(100vh - 57px); }
+
+.dash-side{
+  width:240px; flex-shrink:0;
+  background:var(--ink); color:var(--white);
+  padding:28px 20px;
+  display:flex; flex-direction:column;
+  position:sticky; top:57px; height:calc(100vh - 57px);
+}
+.dash-avatar{
+  width:52px; height:52px; border-radius:50%;
+  background:var(--coral); display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-size:20px; font-weight:600; color:var(--white);
+  margin-bottom:14px; flex-shrink:0;
+}
+.dash-user-name{ font-family:var(--font-display); font-size:17px; font-weight:600; color:var(--white); }
+.dash-user-email{ font-size:12px; color:#8A8275; margin-top:3px; margin-bottom:28px; word-break:break-all; }
+
+.dash-nav{ display:flex; flex-direction:column; gap:4px; }
+.dash-nav-item{
+  padding:11px 14px; border-radius:8px; font-size:13.5px; color:#B8B0A0;
+  display:flex; align-items:center; gap:10px;
+  transition:background .15s ease, color .15s ease;
+}
+.dash-nav-item:hover{ background:rgba(255,255,255,.06); color:var(--white); }
+.dash-nav-item.active{ background:var(--coral); color:var(--white); }
+.dash-logout{ margin-top:auto; font-size:12.5px; color:#8A8275; display:flex; align-items:center; gap:8px; cursor:pointer; }
+.dash-logout:hover{ color:var(--white); }
+
+.dash-main{ flex:1; padding:32px 36px; min-width:0; }
+.dash-section{ display:none; }
+.dash-section.active{ display:block; }
+
+.section-head{ margin-bottom:28px; }
+.section-head h2{ font-size:24px; }
+.section-head p{ font-size:14px; color:var(--ink-soft); margin-top:6px; }
+
+/* stat cards */
+.stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+.stat-card{ background:var(--white); border:1px solid var(--line); border-radius:var(--r-md); padding:18px; }
+.stat-card .s-label{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); }
+.stat-card .s-val{ font-family:var(--font-display); font-size:28px; margin-top:6px; }
+
+/* orders table */
+.orders-table-wrap{ background:var(--white); border:1px solid var(--line); border-radius:var(--r-md); overflow:hidden; }
+.orders-table-head{ padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+.orders-table-head h3{ font-size:15px; font-weight:600; font-family:var(--font-body); }
+table.orders-table{ width:100%; border-collapse:collapse; }
+table.orders-table th{
+  text-align:left; font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase;
+  color:var(--ink-soft); padding:11px 20px; border-bottom:1px solid var(--line); background:var(--paper-deep);
+}
+table.orders-table td{ padding:14px 20px; border-bottom:1px solid var(--line); font-size:13.5px; }
+table.orders-table tr:last-child td{ border-bottom:none; }
+table.orders-table tr:hover td{ background:var(--paper); }
+.order-code{ font-family:var(--font-mono); font-size:12.5px; }
+.status-pill{
+  display:inline-flex; padding:5px 12px; border-radius:999px;
+  font-size:11.5px; font-weight:600; font-family:var(--font-mono);
+}
+.s-pending{  background:#FFF0DC; color:#9A6300; }
+.s-progress{ background:#DCEBFF; color:#1A53A8; }
+.s-done{     background:#DFF3E1; color:#226B30; }
+.s-cancel{   background:#FBE0DC; color:#A8311A; }
+.orders-empty{ padding:50px 20px; text-align:center; color:var(--ink-soft); font-size:14px; }
+.orders-loading{ padding:50px 20px; text-align:center; color:var(--ink-soft); font-size:13px; font-family:var(--font-mono); }
+
+/* profile form */
+.profile-card{ background:var(--white); border:1px solid var(--line); border-radius:var(--r-md); padding:28px; max-width:460px; }
+.profile-card + .profile-card{ margin-top:20px; }
+.profile-card h3{ font-size:17px; margin-bottom:20px; }
+.profile-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+/* CTA place order */
+.cta-order{
+  background:var(--ink); border-radius:var(--r-md); padding:28px 32px;
+  display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  position:relative; overflow:hidden;
+}
+.cta-order::before{
+  content:""; position:absolute; width:280px; height:280px;
+  background:radial-gradient(circle,rgba(255,75,46,.28),transparent 70%);
+  top:-100px; right:-60px; pointer-events:none;
+}
+.cta-order h3{ font-size:20px; color:var(--white); position:relative; }
+.cta-order p{ font-size:13.5px; color:#C9C2B4; margin-top:6px; position:relative; }
+
+/* mobile tabbar */
+.mobile-tabbar{
+  display:none; gap:6px; padding:10px 14px;
+  background:var(--ink); overflow-x:auto;
+  position:sticky; top:57px; z-index:50;
+}
+.mobile-tabbar button{
+  flex-shrink:0; font-size:12.5px; padding:8px 14px; border-radius:999px;
+  border:1.5px solid rgba(255,255,255,.18); background:transparent; color:#B8B0A0;
+  font-family:var(--font-body);
+}
+.mobile-tabbar button.active{ background:var(--coral); border-color:var(--coral); color:var(--white); }
+.mobile-tabbar button.m-logout{ margin-left:auto; border-color:transparent; }
+
+@media (max-width:880px){
+  .dash-side{ display:none; }
+  .mobile-tabbar{ display:flex; }
+  .dash-main{ padding:22px 18px; }
+  .stat-row{ grid-template-columns:1fr 1fr; }
+  table.orders-table{ display:block; overflow-x:auto; white-space:nowrap; }
+  .profile-row{ grid-template-columns:1fr; }
+  .cta-order{ flex-direction:column; align-items:flex-start; }
+}
+@media (max-width:480px){
+  .auth-card{ padding:28px 22px; }
+  .stat-row{ grid-template-columns:1fr; }
+}
+
+/* toast */
+.toast{
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(16px);
+  background:var(--ink); color:var(--white); padding:12px 20px; border-radius:999px;
+  font-size:13.5px; display:flex; align-items:center; gap:10px;
+  box-shadow:var(--shadow-pop); z-index:2000; opacity:0; pointer-events:none;
+  transition:all .3s cubic-bezier(.2,.9,.3,1.2);
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+.toast .t-dot{ width:7px; height:7px; border-radius:50%; background:var(--coral); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">Phatdatagency<span class="dot">.</span></a>
+    <div class="nav-right">
+      <a href="index.html">Trang chủ</a>
+      <a href="showcase.html">Showcase</a>
+      <a href="index.html#services" class="btn btn-primary btn-sm">Đặt đơn</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── AUTH SCREENS ── -->
+<div id="authWrap">
+
+  <!-- LOGIN -->
+  <div class="auth-wrap" id="loginWrap">
+    <div class="auth-card">
+      <div class="eyebrow" style="margin-bottom:16px;">Tài khoản</div>
+      <h2>Đăng nhập</h2>
+      <p class="auth-sub">Xem lịch sử đơn hàng và quản lý tài khoản của bạn.</p>
+
+      <div class="err-msg" id="loginErr"></div>
+
+      <div class="form-group">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" class="field" id="login_email" placeholder="ban@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu <span class="req">*</span></label>
+        <div class="input-pass-wrap">
+          <input type="password" class="field" id="login_pass" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" onclick="togglePass('login_pass',this)" tabindex="-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="loginBtn" onclick="handleLogin()">Đăng nhập</button>
+
+      <div class="auth-footer">
+        Chưa có tài khoản? <a href="javascript:void(0)" onclick="showRegister()">Đăng ký ngay</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="auth-wrap" id="registerWrap" style="display:none;">
+    <div class="auth-card">
+      <div class="eyebrow" style="margin-bottom:16px;">Tài khoản</div>
+      <h2>Đăng ký</h2>
+      <p class="auth-sub">Tạo tài khoản để theo dõi đơn hàng và mở khoá tính năng.</p>
+
+      <div class="err-msg" id="registerErr"></div>
+      <div class="ok-msg"  id="registerOk"></div>
+
+      <div class="form-group">
+        <label>Họ và tên <span class="req">*</span></label>
+        <input type="text" class="field" id="reg_name" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="form-group">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" class="field" id="reg_email" placeholder="ban@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu <span class="req">*</span></label>
+        <div class="input-pass-wrap">
+          <input type="password" class="field" id="reg_pass" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+          <button type="button" onclick="togglePass('reg_pass',this)" tabindex="-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="field-hint">Ít nhất 6 ký tự</p>
+      </div>
+      <div class="form-group">
+        <label>Xác nhận mật khẩu <span class="req">*</span></label>
+        <div class="input-pass-wrap">
+          <input type="password" class="field" id="reg_pass2" placeholder="Nhập lại mật khẩu" autocomplete="new-password">
+          <button type="button" onclick="togglePass('reg_pass2',this)" tabindex="-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="registerBtn" onclick="handleRegister()">Tạo tài khoản</button>
+
+      <div class="auth-footer">
+        Đã có tài khoản? <a href="javascript:void(0)" onclick="showLogin()">Đăng nhập</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#authWrap -->
+
+<!-- ── DASHBOARD ── -->
+<div id="dashWrap">
+
+  <!-- Mobile tabbar -->
+  <nav class="mobile-tabbar">
+    <button class="active" id="mTabOrders"  onclick="switchDashTab('orders')">Đơn hàng</button>
+    <button id="mTabProfile" onclick="switchDashTab('profile')">Tài khoản</button>
+    <button class="m-logout" onclick="handleLogout()">Đăng xuất</button>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="dash-side">
+    <div class="dash-avatar" id="sideAvatar">A</div>
+    <div class="dash-user-name"  id="sideName">Người dùng</div>
+    <div class="dash-user-email" id="sideEmail">email@example.com</div>
+
+    <nav class="dash-nav">
+      <a href="javascript:void(0)" class="dash-nav-item active" id="navOrders" onclick="switchDashTab('orders')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 2h6v4H9z"/><path d="M5 6h14v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6z"/></svg>
+        Đơn hàng của tôi
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navProfile" onclick="switchDashTab('profile')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Thông tin cá nhân
+      </a>
+    </nav>
+
+    <div class="dash-logout" onclick="handleLogout()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      Đăng xuất
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="dash-main">
+
+    <!-- TAB: ĐƠN HÀNG -->
+    <div class="dash-section active" id="secOrders">
+      <div class="section-head">
+        <h2>Đơn hàng của tôi</h2>
+        <p>Tất cả đơn hàng bạn đã đặt qua tài khoản này.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="s-label">Tổng đơn</div>
+          <div class="s-val" id="uStatTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Đang thực hiện</div>
+          <div class="s-val" id="uStatProgress">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Hoàn thành</div>
+          <div class="s-val" id="uStatDone">—</div>
+        </div>
+      </div>
+
+      <div class="orders-table-wrap">
+        <div class="orders-table-head">
+          <h3>Lịch sử đơn hàng</h3>
+          <button class="btn btn-ghost btn-sm" onclick="loadUserOrders()">↻ Làm mới</button>
+        </div>
+        <div id="ordersTableBody"><div class="orders-loading">Đang tải...</div></div>
+      </div>
+
+      <div style="margin-top:24px;">
+        <div class="cta-order">
+          <div style="position:relative;">
+            <h3>Đặt đơn mới</h3>
+            <p>Thiết kế website, profile hay slide — chúng tôi luôn sẵn sàng.</p>
+          </div>
+          <a href="index.html#services" class="btn btn-primary" style="position:relative;">Đặt đơn →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: TÀI KHOẢN -->
+    <div class="dash-section" id="secProfile">
+      <div class="section-head">
+        <h2>Thông tin cá nhân</h2>
+        <p>Cập nhật tên hiển thị và đổi mật khẩu của bạn.</p>
+      </div>
+
+      <!-- Cập nhật tên -->
+      <div class="profile-card">
+        <h3>Thông tin cơ bản</h3>
+        <div class="err-msg" id="profileErr"></div>
+        <div class="ok-msg"  id="profileOk"></div>
+        <div class="form-group">
+          <label>Họ và tên</label>
+          <input type="text" class="field" id="p_name" placeholder="Nguyễn Văn A">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" class="field" id="p_email" disabled style="opacity:.6; cursor:not-allowed;">
+          <p class="field-hint">Email không thể thay đổi.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="handleUpdateProfile()">Lưu thay đổi</button>
+      </div>
+
+      <!-- Đổi mật khẩu -->
+      <div class="profile-card">
+        <h3>Đổi mật khẩu</h3>
+        <div class="err-msg" id="passErr"></div>
+        <div class="ok-msg"  id="passOk"></div>
+        <div class="form-group">
+          <label>Mật khẩu hiện tại</label>
+          <div class="input-pass-wrap">
+            <input type="password" class="field" id="p_old_pass" placeholder="••••••••">
+            <button type="button" onclick="togglePass('p_old_pass',this)" tabindex="-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu mới</label>
+          <div class="input-pass-wrap">
+            <input type="password" class="field" id="p_new_pass" placeholder="Tối thiểu 6 ký tự">
+            <button type="button" onclick="togglePass('p_new_pass',this)" tabindex="-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Xác nhận mật khẩu mới</label>
+          <div class="input-pass-wrap">
+            <input type="password" class="field" id="p_new_pass2" placeholder="Nhập lại mật khẩu mới">
+            <button type="button" onclick="togglePass('p_new_pass2',this)" tabindex="-1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="handleChangePassword()">Đổi mật khẩu</button>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /#dashWrap -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="t-dot"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ============================================================
+   CONFIG
+============================================================ */
+const CONFIG = {
+  SUPABASE_URL: "https://npsylbxggliczhtnzzgl.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig"
+};
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+/* ============================================================
+   STATE
+============================================================ */
+let currentUser = null;   // { id, name, email }
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function isConfigured(){
+  return CONFIG.SUPABASE_URL && !CONFIG.SUPABASE_URL.includes("PASTE_YOUR")
+      && CONFIG.SUPABASE_ANON_KEY && !CONFIG.SUPABASE_ANON_KEY.includes("PASTE_YOUR");
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function esc(s){
+  if(!s) return "";
+  return String(s).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+}
+
+function setBtn(id, loading, label){
+  const btn = document.getElementById(id);
+  if(!btn) return;
+  btn.disabled = loading;
+  btn.textContent = loading ? "Đang xử lý..." : label;
+}
+
+function togglePass(inputId, btn){
+  const input = document.getElementById(inputId);
+  if(!input) return;
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  btn.style.opacity = show ? "1" : "0.5";
+}
+
+/* ============================================================
+   AUTH SCREENS SWITCHING
+============================================================ */
+function showLogin(){
+  document.getElementById("loginWrap").style.display    = "flex";
+  document.getElementById("registerWrap").style.display = "none";
+  document.getElementById("loginErr").classList.remove("show");
+}
+function showRegister(){
+  document.getElementById("loginWrap").style.display    = "none";
+  document.getElementById("registerWrap").style.display = "flex";
+  document.getElementById("registerErr").classList.remove("show");
+  document.getElementById("registerOk").classList.remove("show");
+}
+
+/* ============================================================
+   ENTER KEY SUPPORT
+============================================================ */
+["login_email","login_pass"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if(e.key === "Enter") handleLogin();
+  });
+});
+["reg_name","reg_email","reg_pass","reg_pass2"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if(e.key === "Enter") handleRegister();
+  });
+});
+
+/* ============================================================
+   REGISTER — dùng Supabase Auth (sb.auth.signUp)
+============================================================ */
+async function handleRegister(){
+  const name  = document.getElementById("reg_name").value.trim();
+  const email = document.getElementById("reg_email").value.trim();
+  const pass  = document.getElementById("reg_pass").value;
+  const pass2 = document.getElementById("reg_pass2").value;
+  const errBox = document.getElementById("registerErr");
+  const okBox  = document.getElementById("registerOk");
+
+  errBox.classList.remove("show");
+  okBox.classList.remove("show");
+
+  if(!name || !email || !pass || !pass2){
+    errBox.textContent = "Vui lòng điền đầy đủ tất cả các trường.";
+    errBox.classList.add("show"); return;
+  }
+  if(pass !== pass2){
+    errBox.textContent = "Hai mật khẩu không khớp nhau.";
+    errBox.classList.add("show"); return;
+  }
+  if(pass.length < 6){
+    errBox.textContent = "Mật khẩu phải có ít nhất 6 ký tự.";
+    errBox.classList.add("show"); return;
+  }
+  if(!isConfigured()){
+    errBox.textContent = "Chưa cấu hình Supabase trong code.";
+    errBox.classList.add("show"); return;
+  }
+
+  setBtn("registerBtn", true, "Tạo tài khoản");
+  try{
+    const { data, error } = await sb.auth.signUp({
+      email, password: pass,
+      options: { data: { full_name: name } }
+    });
+
+    if(error){
+      errBox.textContent = translateAuthError(error.message);
+      errBox.classList.add("show");
+      return;
+    }
+
+    // Nếu project đang yêu cầu xác nhận email (mặc định của Supabase),
+    // session sẽ là null cho tới khi người dùng bấm link trong email.
+    if(data.session){
+      okBox.textContent = "Đăng ký thành công! Đang vào tài khoản...";
+      okBox.classList.add("show");
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      okBox.textContent = "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập.";
+      okBox.classList.add("show");
+      document.getElementById("reg_name").value  = "";
+      document.getElementById("reg_email").value = "";
+      document.getElementById("reg_pass").value  = "";
+      document.getElementById("reg_pass2").value = "";
+      setTimeout(() => {
+        showLogin();
+        document.getElementById("login_email").value = email;
+      }, 2200);
+    }
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
+    errBox.classList.add("show");
+  } finally { setBtn("registerBtn", false, "Tạo tài khoản"); }
+}
+
+/* ============================================================
+   LOGIN — dùng Supabase Auth (sb.auth.signInWithPassword)
+============================================================ */
+async function handleLogin(){
+  const email  = document.getElementById("login_email").value.trim();
+  const pass   = document.getElementById("login_pass").value;
+  const errBox = document.getElementById("loginErr");
+  errBox.classList.remove("show");
+
+  if(!email || !pass){
+    errBox.textContent = "Vui lòng nhập email và mật khẩu.";
+    errBox.classList.add("show"); return;
+  }
+  if(!isConfigured()){
+    errBox.textContent = "Chưa cấu hình Supabase trong code.";
+    errBox.classList.add("show"); return;
+  }
+
+  setBtn("loginBtn", true, "Đăng nhập");
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if(error){
+      errBox.textContent = translateAuthError(error.message);
+      errBox.classList.add("show");
+      return;
+    }
+    await enterDashboard();
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
+    errBox.classList.add("show");
+  } finally { setBtn("loginBtn", false, "Đăng nhập"); }
+}
+
+/**
+ * Dịch các thông báo lỗi tiếng Anh phổ biến của Supabase Auth sang tiếng Việt.
+ */
+function translateAuthError(msg){
+  const map = {
+    "Invalid login credentials": "Email hoặc mật khẩu không đúng.",
+    "User already registered": "Email này đã được đăng ký.",
+    "Email not confirmed": "Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.",
+    "Password should be at least 6 characters": "Mật khẩu phải có ít nhất 6 ký tự."
+  };
+  return map[msg] || msg;
+}
+
+async function handleLogout(){
+  if(isConfigured()){
+    try{ await sb.auth.signOut(); } catch{}
+  }
+  currentUser = null;
+  exitDashboard();
+  showToast("Đã đăng xuất.");
+}
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+async function enterDashboard(){
+  const { data } = await sb.auth.getSession();
+  const session = data?.session;
+  if(!session?.user){ exitDashboard(); return; }
+
+  // Lấy thông tin hiển thị từ bảng profiles
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('full_name, email, is_locked')
+    .eq('id', session.user.id)
+    .single();
+
+  // Tài khoản bị admin khoá -> đăng xuất ngay, không cho vào dashboard
+  if(profile?.is_locked){
+    await sb.auth.signOut();
+    showLogin();
+    document.getElementById("loginErr").textContent = "Tài khoản của bạn đã bị khoá. Liên hệ admin để được hỗ trợ.";
+    document.getElementById("loginErr").classList.add("show");
+    return;
+  }
+
+  currentUser = {
+    id: session.user.id,
+    name: profile?.full_name || session.user.email,
+    email: profile?.email || session.user.email
+  };
+
+  document.getElementById("authWrap").style.display = "none";
+  document.getElementById("dashWrap").classList.add("show");
+
+  const initial = (currentUser.name || "U")[0].toUpperCase();
+  document.getElementById("sideAvatar").textContent = initial;
+  document.getElementById("sideName").textContent   = currentUser.name  || "Người dùng";
+  document.getElementById("sideEmail").textContent  = currentUser.email || "";
+  document.getElementById("p_name").value  = currentUser.name  || "";
+  document.getElementById("p_email").value = currentUser.email || "";
+
+  switchDashTab("orders");
+  loadUserOrders();
+}
+function exitDashboard(){
+  document.getElementById("dashWrap").classList.remove("show");
+  document.getElementById("authWrap").style.display = "block";
+  showLogin();
+}
+
+function switchDashTab(tab){
+  ["orders","profile"].forEach(t => {
+    document.getElementById("sec"   + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
+    document.getElementById("nav"   + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
+    document.getElementById("mTab"  + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
+  });
+}
+
+/* ============================================================
+   USER ORDERS — đọc trực tiếp từ bảng orders (RLS tự lọc theo user_id)
+============================================================ */
+const STATUS_MAP = {
+  "Chờ xác nhận":   "s-pending",
+  "Đã xác nhận":    "s-progress",
+  "Đang thực hiện": "s-progress",
+  "Hoàn thành":     "s-done",
+  "Đã huỷ":         "s-cancel"
+};
+
+async function loadUserOrders(){
+  const body = document.getElementById("ordersTableBody");
+  if(!isConfigured()){
+    body.innerHTML = `<div class="orders-empty">Chưa cấu hình Supabase.</div>`; return;
+  }
+  if(!currentUser){ exitDashboard(); return; }
+
+  body.innerHTML = `<div class="orders-loading">Đang tải đơn hàng...</div>`;
+  try{
+    const { data, error } = await sb
+      .from('orders')
+      .select('order_code, service_type, payment_method, created_at, status')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if(error){
+      body.innerHTML = `<div class="orders-empty">${esc(error.message)}</div>`;
+      return;
+    }
+
+    const mapped = (data||[]).map(o => ({
+      "Mã đơn": o.order_code,
+      "Loại dịch vụ": o.service_type,
+      "Phương thức TT": o.payment_method,
+      "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
+      "Trạng thái": o.status
+    }));
+    renderUserOrders(mapped);
+  } catch(err){
+    body.innerHTML = `<div class="orders-empty">Không thể kết nối Supabase.</div>`;
+  }
+}
+
+function renderUserOrders(orders){
+  document.getElementById("uStatTotal").textContent    = orders.length;
+  document.getElementById("uStatProgress").textContent = orders.filter(o => ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
+  document.getElementById("uStatDone").textContent     = orders.filter(o => o["Trạng thái"] === "Hoàn thành").length;
+
+  const body = document.getElementById("ordersTableBody");
+  if(orders.length === 0){
+    body.innerHTML = `<div class="orders-empty">Bạn chưa có đơn hàng nào.<br><a href="index.html#services" style="color:var(--coral-deep);font-weight:600;">Đặt đơn đầu tiên →</a></div>`;
+    return;
+  }
+
+  let html = `<table class="orders-table"><thead><tr>
+    <th>Mã đơn</th><th>Dịch vụ</th><th>Phương thức TT</th><th>Thời gian</th><th>Trạng thái</th>
+  </tr></thead><tbody>`;
+
+  orders.forEach(o => {
+    const st = o["Trạng thái"] || "Chờ xác nhận";
+    html += `<tr>
+      <td class="order-code">${esc(o["Mã đơn"])}</td>
+      <td>${esc(o["Loại dịch vụ"]||"")}</td>
+      <td style="font-size:12.5px;color:var(--ink-soft);">${esc(o["Phương thức TT"]||"—")}</td>
+      <td style="font-size:12px;color:var(--ink-soft);">${esc(o["Thời gian đặt"]||"")}</td>
+      <td><span class="status-pill ${STATUS_MAP[st]||'s-pending'}">${esc(st)}</span></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+}
+
+/* ============================================================
+   UPDATE PROFILE — sửa bảng profiles
+============================================================ */
+async function handleUpdateProfile(){
+  const name   = document.getElementById("p_name").value.trim();
+  const errBox = document.getElementById("profileErr");
+  const okBox  = document.getElementById("profileOk");
+  errBox.classList.remove("show"); okBox.classList.remove("show");
+
+  if(!name){ errBox.textContent = "Tên không được để trống."; errBox.classList.add("show"); return; }
+  if(!isConfigured()){ errBox.textContent = "Chưa cấu hình Supabase."; errBox.classList.add("show"); return; }
+
+  try{
+    const { error } = await sb
+      .from('profiles')
+      .update({ full_name: name })
+      .eq('id', currentUser.id);
+
+    if(error){
+      errBox.textContent = error.message; errBox.classList.add("show");
+      return;
+    }
+    currentUser.name = name;
+    document.getElementById("sideName").textContent = name;
+    document.getElementById("sideAvatar").textContent = name[0].toUpperCase();
+    okBox.textContent = "Đã cập nhật thông tin."; okBox.classList.add("show");
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase."; errBox.classList.add("show");
+  }
+}
+
+/* ============================================================
+   CHANGE PASSWORD — dùng sb.auth.updateUser
+   (Supabase không yêu cầu xác nhận mật khẩu cũ ở client vì
+   user đã có session hợp lệ — đủ điều kiện an toàn để đổi mật khẩu)
+============================================================ */
+async function handleChangePassword(){
+  const oldP  = document.getElementById("p_old_pass").value;
+  const newP  = document.getElementById("p_new_pass").value;
+  const newP2 = document.getElementById("p_new_pass2").value;
+  const errBox = document.getElementById("passErr");
+  const okBox  = document.getElementById("passOk");
+  errBox.classList.remove("show"); okBox.classList.remove("show");
+
+  if(!oldP || !newP || !newP2){ errBox.textContent = "Vui lòng điền đầy đủ các trường."; errBox.classList.add("show"); return; }
+  if(newP !== newP2){ errBox.textContent = "Mật khẩu mới và xác nhận không khớp."; errBox.classList.add("show"); return; }
+  if(newP.length < 6){ errBox.textContent = "Mật khẩu mới phải có ít nhất 6 ký tự."; errBox.classList.add("show"); return; }
+  if(!isConfigured()){ errBox.textContent = "Chưa cấu hình Supabase."; errBox.classList.add("show"); return; }
+
+  try{
+    // Xác minh mật khẩu cũ bằng cách thử đăng nhập lại (Supabase không có API verify password riêng)
+    const { error: verifyError } = await sb.auth.signInWithPassword({
+      email: currentUser.email, password: oldP
+    });
+    if(verifyError){
+      errBox.textContent = "Mật khẩu hiện tại không đúng."; errBox.classList.add("show");
+      return;
+    }
+
+    const { error } = await sb.auth.updateUser({ password: newP });
+    if(error){
+      errBox.textContent = error.message; errBox.classList.add("show");
+      return;
+    }
+    okBox.textContent = "Đổi mật khẩu thành công!"; okBox.classList.add("show");
+    document.getElementById("p_old_pass").value = "";
+    document.getElementById("p_new_pass").value = "";
+    document.getElementById("p_new_pass2").value = "";
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase."; errBox.classList.add("show");
+  }
+}
+
+/* ============================================================
+   INIT — kiểm tra session Supabase hiện có (tự khôi phục, không
+   cần tự quản lý token vì supabase-js tự lưu trong localStorage)
+============================================================ */
+(async function init(){
+  if(!isConfigured()){ showLogin(); return; }
+  const { data } = await sb.auth.getSession();
+  if(data?.session){
+    await enterDashboard();
+  } else {
+    showLogin();
+  }
+
+  // Tự cập nhật khi trạng thái đăng nhập đổi (vd: xác nhận email ở tab khác)
+  sb.auth.onAuthStateChange((event) => {
+    if(event === 'SIGNED_OUT'){ exitDashboard(); }
+  });
+})();
+</script>
+</body>
+</html>

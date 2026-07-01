@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quản trị đơn hàng — Phatdatagency</title>
+<title>Quản trị đơn hàng</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -290,17 +290,20 @@ textarea.field{ resize:vertical; min-height:70px; }
 .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
 .toast .t-dot{ width:7px; height:7px; border-radius:50%; background: var(--coral); }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
 <!-- LOGIN SCREEN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">PHATDATAGENCY<span class="dot">.</span></div>
+    <div class="login-logo">Phatdatagency<span class="dot">.</span></div>
     <p class="login-sub">Đăng nhập quản trị để xem dashboard đơn hàng.</p>
-    <label for="adminPassword">Mật khẩu admin</label>
-    <input type="password" class="field" id="adminPassword" placeholder="••••••••" autocomplete="off">
-    <div class="login-error" id="loginError">Sai mật khẩu, vui lòng thử lại.</div>
+    <label for="adminEmail">Email admin</label>
+    <input type="email" class="field" id="adminEmail" placeholder="admin@phatdatagency.id.vn" autocomplete="username" style="margin-bottom:14px;">
+    <label for="adminPassword">Mật khẩu</label>
+    <input type="password" class="field" id="adminPassword" placeholder="••••••••" autocomplete="current-password">
+    <div class="login-error" id="loginError">Sai email hoặc mật khẩu, vui lòng thử lại.</div>
     <button class="btn btn-primary" id="loginBtn" onclick="handleAdminLogin()">Đăng nhập</button>
   </div>
 </div>
@@ -312,11 +315,13 @@ textarea.field{ resize:vertical; min-height:70px; }
   <nav class="mobile-tabbar">
     <button class="active" id="mobileTabOverview" onclick="switchTab('overview')">Tổng quan</button>
     <button id="mobileTabServices" onclick="switchTab('services')">Dịch vụ</button>
+    <button id="mobileTabProjects" onclick="switchTab('projects')">Dự án</button>
+    <button id="mobileTabUsers"    onclick="switchTab('users')">Người dùng</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
   <aside class="dash-sidebar">
-    <div class="dash-logo">PHATDATAGENCY<span class="dot">.</span></div>
+    <div class="dash-logo">Phatdatagency<span class="dot">.</span></div>
     <nav class="dash-nav">
       <a href="javascript:void(0)" class="dash-nav-item active" id="navTabOverview" onclick="switchTab('overview')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -325,6 +330,14 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabServices" onclick="switchTab('services')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 7h-9M14 17H5M17 4v6M7 14v6" stroke-linecap="round"/></svg>
         Dịch vụ
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabProjects" onclick="switchTab('projects')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+        Showcase
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabUsers" onclick="switchTab('users')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+        Người dùng
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -402,10 +415,130 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: SHOWCASE / PROJECTS -->
+    <div class="tab-panel" id="tabProjects">
+      <div class="dash-top">
+        <div>
+          <h1>Quản lý Showcase</h1>
+          <p>Dự án "Hiển thị" sẽ xuất hiện trên <a href="showcase.html" target="_blank" style="color:var(--coral);">showcase.html ↗</a></p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadProjectsTable()">↻ Làm mới</button>
+      </div>
+      <div class="svc-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="openProjectModal()">+ Thêm dự án</button>
+      </div>
+      <div class="dash-table-wrap">
+        <div class="dash-table-head"><h3>Danh sách dự án</h3></div>
+        <div id="projectsTableBody"><div class="dash-loading">Đang tải...</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: NGƯỜI DÙNG -->
+    <div class="tab-panel" id="tabUsers">
+      <div class="dash-top">
+        <div>
+          <h1>Người dùng</h1>
+          <p>Danh sách tài khoản đã đăng ký qua trang <a href="account.html" target="_blank" style="color:var(--coral);">account.html ↗</a></p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadUsersTable()">↻ Làm mới</button>
+      </div>
+
+      <div class="dash-stats" style="grid-template-columns:repeat(3,1fr);">
+        <div class="dash-stat-card">
+          <div class="ds-label">Tổng tài khoản</div>
+          <div class="ds-val" id="uStatAll">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">Đang hoạt động</div>
+          <div class="ds-val" id="uStatActive">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">Đã khoá</div>
+          <div class="ds-val" id="uStatLocked">—</div>
+        </div>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div class="dash-table-head"><h3>Danh sách tài khoản</h3>
+          <div class="dash-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="userSearchInput" placeholder="Tìm theo tên, email...">
+          </div>
+        </div>
+        <div id="usersTableBody"><div class="dash-loading">Đang tải...</div></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
-<!-- ======================= SERVICE MODAL (thêm / sửa) ======================= -->
+<!-- ======================= PROJECT MODAL (thêm / sửa) ======================= -->
+<div class="modal-overlay" id="projectModalOverlay">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-head">
+      <h3 id="projectModalTitle">Thêm dự án</h3>
+      <button class="modal-close" onclick="closeProjectModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Tên dự án *</label>
+        <input type="text" class="field" id="prj_name" placeholder="VD: Landing Page Mỹ phẩm">
+      </div>
+      <div class="form-group">
+        <label>Mô tả</label>
+        <textarea class="field" id="prj_desc" placeholder="Mô tả ngắn gọn về dự án (hiển thị trong card và chi tiết)"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Loại dự án</label>
+          <select class="field" id="prj_type">
+            <option value="Website">Website</option>
+            <option value="Tool">Tool</option>
+            <option value="Slide">Slide</option>
+            <option value="Profile">Profile</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Thứ tự hiển thị</label>
+          <input type="number" class="field" id="prj_order" value="1" min="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tags (phân cách bằng dấu phẩy)</label>
+        <input type="text" class="field" id="prj_tags" placeholder="VD: Landing Page,E-commerce,Beauty">
+      </div>
+      <div class="form-group">
+        <label>Link demo (URL)</label>
+        <input type="text" class="field" id="prj_link" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>Ảnh thumbnail (URL ảnh, hiển thị trên card)</label>
+        <input type="text" class="field" id="prj_thumb" placeholder="https://images.unsplash.com/...">
+        <small style="color:var(--ink-soft);font-size:11.5px;margin-top:4px;">URL ảnh trực tiếp (.jpg/.png) hoặc để trống</small>
+      </div>
+      <div class="form-group">
+        <label>Ảnh chi tiết / Link preview (URL ảnh lớn hoặc URL trang demo để embed)</label>
+        <input type="text" class="field" id="prj_detail" placeholder="https://...">
+        <small style="color:var(--ink-soft);font-size:11.5px;margin-top:4px;">Để trống thì dùng ảnh thumbnail. Nếu là URL trang web sẽ embed bằng iframe.</small>
+      </div>
+      <div class="form-group">
+        <label>Trạng thái</label>
+        <select class="field" id="prj_status">
+          <option value="Hiển thị">Hiển thị (xuất hiện trên showcase)</option>
+          <option value="Ẩn">Ẩn (không hiển thị)</option>
+        </select>
+      </div>
+      <div class="modal-error" id="projectModalError"></div>
+      <div class="modal-submit-row">
+        <button class="btn btn-ghost btn-sm" onclick="closeProjectModal()">Huỷ</button>
+        <button class="btn btn-primary btn-sm" id="projectSaveBtn" onclick="handleSaveProject()">Lưu dự án</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="serviceModalOverlay">
   <div class="modal">
     <div class="modal-head">
@@ -457,21 +590,26 @@ textarea.field{ resize:vertical; min-height:70px; }
 
 <script>
 /* =====================================================================
-   CẤU HÌNH — PHẢI giống hệt URL trong file index.html
+   CẤU HÌNH — PHẢI giống hệt URL/key trong file index.html
 ===================================================================== */
 const CONFIG = {
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyd9g3QsXK3nTh3RnXNfpdsTGL9jfGZl_5YQP-MT64Ua5AHzLJSdjLm5Dc4ZnFriJzj3A/exec"
+  SUPABASE_URL: "https://npsylbxggliczhtnzzgl.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig"
 };
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* =====================================================================
-   AUTH / LOGIN
+   AUTH / LOGIN — dùng Supabase Auth, chỉ user có is_admin=true trong
+   bảng profiles mới được coi là admin hợp lệ.
 ===================================================================== */
+let currentAdmin = null; // { id, email }
+
 function showLoginScreen(){
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('dashShell').style.display = 'none';
   document.getElementById('adminPassword').value = '';
   document.getElementById('loginError').classList.remove('show');
-  setTimeout(()=> document.getElementById('adminPassword').focus(), 100);
+  setTimeout(()=> document.getElementById('adminEmail').focus(), 100);
 }
 function showDashShell(){
   document.getElementById('loginScreen').style.display = 'none';
@@ -480,18 +618,18 @@ function showDashShell(){
 }
 
 async function handleAdminLogin(){
-  const pwInput = document.getElementById('adminPassword');
-  const password = pwInput.value;
-  const errBox = document.getElementById('loginError');
-  const btn = document.getElementById('loginBtn');
+  const email    = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const errBox   = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
 
-  if(!password){
-    errBox.textContent = "Vui lòng nhập mật khẩu.";
+  if(!email || !password){
+    errBox.textContent = "Vui lòng nhập email và mật khẩu.";
     errBox.classList.add('show');
     return;
   }
   if(!isBackendConfigured()){
-    errBox.textContent = "Chưa cấu hình APPS_SCRIPT_URL trong code.";
+    errBox.textContent = "Chưa cấu hình Supabase trong code.";
     errBox.classList.add('show');
     return;
   }
@@ -502,16 +640,31 @@ async function handleAdminLogin(){
   btn.textContent = "Đang kiểm tra...";
 
   try{
-    const result = await callBackend('adminLogin', { password });
-    if(result.ok){
-      sessionStorage.setItem('admin_token', result.token);
-      showDashShell();
-    } else {
-      errBox.textContent = result.error || "Sai mật khẩu, vui lòng thử lại.";
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      errBox.textContent = "Sai email hoặc mật khẩu.";
       errBox.classList.add('show');
+      return;
     }
+
+    // Kiểm tra quyền admin qua bảng profiles
+    const { data: profile, error: pErr } = await sb
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', data.user.id)
+      .single();
+
+    if(pErr || !profile?.is_admin){
+      await sb.auth.signOut();
+      errBox.textContent = "Tài khoản này không có quyền quản trị.";
+      errBox.classList.add('show');
+      return;
+    }
+
+    currentAdmin = { id: data.user.id, email: data.user.email };
+    showDashShell();
   } catch(err){
-    errBox.textContent = "Không thể kết nối máy chủ. Kiểm tra lại APPS_SCRIPT_URL.";
+    errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
     errBox.classList.add('show');
   } finally {
     btn.disabled = false;
@@ -519,13 +672,19 @@ async function handleAdminLogin(){
   }
 }
 
-function handleAdminLogout(){
-  sessionStorage.removeItem('admin_token');
+async function handleAdminLogout(){
+  if(isBackendConfigured()){
+    try{ await sb.auth.signOut(); } catch{}
+  }
+  currentAdmin = null;
   showLoginScreen();
 }
 
 document.getElementById('adminPassword').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter') handleAdminLogin();
+});
+document.getElementById('adminEmail').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('adminPassword').focus();
 });
 
 /* =====================================================================
@@ -541,32 +700,11 @@ function showToast(msg){
 }
 
 /* =====================================================================
-   BACKEND COMMUNICATION (Google Apps Script)
+   BACKEND COMMUNICATION (Supabase)
 ===================================================================== */
 function isBackendConfigured(){
-  return CONFIG.APPS_SCRIPT_URL && CONFIG.APPS_SCRIPT_URL.indexOf("PASTE_YOUR") !== 0;
-}
-
-async function callBackend(action, payload){
-  if(!isBackendConfigured()){
-    throw new Error("Chưa cấu hình APPS_SCRIPT_URL");
-  }
-  const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...payload })
-  });
-  return await res.json();
-}
-
-async function callBackendGet(params){
-  if(!isBackendConfigured()){
-    throw new Error("Chưa cấu hình APPS_SCRIPT_URL");
-  }
-  const url = new URL(CONFIG.APPS_SCRIPT_URL);
-  Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
-  const res = await fetch(url.toString());
-  return await res.json();
+  return CONFIG.SUPABASE_URL && CONFIG.SUPABASE_URL.indexOf("PASTE_YOUR") !== 0
+      && CONFIG.SUPABASE_ANON_KEY && CONFIG.SUPABASE_ANON_KEY.indexOf("PASTE_YOUR") !== 0;
 }
 
 /* =====================================================================
@@ -586,12 +724,10 @@ async function loadDashboard(){
   const tableBody = document.getElementById('dashTableBody');
 
   if(!isBackendConfigured()){
-    tableBody.innerHTML = `<div class="dash-empty">Chưa kết nối Google Sheet.<br>Hãy dán URL Apps Script Web App vào biến <code>APPS_SCRIPT_URL</code> trong code.</div>`;
+    tableBody.innerHTML = `<div class="dash-empty">Chưa kết nối Supabase.<br>Hãy dán URL + anon key vào biến <code>CONFIG</code> trong code.</div>`;
     return;
   }
-
-  const token = sessionStorage.getItem('admin_token');
-  if(!token){
+  if(!currentAdmin){
     showLoginScreen();
     return;
   }
@@ -599,18 +735,29 @@ async function loadDashboard(){
   tableBody.innerHTML = `<div class="dash-loading">Đang tải dữ liệu...</div>`;
 
   try{
-    const result = await callBackendGet({ action: 'list', token });
-    if(result.ok){
-      allOrders = result.orders || [];
-      renderDashboard(allOrders);
-    } else {
-      sessionStorage.removeItem('admin_token');
-      showLoginScreen();
-      document.getElementById('loginError').textContent = result.error || "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại.";
-      document.getElementById('loginError').classList.add('show');
+    const { data, error } = await sb
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      tableBody.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(error.message)}</div>`;
+      return;
     }
+
+    allOrders = (data||[]).map(o => ({
+      "Mã đơn": o.order_code,
+      "Họ tên": o.customer_name,
+      "SĐT": o.phone,
+      "Email": o.email,
+      "Loại dịch vụ": o.service_type,
+      "Phương thức TT": o.payment_method,
+      "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
+      "Trạng thái": o.status
+    }));
+    renderDashboard(allOrders);
   } catch(err){
-    tableBody.innerHTML = `<div class="dash-empty">Không thể kết nối Google Sheet. Kiểm tra lại APPS_SCRIPT_URL.</div>`;
+    tableBody.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`;
   }
 }
 
@@ -630,7 +777,7 @@ function renderDashboard(orders){
     <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
 
-  orders.slice().reverse().forEach(o=>{
+  orders.forEach(o=>{
     const status = o["Trạng thái"] || "Chờ xác nhận";
     const code = escapeHtml(o["Mã đơn"]);
     html += `<tr>
@@ -659,11 +806,14 @@ function renderStatusSelect(code, currentStatus){
 }
 
 async function handleStatusChange(code, newStatus, selectEl){
-  const token = sessionStorage.getItem('admin_token');
   selectEl.disabled = true;
   try{
-    const result = await callBackend('updateOrderStatus', { token, code, status: newStatus });
-    if(result.ok){
+    const { error } = await sb
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('order_code', code);
+
+    if(!error){
       showToast(`Đã cập nhật trạng thái đơn ${code}.`);
       const order = allOrders.find(o => o["Mã đơn"] === code);
       if(order) order["Trạng thái"] = newStatus;
@@ -674,10 +824,10 @@ async function handleStatusChange(code, newStatus, selectEl){
       document.getElementById('statProgress').textContent = allOrders.filter(o=> ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
       document.getElementById('statDone').textContent = allOrders.filter(o=> o["Trạng thái"] === "Hoàn thành").length;
     } else {
-      showToast("Lỗi: " + (result.error || "không cập nhật được"));
+      showToast("Lỗi: " + error.message);
     }
   } catch(err){
-    showToast("Không thể kết nối máy chủ.");
+    showToast("Không thể kết nối Supabase.");
   } finally {
     selectEl.disabled = false;
   }
@@ -703,16 +853,16 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
    TAB SWITCHING
 ===================================================================== */
 function switchTab(tab){
-  document.getElementById('tabOverview').classList.toggle('active', tab === 'overview');
-  document.getElementById('tabServices').classList.toggle('active', tab === 'services');
-  document.getElementById('navTabOverview').classList.toggle('active', tab === 'overview');
-  document.getElementById('navTabServices').classList.toggle('active', tab === 'services');
-  document.getElementById('mobileTabOverview').classList.toggle('active', tab === 'overview');
-  document.getElementById('mobileTabServices').classList.toggle('active', tab === 'services');
+  ['overview','services','projects','users'].forEach(t => {
+    const capT = t.charAt(0).toUpperCase() + t.slice(1);
+    document.getElementById('tab'       + capT).classList.toggle('active', tab === t);
+    document.getElementById('navTab'    + capT).classList.toggle('active', tab === t);
+    document.getElementById('mobileTab' + capT).classList.toggle('active', tab === t);
+  });
 
-  if(tab === 'services' && allServices.length === 0){
-    loadServicesTable();
-  }
+  if(tab === 'services' && allServices.length === 0) loadServicesTable();
+  if(tab === 'projects' && allProjects.length === 0) loadProjectsTable();
+  if(tab === 'users'    && allUsers.length    === 0) loadUsersTable();
 }
 
 /* =====================================================================
@@ -723,13 +873,12 @@ let editingServiceId = null;
 
 async function loadServicesTable(){
   const body = document.getElementById('servicesTableBody');
-  const token = sessionStorage.getItem('admin_token');
 
   if(!isBackendConfigured()){
-    body.innerHTML = `<div class="dash-empty">Chưa cấu hình APPS_SCRIPT_URL.</div>`;
+    body.innerHTML = `<div class="dash-empty">Chưa cấu hình Supabase.</div>`;
     return;
   }
-  if(!token){
+  if(!currentAdmin){
     showLoginScreen();
     return;
   }
@@ -737,15 +886,22 @@ async function loadServicesTable(){
   body.innerHTML = `<div class="dash-loading">Đang tải dữ liệu...</div>`;
 
   try{
-    const result = await callBackendGet({ action: 'listServices', onlyActive: '0', token });
-    if(result.ok){
-      allServices = result.services || [];
-      renderServicesTable(allServices);
-    } else {
-      body.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(result.error || 'không xác định')}</div>`;
+    const { data, error } = await sb
+      .from('services')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if(error){
+      body.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(error.message)}</div>`;
+      return;
     }
+    allServices = (data||[]).map(s => ({
+      "ID": s.id, "Tên dịch vụ": s.name, "Mô tả": s.description,
+      "Giá hiển thị": s.price_label, "Trạng thái": s.status, "Thứ tự": s.sort_order
+    }));
+    renderServicesTable(allServices);
   } catch(err){
-    body.innerHTML = `<div class="dash-empty">Không thể kết nối Google Sheet.</div>`;
+    body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`;
   }
 }
 
@@ -829,32 +985,31 @@ async function handleSaveService(){
   }
   errBox.classList.remove('show');
 
-  const token = sessionStorage.getItem('admin_token');
   const btn = document.getElementById('serviceSaveBtn');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Đang lưu...";
 
-  const data = { name, description: desc, priceLabel: price, status, order };
+  const row = { name, description: desc, price_label: price, status, sort_order: order };
 
   try{
-    let result;
+    let error;
     if(editingServiceId){
-      result = await callBackend('updateService', { token, id: editingServiceId, data });
+      ({ error } = await sb.from('services').update(row).eq('id', editingServiceId));
     } else {
-      result = await callBackend('createService', { token, data });
+      ({ error } = await sb.from('services').insert(row));
     }
 
-    if(result.ok){
+    if(!error){
       showToast(editingServiceId ? "Đã cập nhật dịch vụ." : "Đã thêm dịch vụ mới.");
       closeServiceModal();
       loadServicesTable();
     } else {
-      errBox.textContent = result.error || "Có lỗi xảy ra, vui lòng thử lại.";
+      errBox.textContent = error.message;
       errBox.classList.add('show');
     }
   } catch(err){
-    errBox.textContent = "Không thể kết nối máy chủ.";
+    errBox.textContent = "Không thể kết nối Supabase.";
     errBox.classList.add('show');
   } finally {
     btn.disabled = false;
@@ -863,31 +1018,29 @@ async function handleSaveService(){
 }
 
 async function handleToggleServiceStatus(id, newStatus){
-  const token = sessionStorage.getItem('admin_token');
   try{
-    const result = await callBackend('updateService', { token, id, data: { status: newStatus } });
-    if(result.ok){
+    const { error } = await sb.from('services').update({ status: newStatus }).eq('id', id);
+    if(!error){
       showToast(newStatus === 'Đang bán' ? "Đã mở bán dịch vụ." : "Đã ngừng bán dịch vụ.");
       loadServicesTable();
     } else {
-      showToast("Lỗi: " + (result.error || "không cập nhật được"));
+      showToast("Lỗi: " + error.message);
     }
   } catch(err){
-    showToast("Không thể kết nối máy chủ.");
+    showToast("Không thể kết nối Supabase.");
   }
 }
 
 async function handleDeleteService(id, name){
   if(!confirm(`Xoá dịch vụ "${name}"? Hành động này không thể hoàn tác.`)) return;
 
-  const token = sessionStorage.getItem('admin_token');
   try{
-    const result = await callBackend('deleteService', { token, id });
-    if(result.ok){
+    const { error } = await sb.from('services').delete().eq('id', id);
+    if(!error){
       showToast("Đã xoá dịch vụ.");
       loadServicesTable();
     } else {
-      showToast("Lỗi: " + (result.error || "không xoá được"));
+      showToast("Lỗi: " + error.message);
     }
   } catch(err){
     showToast("Không thể kết nối máy chủ.");
@@ -895,15 +1048,301 @@ async function handleDeleteService(id, name){
 }
 
 /* =====================================================================
-   INIT — kiểm tra phiên đăng nhập ngay khi tải trang
+   PROJECTS — CRUD
 ===================================================================== */
-(function init(){
-  const token = sessionStorage.getItem('admin_token');
-  if(token){
-    showDashShell();
-  } else {
-    showLoginScreen();
+let allProjects = [];
+let editingProjectId = null;
+
+async function loadProjectsTable(){
+  const body = document.getElementById('projectsTableBody');
+
+  if(!isBackendConfigured()){
+    body.innerHTML = `<div class="dash-empty">Chưa cấu hình Supabase.</div>`;
+    return;
   }
+  if(!currentAdmin){ showLoginScreen(); return; }
+
+  body.innerHTML = `<div class="dash-loading">Đang tải dữ liệu...</div>`;
+
+  try{
+    const { data, error } = await sb
+      .from('projects')
+      .select('*')
+      .order('sort_order', { ascending: true });
+
+    if(error){
+      body.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+    allProjects = (data||[]).map(p => ({
+      "ID": p.id, "Tên dự án": p.name, "Mô tả": p.description, "Loại": p.type,
+      "Tags": p.tags, "Link demo": p.demo_link,
+      "Ảnh thumbnail (URL)": p.thumbnail_url, "Ảnh chi tiết (URL)": p.detail_image_url,
+      "Trạng thái": p.status, "Thứ tự": p.sort_order
+    }));
+    renderProjectsTable(allProjects);
+  } catch(err){
+    body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`;
+  }
+}
+
+function renderProjectsTable(projects){
+  const body = document.getElementById('projectsTableBody');
+  if(projects.length === 0){
+    body.innerHTML = `<div class="dash-empty">Chưa có dự án nào. Bấm "+ Thêm dự án" để tạo mới.</div>`;
+    return;
+  }
+  const sorted = projects.slice().sort((a,b) => (Number(a["Thứ tự"])||0) - (Number(b["Thứ tự"])||0));
+  let html = `<table class="dash-table"><thead><tr>
+    <th>#</th><th>Dự án</th><th>Loại</th><th>Link demo</th><th>Trạng thái</th><th>Thao tác</th>
+  </tr></thead><tbody>`;
+
+  sorted.forEach(p => {
+    const isVisible = p["Trạng thái"] === "Hiển thị";
+    const demo = p["Link demo"] || "";
+    html += `<tr>
+      <td style="font-family:var(--font-mono);color:var(--ink-soft);">${escapeHtml(p["Thứ tự"])}</td>
+      <td>
+        <b>${escapeHtml(p["Tên dự án"])}</b><br>
+        <span style="font-size:12px;color:var(--ink-soft);">${escapeHtml((p["Mô tả"]||"").slice(0,55))}${(p["Mô tả"]||"").length>55?"…":""}</span>
+      </td>
+      <td><span class="svc-status-pill svc-status-active" style="background:#EFF0FF;color:#3A3AD6;">${escapeHtml(p["Loại"]||"")}</span></td>
+      <td style="font-size:12px;">${demo ? `<a href="${escapeHtml(demo)}" target="_blank" style="color:var(--coral);">Xem ↗</a>` : "—"}</td>
+      <td><span class="svc-status-pill ${isVisible ? 'svc-status-active' : 'svc-status-inactive'}">${escapeHtml(p["Trạng thái"])}</span></td>
+      <td>
+        <div class="svc-actions">
+          <button onclick="openProjectModal('${p["ID"]}')">Sửa</button>
+          <button onclick="handleToggleProjectStatus('${p["ID"]}','${isVisible ? 'Ẩn' : 'Hiển thị'}')">${isVisible ? 'Ẩn' : 'Hiện'}</button>
+          <button class="danger" onclick="handleDeleteProject('${p["ID"]}','${escapeHtml(p["Tên dự án"]).replace(/'/g,"\\'")}')">Xoá</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+}
+
+function openProjectModal(id){
+  editingProjectId = id || null;
+  document.getElementById('projectModalError').classList.remove('show');
+
+  if(id){
+    const p = allProjects.find(x => x["ID"] === id);
+    document.getElementById('projectModalTitle').textContent = "Sửa dự án";
+    document.getElementById('prj_name').value   = p ? p["Tên dự án"] : '';
+    document.getElementById('prj_desc').value   = p ? p["Mô tả"] : '';
+    document.getElementById('prj_type').value   = p ? p["Loại"] : 'Website';
+    document.getElementById('prj_tags').value   = p ? p["Tags"] : '';
+    document.getElementById('prj_link').value   = p ? p["Link demo"] : '';
+    document.getElementById('prj_thumb').value  = p ? p["Ảnh thumbnail (URL)"] : '';
+    document.getElementById('prj_detail').value = p ? p["Ảnh chi tiết (URL)"] : '';
+    document.getElementById('prj_status').value = p ? p["Trạng thái"] : 'Hiển thị';
+    document.getElementById('prj_order').value  = p ? p["Thứ tự"] : 1;
+  } else {
+    document.getElementById('projectModalTitle').textContent = "Thêm dự án";
+    ['prj_name','prj_desc','prj_tags','prj_link','prj_thumb','prj_detail'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('prj_type').value   = 'Website';
+    document.getElementById('prj_status').value = 'Hiển thị';
+    document.getElementById('prj_order').value  = allProjects.length + 1;
+  }
+
+  document.getElementById('projectModalOverlay').classList.add('show');
+}
+
+function closeProjectModal(){
+  document.getElementById('projectModalOverlay').classList.remove('show');
+  editingProjectId = null;
+}
+document.getElementById('projectModalOverlay').addEventListener('click', e => {
+  if(e.target.id === 'projectModalOverlay') closeProjectModal();
+});
+
+async function handleSaveProject(){
+  const name   = document.getElementById('prj_name').value.trim();
+  const errBox = document.getElementById('projectModalError');
+  if(!name){
+    errBox.textContent = "Vui lòng nhập tên dự án.";
+    errBox.classList.add('show');
+    return;
+  }
+  errBox.classList.remove('show');
+
+  const btn   = document.getElementById('projectSaveBtn');
+  btn.disabled = true; btn.textContent = "Đang lưu...";
+
+  const row = {
+    name,
+    description       : document.getElementById('prj_desc').value.trim(),
+    type              : document.getElementById('prj_type').value,
+    tags              : document.getElementById('prj_tags').value.trim(),
+    demo_link         : document.getElementById('prj_link').value.trim(),
+    thumbnail_url     : document.getElementById('prj_thumb').value.trim(),
+    detail_image_url  : document.getElementById('prj_detail').value.trim(),
+    status            : document.getElementById('prj_status').value,
+    sort_order        : Number(document.getElementById('prj_order').value) || 1
+  };
+
+  try{
+    let error;
+    if(editingProjectId){
+      ({ error } = await sb.from('projects').update(row).eq('id', editingProjectId));
+    } else {
+      ({ error } = await sb.from('projects').insert(row));
+    }
+
+    if(!error){
+      showToast(editingProjectId ? "Đã cập nhật dự án." : "Đã thêm dự án mới.");
+      closeProjectModal();
+      allProjects = []; // reset để force reload
+      loadProjectsTable();
+    } else {
+      errBox.textContent = error.message;
+      errBox.classList.add('show');
+    }
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase.";
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = "Lưu dự án";
+  }
+}
+
+async function handleToggleProjectStatus(id, newStatus){
+  try{
+    const { error } = await sb.from('projects').update({ status: newStatus }).eq('id', id);
+    if(!error){
+      showToast(newStatus === 'Hiển thị' ? "Đã hiện dự án." : "Đã ẩn dự án.");
+      allProjects = [];
+      loadProjectsTable();
+    } else { showToast("Lỗi: " + error.message); }
+  } catch{ showToast("Không thể kết nối."); }
+}
+
+async function handleDeleteProject(id, name){
+  if(!confirm(`Xoá dự án "${name}"? Hành động này không thể hoàn tác.`)) return;
+  try{
+    const { error } = await sb.from('projects').delete().eq('id', id);
+    if(!error){
+      showToast("Đã xoá dự án.");
+      allProjects = [];
+      loadProjectsTable();
+    } else { showToast("Lỗi: " + error.message); }
+  } catch{ showToast("Không thể kết nối."); }
+}
+
+/* =====================================================================
+   USERS — Admin view
+===================================================================== */
+let allUsers = [];
+
+async function loadUsersTable(){
+  const body = document.getElementById('usersTableBody');
+  if(!isBackendConfigured()){ body.innerHTML = `<div class="dash-empty">Chưa cấu hình Supabase.</div>`; return; }
+  if(!currentAdmin){ showLoginScreen(); return; }
+  body.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(error){
+      body.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(error.message)}</div>`;
+      return;
+    }
+    allUsers = (data||[]).map(u => ({
+      id: u.id, name: u.full_name, email: u.email,
+      registeredAt: new Date(u.created_at).toLocaleDateString('vi-VN'),
+      status: u.is_locked ? 'Đã khoá' : 'Hoạt động'
+    }));
+    renderUsersTable(allUsers);
+  } catch{ body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`; }
+}
+
+function renderUsersTable(users){
+  document.getElementById('uStatAll').textContent    = users.length;
+  document.getElementById('uStatActive').textContent = users.filter(u => u.status === 'Hoạt động').length;
+  document.getElementById('uStatLocked').textContent = users.filter(u => u.status === 'Đã khoá').length;
+
+  const body = document.getElementById('usersTableBody');
+  if(!users.length){ body.innerHTML = `<div class="dash-empty">Chưa có tài khoản nào.</div>`; return; }
+
+  let html = `<table class="dash-table"><thead><tr>
+    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Thao tác</th>
+  </tr></thead><tbody>`;
+  users.forEach(u => {
+    const locked = u.status === 'Đã khoá';
+    html += `<tr>
+      <td>${escapeHtml(u.name||'')}</td>
+      <td style="font-family:var(--font-mono);font-size:12.5px;">${escapeHtml(u.email||'')}</td>
+      <td style="font-size:12px;color:var(--ink-soft);">${escapeHtml(u.registeredAt||'')}</td>
+      <td><span class="svc-status-pill ${locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
+      <td>
+        <div class="svc-actions">
+          <button onclick="handleToggleUser('${u.id}')" style="${locked?'color:var(--sage);':'color:#A8311A;'}">
+            ${locked ? 'Mở khoá' : 'Khoá'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+}
+
+async function handleToggleUser(id){
+  const user  = allUsers.find(u => u.id === id);
+  const willLock = user && user.status !== 'Đã khoá';
+  const actionLabel = willLock ? 'khoá' : 'mở khoá';
+  if(!confirm(`Bạn muốn ${actionLabel} tài khoản "${user?.email || id}"?`)) return;
+  try{
+    const { error } = await sb.from('profiles').update({ is_locked: willLock }).eq('id', id);
+    if(!error){
+      showToast(`Đã ${actionLabel} tài khoản.`);
+      allUsers = [];
+      loadUsersTable();
+    } else showToast('Lỗi: ' + error.message);
+  } catch{ showToast('Không thể kết nối.'); }
+}
+
+document.getElementById('userSearchInput').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if(!q){ renderUsersTable(allUsers); return; }
+  renderUsersTable(allUsers.filter(u =>
+    (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)
+  ));
+});
+
+/* =====================================================================
+   INIT — kiểm tra phiên đăng nhập ngay khi tải trang, đồng thời
+   xác minh quyền admin (is_admin = true trong profiles)
+===================================================================== */
+(async function init(){
+  if(!isBackendConfigured()){ showLoginScreen(); return; }
+
+  const { data } = await sb.auth.getSession();
+  if(data?.session?.user){
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', data.session.user.id)
+      .single();
+
+    if(profile?.is_admin){
+      currentAdmin = { id: data.session.user.id, email: data.session.user.email };
+      showDashShell();
+      return;
+    }
+    // Có session nhưng không phải admin -> đăng xuất, về màn login
+    await sb.auth.signOut();
+  }
+  showLoginScreen();
+
+  sb.auth.onAuthStateChange((event) => {
+    if(event === 'SIGNED_OUT'){ currentAdmin = null; showLoginScreen(); }
+  });
 })();
 </script>
 
