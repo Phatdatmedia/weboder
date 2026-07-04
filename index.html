@@ -1043,7 +1043,8 @@ textarea.field{ resize:vertical; min-height:90px; }
         <div class="form-group full" style="margin-bottom:18px;">
           <label>Phương thức thanh toán <span class="req">*</span></label>
           <div class="service-pills" id="paymentPills">
-            <button type="button" class="service-pill" data-payment="Thanh toán trước">💳 Thanh toán trước</button>
+            <button type="button" class="service-pill" data-payment="PayOS">⚡ PayOS (link tức thì)</button>
+            <button type="button" class="service-pill" data-payment="VietQR">📱 VietQR (quét mã)</button>
             <button type="button" class="service-pill" data-payment="Thanh toán sau">🤝 Thanh toán sau</button>
           </div>
           <p class="payment-hint" id="paymentHint"></p>
@@ -1120,6 +1121,9 @@ textarea.field{ resize:vertical; min-height:90px; }
           <button type="button" class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="switchToPayNow()">↻ Đổi phương thức thanh toán</button>
         </div>
 
+        <!-- Hiện khi chọn PayOS -->
+        <div id="payosSection" style="display:none;"></div>
+
         <div class="modal-submit-row" style="justify-content:flex-end;">
           <button class="btn btn-primary" onclick="closeOrderModal()">Hoàn tất</button>
         </div>
@@ -1144,12 +1148,22 @@ const CONFIG = {
   SUPABASE_URL: "https://npsylbxggliczhtnzzgl.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig",
 
-  // Thông tin nhận thanh toán VietQR
+  // Thông tin nhận thanh toán VietQR (fallback thủ công)
   BANK_ID: "970407",        // Mã ngân hàng VietQR, vd: 970436 = Vietcombank. Tra cứu tại vietqr.io
   BANK_NAME: "Techcombank",
   ACCOUNT_NUMBER: "3838648888",
   ACCOUNT_NAME: "LE PHAT DAT",
-  DEPOSIT_AMOUNT: 500000 // số tiền đặt cọc mặc định hiển thị trên QR (VNĐ)
+  DEPOSIT_AMOUNT: 20000,   // số tiền đặt cọc mặc định hiển thị trên QR (VNĐ)
+
+  // ── PayOS ──────────────────────────────────────────────────────────────
+  // Lấy tại: https://my.payos.vn → Tài khoản → API Keys
+  // ⚠️  CLIENT_ID và API_KEY chỉ dùng ở Supabase Edge Function (server-side)
+  //     CHECKSUM_KEY dùng để verify webhook (cũng nên đặt ở server)
+  //     Ở frontend chỉ cần PAYOS_RETURN_URL và PAYOS_CANCEL_URL
+  PAYOS_RETURN_URL: "https://phatdatagency.id.vn/payment-success", // trang báo thành công
+  PAYOS_CANCEL_URL: "https://phatdatagency.id.vn/payment-cancel",  // trang báo huỷ
+  // Tên hiển thị trên trang thanh toán PayOS
+  PAYOS_DESCRIPTION: "Dat coc don hang",  // tối đa 25 ký tự, không dấu
 };
 
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
@@ -1236,10 +1250,12 @@ function selectPayment(method){
     p.classList.toggle('active', p.dataset.payment === method);
   });
   const hint = document.getElementById('paymentHint');
-  if(method === 'Thanh toán trước'){
-    hint.textContent = "Bạn sẽ thấy mã QR chuyển khoản ngay sau khi đặt đơn.";
+  if(method === 'PayOS'){
+    hint.textContent = "⚡ Bạn sẽ nhận link thanh toán PayOS ngay sau khi đặt đơn — hỗ trợ ATM, Visa, ví điện tử.";
+  } else if(method === 'VietQR'){
+    hint.textContent = "📱 Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản đặt cọc.";
   } else if(method === 'Thanh toán sau'){
-    hint.textContent = "Đội ngũ sẽ trao đổi thanh toán khi xác nhận đơn. Bạn có thể đổi ý bất cứ lúc nào.";
+    hint.textContent = "🤝 Đội ngũ sẽ trao đổi thanh toán khi xác nhận đơn. Bạn có thể đổi ý bất cứ lúc nào.";
   } else {
     hint.textContent = "";
   }
@@ -1283,8 +1299,16 @@ async function handleSubmitOrder(){
     description: desc,
     budget, deadline,
     amount: CONFIG.DEPOSIT_AMOUNT,
-    paymentMethod: selectedPayment
+    // Lưu vào DB: PayOS và VietQR đều là "Thanh toán trước"
+    paymentMethod: (selectedPayment === 'PayOS' || selectedPayment === 'VietQR')
+      ? 'Thanh toán trước (' + selectedPayment + ')'
+      : selectedPayment
   };
+
+  // Lưu để truyền sang PayOS
+  window._lastBuyerName  = name;
+  window._lastBuyerEmail = email;
+  window._lastBuyerPhone = phone;
 
   try{
     const result = await createOrderSupabase(orderData);
@@ -1306,36 +1330,118 @@ async function handleSubmitOrder(){
 function showPaymentView(code, paymentMethod){
   document.getElementById('formView').style.display = 'none';
   document.getElementById('payView').classList.add('show');
-
   document.getElementById('payOrderCode').textContent = code;
   window._lastOrderCode = code;
 
-  if(paymentMethod === 'Thanh toán trước'){
-    renderPayNowSection(code);
+  if(paymentMethod === 'PayOS'){
+    renderPayOSSection(code);
+  } else if(paymentMethod === 'VietQR'){
+    renderVietQRSection(code);
   } else {
     document.getElementById('payQrSection').style.display = 'none';
     document.getElementById('payLaterSection').style.display = 'block';
+    document.getElementById('payosSection').style.display = 'none';
   }
 }
 
-function renderPayNowSection(code){
+/* ── VietQR (giữ nguyên logic cũ) ── */
+function renderVietQRSection(code){
   document.getElementById('payQrSection').style.display = 'block';
   document.getElementById('payLaterSection').style.display = 'none';
+  document.getElementById('payosSection').style.display = 'none';
 
   document.getElementById('payBankName').textContent = CONFIG.BANK_NAME;
   document.getElementById('payAccNum').textContent = CONFIG.ACCOUNT_NUMBER;
   document.getElementById('payAccName').textContent = CONFIG.ACCOUNT_NAME;
   document.getElementById('payTransferNote').textContent = code;
 
-  const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png?amount=${CONFIG.DEPOSIT_AMOUNT}&addInfo=${encodeURIComponent(code)}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
+  const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png`
+    + `?amount=${CONFIG.DEPOSIT_AMOUNT}`
+    + `&addInfo=${encodeURIComponent(code)}`
+    + `&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
   document.getElementById('payQrImg').src = qrUrl;
 }
 
-function switchToPayNow(){
+/* ── PayOS ── */
+async function renderPayOSSection(code){
+  document.getElementById('payQrSection').style.display = 'none';
+  document.getElementById('payLaterSection').style.display = 'none';
+
+  const section = document.getElementById('payosSection');
+  section.style.display = 'block';
+  section.innerHTML = `
+    <div style="text-align:center; padding:28px 0;">
+      <svg class="spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2.2">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <p style="margin-top:12px; font-size:13.5px; color:var(--ink-soft);">Đang tạo link thanh toán PayOS...</p>
+    </div>`;
+
+  try{
+    const result = await createPayOSLink(code);
+    if(result.ok && result.checkoutUrl){
+      section.innerHTML = `
+        <div style="text-align:center; padding:10px 0 6px;">
+          <div style="font-size:13px; color:var(--ink-soft); margin-bottom:16px;">
+            Link thanh toán đã sẵn sàng — hỗ trợ ATM, Visa/Master, ví điện tử.
+          </div>
+          <a href="${result.checkoutUrl}" target="_blank" rel="noopener"
+             class="btn btn-primary" style="font-size:15px; padding:15px 36px; display:inline-flex;">
+            ⚡ Thanh toán ngay →
+          </a>
+          <div style="margin-top:14px;">
+            <a href="${result.checkoutUrl}" style="font-family:var(--font-mono); font-size:11px;
+               color:var(--ink-soft); word-break:break-all; text-decoration:underline;"
+               target="_blank" rel="noopener">${result.checkoutUrl}</a>
+          </div>
+          <div style="margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" onclick="copyPayosLink('${result.checkoutUrl}')">
+              📋 Sao chép link
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="switchToVietQR()">
+              📱 Dùng VietQR thay thế
+            </button>
+          </div>
+        </div>
+        <div class="pay-note" style="margin-top:20px;">
+          Sau khi thanh toán thành công, PayOS sẽ tự động cập nhật trạng thái đơn hàng.
+          Lưu lại mã đơn <b>${code}</b> để tra cứu tiến trình.
+        </div>`;
+    } else {
+      // Fallback về VietQR nếu PayOS lỗi
+      section.innerHTML = `
+        <div class="pay-note" style="color:#9A3300; background:#FFF0DC; border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:16px;">
+          ⚠️ Không tạo được link PayOS (${result.error || 'lỗi không xác định'}).
+          Đã tự động chuyển sang VietQR.
+        </div>`;
+      setTimeout(()=> renderVietQRSection(code), 600);
+    }
+  } catch(err){
+    section.innerHTML = `
+      <div class="pay-note" style="color:#9A3300; background:#FFF0DC; border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:16px;">
+        ⚠️ Lỗi kết nối PayOS. Đã tự động chuyển sang VietQR.
+      </div>`;
+    setTimeout(()=> renderVietQRSection(code), 600);
+  }
+}
+
+function copyPayosLink(url){
+  navigator.clipboard.writeText(url).then(()=> showToast("Đã sao chép link thanh toán!"));
+}
+
+function switchToVietQR(){
   const code = window._lastOrderCode;
   if(!code) return;
-  renderPayNowSection(code);
-  showToast("Đã chuyển sang thanh toán trước.");
+  renderVietQRSection(code);
+  showToast("Đã chuyển sang VietQR.");
+}
+
+function switchToPayNow(){
+  // Giữ tương thích — mặc định chuyển sang VietQR
+  const code = window._lastOrderCode;
+  if(!code) return;
+  renderVietQRSection(code);
+  showToast("Đã chuyển sang thanh toán QR.");
 }
 
 function copyOrderCode(){
@@ -1401,6 +1507,33 @@ async function createOrderSupabase(data){
 
   if(error) return { ok:false, error: error.message };
   return { ok:true, code: orderCode };
+}
+
+/**
+ * Tạo link thanh toán PayOS qua Supabase Edge Function.
+ * Edge Function sẽ giữ CLIENT_ID, API_KEY, CHECKSUM_KEY an toàn ở server.
+ *
+ * Supabase Edge Function cần deploy tại: supabase/functions/create-payos-link/index.ts
+ * (xem hướng dẫn bên dưới)
+ */
+async function createPayOSLink(orderCode){
+  if(!isBackendConfigured()) throw new Error("Chưa cấu hình Supabase");
+
+  const { data, error } = await sb.functions.invoke('create-payos-link', {
+    body: {
+      orderCode,                          // mã đơn, VD: DH-250704-1234
+      amount: CONFIG.DEPOSIT_AMOUNT,      // số tiền đặt cọc (VNĐ)
+      description: CONFIG.PAYOS_DESCRIPTION, // tối đa 25 ký tự, không dấu
+      returnUrl: CONFIG.PAYOS_RETURN_URL,
+      cancelUrl: CONFIG.PAYOS_CANCEL_URL,
+      buyerName: window._lastBuyerName || '',
+      buyerEmail: window._lastBuyerEmail || '',
+      buyerPhone: window._lastBuyerPhone || '',
+    }
+  });
+
+  if(error) return { ok: false, error: error.message };
+  return data; // { ok, checkoutUrl, paymentLinkId } hoặc { ok:false, error }
 }
 
 /**

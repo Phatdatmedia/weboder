@@ -289,6 +289,86 @@ textarea.field{ resize:vertical; min-height:70px; }
 }
 .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
 .toast .t-dot{ width:7px; height:7px; border-radius:50%; background: var(--coral); }
+
+/* ====================== ANNOUNCE & PAYMENT CONFIG ====================== */
+.cfg-section{
+  background: var(--white);
+  border:1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: 22px;
+  overflow:hidden;
+}
+.cfg-section-head{
+  padding: 16px 22px;
+  border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px;
+}
+.cfg-section-head h3{ font-size:15px; font-family:var(--font-body); font-weight:600; }
+.cfg-section-head p{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+.cfg-body{ padding: 22px; }
+.cfg-row{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:640px){ .cfg-row{ grid-template-columns:1fr; } }
+.cfg-form-group{ display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
+.cfg-form-group label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+.cfg-form-group small{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+.cfg-form-group textarea.field{ min-height:80px; resize:vertical; }
+
+/* Toggle switch */
+.toggle-wrap{ display:flex; align-items:center; gap:12px; }
+.toggle{
+  position:relative; width:44px; height:24px; flex-shrink:0;
+}
+.toggle input{ opacity:0; width:0; height:0; position:absolute; }
+.toggle-slider{
+  position:absolute; inset:0; background:var(--line); border-radius:999px; cursor:pointer;
+  transition: background .2s;
+}
+.toggle-slider::before{
+  content:""; position:absolute;
+  width:18px; height:18px; border-radius:50%; background:white;
+  left:3px; top:3px; transition:transform .2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.toggle input:checked + .toggle-slider{ background:var(--coral); }
+.toggle input:checked + .toggle-slider::before{ transform:translateX(20px); }
+.toggle-label{ font-size:13.5px; font-weight:500; }
+
+/* Announce preview */
+.announce-preview{
+  border:1.5px dashed var(--line); border-radius:var(--radius-md);
+  padding:20px; background:var(--paper); text-align:center;
+  margin-top:16px; font-size:13px; color:var(--ink-soft);
+}
+.announce-preview.has-content{
+  background:var(--white); text-align:left; padding:0; overflow:hidden;
+}
+.ap-img{ width:100%; max-height:160px; object-fit:cover; display:block; }
+.ap-body{ padding:16px 18px 10px; }
+.ap-tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-deep); margin-bottom:6px; }
+.ap-title{ font-family:var(--font-display); font-size:17px; font-weight:600; margin-bottom:5px; }
+.ap-desc{ font-size:13px; color:var(--ink-soft); line-height:1.55; }
+.ap-footer{ padding:12px 18px 14px; display:flex; justify-content:flex-end; gap:10px; }
+.ap-btn{ display:inline-block; padding:9px 18px; border-radius:999px; background:var(--ink); color:var(--white); font-size:13px; font-weight:600; }
+
+/* Payment method cards */
+.pay-method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:640px){ .pay-method-grid{ grid-template-columns:1fr; } }
+.pay-method-card{
+  border:1.5px solid var(--line); border-radius:var(--radius-md); padding:18px;
+  transition: border-color .18s;
+}
+.pay-method-card.active-card{ border-color:var(--coral); background:rgba(255,75,46,.03); }
+.pay-method-card h4{ font-size:14px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.save-row{ display:flex; justify-content:flex-end; margin-top:6px; }
+.chip{
+  display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--font-mono); font-size:11px; padding:4px 10px; border-radius:999px;
+  border:1px solid var(--line); color:var(--ink-soft); background:var(--paper);
+}
+.chip.on{ background:rgba(34,107,48,.08); border-color:#7FC089; color:#226B30; }
+.chip.off{ background:rgba(168,49,26,.08); border-color:#E08B7A; color:#A8311A; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -317,6 +397,8 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabServices" onclick="switchTab('services')">Dịch vụ</button>
     <button id="mobileTabProjects" onclick="switchTab('projects')">Dự án</button>
     <button id="mobileTabUsers"    onclick="switchTab('users')">Người dùng</button>
+    <button id="mobileTabAnnounce" onclick="switchTab('announce')">Thông báo</button>
+    <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -338,6 +420,14 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabUsers" onclick="switchTab('users')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
         Người dùng
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabAnnounce" onclick="switchTab('announce')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Thông báo
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabPayment" onclick="switchTab('payment')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Thanh toán
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -466,6 +556,243 @@ textarea.field{ resize:vertical; min-height:70px; }
           </div>
         </div>
         <div id="usersTableBody"><div class="dash-loading">Đang tải...</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: THÔNG BÁO POPUP -->
+    <div class="tab-panel" id="tabAnnounce">
+      <div class="dash-top">
+        <div>
+          <h1>Thông báo popup</h1>
+          <p>Quản lý popup hiện khi khách vào trang chủ. Lưu xong là áp dụng ngay.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveAnnounceConfig()">💾 Lưu thay đổi</button>
+      </div>
+
+      <!-- Bật / tắt -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Trạng thái popup</h3>
+            <p>Bật để hiện popup khi khách truy cập trang chủ</p>
+          </div>
+          <label class="toggle" title="Bật / tắt popup">
+            <input type="checkbox" id="ann_enabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Nội dung -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div><h3>Nội dung thông báo</h3></div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Nhãn nhỏ (tag)</label>
+              <input type="text" class="field" id="ann_tag" placeholder="VD: 🎉 Khuyến mãi tháng 7">
+            </div>
+            <div class="cfg-form-group">
+              <label>Nút hành động</label>
+              <input type="text" class="field" id="ann_btnText" placeholder="VD: Đặt đơn ngay →">
+            </div>
+          </div>
+          <div class="cfg-form-group">
+            <label>Tiêu đề *</label>
+            <input type="text" class="field" id="ann_title" placeholder="VD: Ưu đãi thiết kế Web chỉ từ 1.500.000đ">
+          </div>
+          <div class="cfg-form-group">
+            <label>Nội dung mô tả (hỗ trợ HTML: &lt;b&gt;, &lt;br&gt;)</label>
+            <textarea class="field" id="ann_desc" placeholder="VD: Giảm &lt;b&gt;20%&lt;/b&gt; cho tất cả dịch vụ trong tháng 7."></textarea>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Link nút hành động</label>
+              <input type="text" class="field" id="ann_btnUrl" placeholder="#services hoặc https://...">
+              <small>Dùng #services để cuộn xuống mục dịch vụ</small>
+            </div>
+            <div class="cfg-form-group">
+              <label>Delay hiện popup (ms)</label>
+              <input type="number" class="field" id="ann_delay" value="900" min="0" max="10000">
+              <small>900 = hiện sau 0.9 giây khi tải trang</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ảnh -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Ảnh minh hoạ</h3>
+            <p>Để trống nếu không muốn hiện ảnh</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-form-group">
+            <label>URL ảnh (jpg, png, webp...)</label>
+            <input type="text" class="field" id="ann_image" placeholder="https://images.unsplash.com/... hoặc để trống">
+            <small>Khuyến nghị tỉ lệ 16:9 hoặc 4:3, chiều rộng tối thiểu 900px</small>
+          </div>
+          <div id="ann_imgPreview" style="display:none; margin-top:10px;">
+            <img id="ann_imgPreviewEl" src="" alt="Preview ảnh" style="max-height:140px; border-radius:8px; border:1px solid var(--line);">
+          </div>
+        </div>
+      </div>
+
+      <!-- Khoá reset -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Reset "Không hiện lại"</h3>
+            <p>Đổi khoá này để popup hiện lại với tất cả khách (kể cả người đã tích "Không hiện lại")</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Storage key</label>
+              <input type="text" class="field" id="ann_storageKey" value="announce_hide_v1">
+              <small>VD: đổi thành announce_hide_v2 để reset toàn bộ</small>
+            </div>
+            <div style="display:flex; align-items:flex-end; padding-bottom:16px;">
+              <button class="btn btn-ghost btn-sm" onclick="bumpStorageKey()">↑ Tăng version</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div><h3>Preview popup</h3></div>
+          <button class="btn btn-ghost btn-sm" onclick="renderAnnouncePreview()">↻ Cập nhật preview</button>
+        </div>
+        <div class="cfg-body">
+          <div class="announce-preview" id="annPreviewBox">
+            Bấm "Cập nhật preview" để xem thử popup trước khi lưu.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CẤU HÌNH THANH TOÁN -->
+    <div class="tab-panel" id="tabPayment">
+      <div class="dash-top">
+        <div>
+          <h1>Cấu hình thanh toán</h1>
+          <p>Thay đổi tại đây sẽ được lưu vào Supabase và áp dụng cho trang chủ.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="savePaymentConfig()">💾 Lưu cấu hình</button>
+      </div>
+
+      <!-- Số tiền đặt cọc -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Số tiền đặt cọc mặc định</h3>
+            <p>Áp dụng cho cả VietQR và PayOS khi khách đặt đơn</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Số tiền (VNĐ)</label>
+              <input type="number" class="field" id="pay_depositAmount" placeholder="500000" min="1000">
+              <small>Tối thiểu 1.000đ theo quy định VietQR và PayOS</small>
+            </div>
+            <div class="cfg-form-group">
+              <label>Nội dung chuyển khoản mặc định</label>
+              <input type="text" class="field" id="pay_depositDesc" placeholder="Dat coc don hang" maxlength="25">
+              <small>Tối đa 25 ký tự, không dấu (dùng cho PayOS)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pay-method-grid">
+        <!-- VietQR -->
+        <div class="cfg-section pay-method-card" id="cardVietQR">
+          <div class="cfg-section-head">
+            <div>
+              <h3>📱 VietQR — Chuyển khoản</h3>
+              <p>Tạo QR thanh toán qua ngân hàng</p>
+            </div>
+            <span class="chip on" id="vietqrChip">Đang dùng</span>
+          </div>
+          <div class="cfg-body">
+            <div class="cfg-row">
+              <div class="cfg-form-group">
+                <label>Tên ngân hàng</label>
+                <input type="text" class="field" id="pay_bankName" placeholder="Techcombank">
+              </div>
+              <div class="cfg-form-group">
+                <label>Mã ngân hàng VietQR</label>
+                <input type="text" class="field" id="pay_bankId" placeholder="970407">
+                <small>Tra cứu tại <a href="https://vietqr.io/danh-sach-ngan-hang" target="_blank" style="color:var(--coral);">vietqr.io ↗</a></small>
+              </div>
+            </div>
+            <div class="cfg-row">
+              <div class="cfg-form-group">
+                <label>Số tài khoản</label>
+                <input type="text" class="field" id="pay_accNum" placeholder="3838648888">
+              </div>
+              <div class="cfg-form-group">
+                <label>Tên chủ tài khoản</label>
+                <input type="text" class="field" id="pay_accName" placeholder="LE PHAT DAT">
+                <small>Viết HOA, không dấu</small>
+              </div>
+            </div>
+            <!-- QR preview -->
+            <div style="margin-top:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="previewVietQR()">🔍 Xem thử QR</button>
+              <div id="vietqrPreview" style="margin-top:12px; display:none;">
+                <img id="vietqrPreviewImg" src="" alt="VietQR Preview" style="max-width:180px; border-radius:8px; border:1px solid var(--line);">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PayOS -->
+        <div class="cfg-section pay-method-card" id="cardPayOS">
+          <div class="cfg-section-head">
+            <div>
+              <h3>⚡ PayOS — Link thanh toán</h3>
+              <p>Tạo link thanh toán tức thì, hỗ trợ ATM, Visa, ví điện tử</p>
+            </div>
+            <span class="chip on" id="payosChip">Đang dùng</span>
+          </div>
+          <div class="cfg-body">
+            <div class="cfg-form-group">
+              <label>Return URL (trang thành công)</label>
+              <input type="text" class="field" id="pay_returnUrl" placeholder="https://phatdatagency.com/payment-success">
+            </div>
+            <div class="cfg-form-group">
+              <label>Cancel URL (trang huỷ)</label>
+              <input type="text" class="field" id="pay_cancelUrl" placeholder="https://phatdatagency.com/payment-cancel">
+            </div>
+            <div style="background:var(--paper-deep); border-radius:8px; padding:12px 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.6;">
+              🔐 <b>CLIENT_ID, API_KEY, CHECKSUM_KEY</b> phải được set tại<br>
+              <b>Supabase Dashboard → Settings → Edge Functions → Secrets</b><br>
+              (không nhập vào đây vì lý do bảo mật)
+            </div>
+            <div style="margin-top:10px;">
+              <a href="https://my.payos.vn" target="_blank" class="btn btn-ghost btn-sm">↗ Mở my.payos.vn</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lịch sử thay đổi -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div><h3>Lịch sử lưu cấu hình</h3></div>
+        </div>
+        <div class="cfg-body">
+          <div id="payConfigHistory" style="font-size:13px; color:var(--ink-soft);">Chưa có thay đổi nào trong phiên này.</div>
+        </div>
       </div>
     </div>
 
@@ -852,17 +1179,22 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
+const ALL_TABS = ['overview','services','projects','users','announce','payment'];
+
 function switchTab(tab){
-  ['overview','services','projects','users'].forEach(t => {
+  ALL_TABS.forEach(t => {
     const capT = t.charAt(0).toUpperCase() + t.slice(1);
-    document.getElementById('tab'       + capT).classList.toggle('active', tab === t);
-    document.getElementById('navTab'    + capT).classList.toggle('active', tab === t);
-    document.getElementById('mobileTab' + capT).classList.toggle('active', tab === t);
+    document.getElementById('tab'    + capT)?.classList.toggle('active', tab === t);
+    document.getElementById('navTab' + capT)?.classList.toggle('active', tab === t);
+    const mobileBtn = document.getElementById('mobileTab' + capT);
+    if(mobileBtn) mobileBtn.classList.toggle('active', tab === t);
   });
 
   if(tab === 'services' && allServices.length === 0) loadServicesTable();
   if(tab === 'projects' && allProjects.length === 0) loadProjectsTable();
   if(tab === 'users'    && allUsers.length    === 0) loadUsersTable();
+  if(tab === 'announce') loadAnnounceConfig();
+  if(tab === 'payment')  loadPaymentConfig();
 }
 
 /* =====================================================================
@@ -1316,9 +1648,253 @@ document.getElementById('userSearchInput').addEventListener('input', e => {
 });
 
 /* =====================================================================
-   INIT — kiểm tra phiên đăng nhập ngay khi tải trang, đồng thời
-   xác minh quyền admin (is_admin = true trong profiles)
+   ANNOUNCE CONFIG — lưu vào bảng `site_config` trong Supabase
+   Cấu trúc bảng:
+     CREATE TABLE site_config (
+       key   TEXT PRIMARY KEY,
+       value JSONB NOT NULL,
+       updated_at TIMESTAMPTZ DEFAULT NOW()
+     );
 ===================================================================== */
+const ANN_KEY = 'announce_popup';
+
+async function loadAnnounceConfig(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', ANN_KEY).single();
+    if(data?.value){
+      const c = data.value;
+      document.getElementById('ann_enabled').checked    = c.enabled !== false;
+      document.getElementById('ann_tag').value          = c.tag       || '';
+      document.getElementById('ann_title').value        = c.title     || '';
+      document.getElementById('ann_desc').value         = c.desc      || '';
+      document.getElementById('ann_btnText').value      = c.btnText   || '';
+      document.getElementById('ann_btnUrl').value       = c.btnUrl    || '';
+      document.getElementById('ann_image').value        = c.image     || '';
+      document.getElementById('ann_delay').value        = c.delay     ?? 900;
+      document.getElementById('ann_storageKey').value   = c.storageKey|| 'announce_hide_v1';
+      updateImagePreview(c.image || '');
+    }
+  } catch(e){ /* bảng chưa có row → bỏ qua */ }
+}
+
+async function saveAnnounceConfig(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+  const title = document.getElementById('ann_title').value.trim();
+  if(!title){ showToast('Vui lòng nhập tiêu đề thông báo.'); return; }
+
+  const cfg = {
+    enabled    : document.getElementById('ann_enabled').checked,
+    tag        : document.getElementById('ann_tag').value.trim(),
+    title,
+    desc       : document.getElementById('ann_desc').value.trim(),
+    btnText    : document.getElementById('ann_btnText').value.trim(),
+    btnUrl     : document.getElementById('ann_btnUrl').value.trim(),
+    image      : document.getElementById('ann_image').value.trim(),
+    delay      : Number(document.getElementById('ann_delay').value) || 900,
+    storageKey : document.getElementById('ann_storageKey').value.trim() || 'announce_hide_v1',
+  };
+
+  const btn = document.querySelector('#tabAnnounce .btn-primary');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key: ANN_KEY, value: cfg, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+    showToast('✅ Đã lưu cấu hình thông báo!');
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+/* Xem trước ảnh khi paste URL */
+document.getElementById('ann_image').addEventListener('input', e => {
+  updateImagePreview(e.target.value.trim());
+});
+function updateImagePreview(url){
+  const wrap = document.getElementById('ann_imgPreview');
+  const img  = document.getElementById('ann_imgPreviewEl');
+  if(url){ wrap.style.display='block'; img.src=url; }
+  else   { wrap.style.display='none';  img.src=''; }
+}
+
+/* Tự động tăng version storage key */
+function bumpStorageKey(){
+  const el  = document.getElementById('ann_storageKey');
+  const val = el.value.trim();
+  const m   = val.match(/^(.+_v)(\d+)$/);
+  if(m) el.value = m[1] + (parseInt(m[2]) + 1);
+  else  el.value = val + '_v2';
+  showToast('Đã tăng version → ' + el.value);
+}
+
+/* Preview popup */
+function renderAnnouncePreview(){
+  const enabled  = document.getElementById('ann_enabled').checked;
+  const tag      = document.getElementById('ann_tag').value.trim();
+  const title    = document.getElementById('ann_title').value.trim();
+  const desc     = document.getElementById('ann_desc').value.trim();
+  const btnText  = document.getElementById('ann_btnText').value.trim() || 'Xem ngay';
+  const image    = document.getElementById('ann_image').value.trim();
+  const box      = document.getElementById('annPreviewBox');
+
+  if(!enabled){
+    box.className = 'announce-preview';
+    box.innerHTML = '⚫ Popup đang <b>tắt</b> — khách sẽ không thấy thông báo.';
+    return;
+  }
+  if(!title){
+    box.className = 'announce-preview';
+    box.innerHTML = 'Nhập tiêu đề để xem preview.';
+    return;
+  }
+
+  box.className = 'announce-preview has-content';
+  box.innerHTML = `
+    ${image ? `<img class="ap-img" src="${escapeHtml(image)}" alt="Banner" onerror="this.style.display='none'">` : ''}
+    <div class="ap-body">
+      ${tag   ? `<div class="ap-tag">${escapeHtml(tag)}</div>` : ''}
+      <div class="ap-title">${escapeHtml(title)}</div>
+      ${desc  ? `<div class="ap-desc">${desc}</div>` : ''}
+    </div>
+    <div class="ap-footer">
+      <span style="font-size:12px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;">Bỏ qua</span>
+      <span class="ap-btn">${escapeHtml(btnText)}</span>
+    </div>`;
+}
+
+/* =====================================================================
+   PAYMENT CONFIG — lưu vào bảng `site_config`
+===================================================================== */
+const PAY_KEY = 'payment_config';
+let payConfigHistory = [];
+
+async function loadPaymentConfig(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', PAY_KEY).single();
+    if(data?.value){
+      const c = data.value;
+      document.getElementById('pay_depositAmount').value = c.depositAmount || 500000;
+      document.getElementById('pay_depositDesc').value   = c.depositDesc   || 'Dat coc don hang';
+      document.getElementById('pay_bankName').value      = c.bankName      || '';
+      document.getElementById('pay_bankId').value        = c.bankId        || '';
+      document.getElementById('pay_accNum').value        = c.accNum        || '';
+      document.getElementById('pay_accName').value       = c.accName       || '';
+      document.getElementById('pay_returnUrl').value     = c.returnUrl     || '';
+      document.getElementById('pay_cancelUrl').value     = c.cancelUrl     || '';
+    }
+  } catch(e){ /* bảng chưa có row → bỏ qua */ }
+}
+
+async function savePaymentConfig(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+
+  const depositAmount = Number(document.getElementById('pay_depositAmount').value) || 0;
+  if(depositAmount < 1000){ showToast('Số tiền đặt cọc tối thiểu 1.000đ.'); return; }
+
+  const cfg = {
+    depositAmount,
+    depositDesc : document.getElementById('pay_depositDesc').value.trim().slice(0,25),
+    bankName    : document.getElementById('pay_bankName').value.trim(),
+    bankId      : document.getElementById('pay_bankId').value.trim(),
+    accNum      : document.getElementById('pay_accNum').value.trim(),
+    accName     : document.getElementById('pay_accName').value.trim().toUpperCase(),
+    returnUrl   : document.getElementById('pay_returnUrl').value.trim(),
+    cancelUrl   : document.getElementById('pay_cancelUrl').value.trim(),
+  };
+
+  const btn = document.querySelector('#tabPayment .btn-primary');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key: PAY_KEY, value: cfg, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+
+    // Ghi lịch sử
+    payConfigHistory.unshift({
+      time: new Date().toLocaleString('vi-VN'),
+      by: currentAdmin.email,
+      amount: depositAmount,
+    });
+    renderPayHistory();
+    showToast('✅ Đã lưu cấu hình thanh toán!');
+
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+function renderPayHistory(){
+  const el = document.getElementById('payConfigHistory');
+  if(!payConfigHistory.length){
+    el.textContent = 'Chưa có thay đổi nào trong phiên này.';
+    return;
+  }
+  el.innerHTML = payConfigHistory.map(h =>
+    `<div style="padding:8px 0; border-bottom:1px solid var(--line);">
+       <span style="font-family:var(--font-mono);font-size:11.5px;color:var(--ink-soft);">${h.time}</span>
+       &nbsp;·&nbsp; Lưu bởi <b>${escapeHtml(h.by)}</b>
+       &nbsp;·&nbsp; Đặt cọc: <b>${Number(h.amount).toLocaleString('vi-VN')}đ</b>
+     </div>`
+  ).join('');
+}
+
+/* Xem thử QR VietQR */
+function previewVietQR(){
+  const bankId  = document.getElementById('pay_bankId').value.trim();
+  const accNum  = document.getElementById('pay_accNum').value.trim();
+  const accName = document.getElementById('pay_accName').value.trim();
+  const amount  = document.getElementById('pay_depositAmount').value || 500000;
+  if(!bankId || !accNum){ showToast('Nhập mã ngân hàng và số tài khoản trước.'); return; }
+
+  const url = `https://img.vietqr.io/image/${bankId}-${accNum}-compact2.png`
+            + `?amount=${amount}&addInfo=PREVIEW&accountName=${encodeURIComponent(accName)}`;
+  const img  = document.getElementById('vietqrPreviewImg');
+  const wrap = document.getElementById('vietqrPreview');
+  img.src = url;
+  wrap.style.display = 'block';
+  showToast('Đang tải QR preview...');
+}
+
+/* =====================================================================
+   SQL HELPER — hiển thị SQL tạo bảng site_config nếu chưa có
+===================================================================== */
+(function injectSqlHint(){
+  // Chỉ log ra console, không làm phiền UI
+  console.info(`%c[Phatdatagency Admin] Nếu lưu config bị lỗi "relation site_config does not exist",
+chạy SQL sau trong Supabase SQL Editor:
+
+CREATE TABLE IF NOT EXISTS site_config (
+  key         TEXT PRIMARY KEY,
+  value       JSONB NOT NULL DEFAULT '{}',
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+-- Cho phép admin đọc/ghi
+ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admin full access" ON site_config
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
+`, 'color:#FF4B2E; font-size:12px;');
+})();
+
+
 (async function init(){
   if(!isBackendConfigured()){ showLoginScreen(); return; }
 
