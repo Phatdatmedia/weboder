@@ -716,6 +716,48 @@ textarea.field{ resize:vertical; min-height:90px; }
 /* spinner */
 .spin{ animation: spin 0.9s linear infinite; }
 @keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ====================== ANNOUNCE POPUP ====================== */
+.announce-overlay{
+  position:fixed; inset:0;
+  background: rgba(33,28,22,0.55);
+  backdrop-filter: blur(3px);
+  z-index:1500;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 20px;
+}
+.announce-overlay.show{ display:flex; animation: overlayIn .25s ease; }
+
+.announce-box{
+  position:relative;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  max-width: 420px;
+  width:100%;
+  overflow:hidden;
+  box-shadow: var(--shadow-pop);
+  animation: modalIn .3s cubic-bezier(.2,.9,.3,1.2);
+}
+.announce-box .ap-img{ width:100%; max-height:200px; object-fit:cover; display:block; }
+.announce-box .ap-body{ padding:22px 24px 6px; }
+.announce-box .ap-tag{ font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-deep); margin-bottom:8px; }
+.announce-box .ap-title{ font-family:var(--font-display); font-size:21px; font-weight:600; margin-bottom:8px; }
+.announce-box .ap-desc{ font-size:14px; color:var(--ink-soft); line-height:1.6; white-space:pre-line; }
+.announce-box .ap-footer{ padding:18px 24px 24px; display:flex; justify-content:flex-end; align-items:center; gap:16px; }
+.announce-box .ap-skip{ font-size:12.5px; color:var(--ink-soft); text-decoration:underline; cursor:pointer; background:none; border:none; padding:0; }
+.announce-box .ap-btn{ display:inline-flex; padding:11px 22px; border-radius:999px; background:var(--ink); color:var(--white); font-size:13.5px; font-weight:600; transition: background .18s ease, transform .18s ease; }
+.announce-box .ap-btn:hover{ background:var(--coral); transform: translateY(-2px); }
+.announce-close{
+  position:absolute; top:12px; right:12px; z-index:2;
+  width:32px; height:32px; border-radius:50%;
+  border:1.5px solid var(--line);
+  background:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.announce-close:hover{ background: var(--ink); border-color:var(--ink); color:var(--white); transform: rotate(90deg); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1137,6 +1179,16 @@ textarea.field{ resize:vertical; min-height:90px; }
 <div class="toast" id="toast">
   <span class="t-dot"></span>
   <span id="toastMsg">Đã sao chép</span>
+</div>
+
+<!-- ANNOUNCE POPUP (nội dung đọc từ Supabase, bảng site_config, key = announce_popup) -->
+<div class="announce-overlay" id="announceOverlay">
+  <div class="announce-box" id="announceBox">
+    <button class="announce-close" onclick="closeAnnouncePopup()" aria-label="Đóng">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="announceContent"></div>
+  </div>
 </div>
 
 <script>
@@ -1966,6 +2018,89 @@ if(isBackendConfigured()){
 } else {
   loadServicesGrid();
 }
+
+/* =====================================================================
+   ANNOUNCE POPUP — đọc cấu hình từ Supabase, bảng `site_config`,
+   key = 'announce_popup' (được set từ trang admin, tab "Thông báo").
+   Nếu chưa cấu hình Supabase hoặc chưa có row nào, popup sẽ không hiện.
+===================================================================== */
+const ANN_KEY = 'announce_popup';
+
+function escapeHtmlAnn(str){
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
+const ANN_SNOOZE_MS = 24 * 60 * 60 * 1000; // tạm ẩn 24h sau khi bấm Bỏ qua/đã xem
+
+function closeAnnouncePopup(rememberKey){
+  const overlay = document.getElementById('announceOverlay');
+  overlay.classList.remove('show');
+  if(rememberKey){
+    try{
+      localStorage.setItem(rememberKey, JSON.stringify({ hideUntil: Date.now() + ANN_SNOOZE_MS }));
+    } catch(e){}
+  }
+}
+
+async function initAnnounce(){
+  if(!isBackendConfigured()) return; // chưa cấu hình Supabase -> bỏ qua
+
+  let cfg = null;
+  try{
+    const { data, error } = await sb.from('site_config').select('value').eq('key', ANN_KEY).single();
+    if(error) throw error;
+    cfg = data?.value || null;
+  } catch(e){
+    // Chưa có row site_config (bảng mới tạo, admin chưa lưu lần nào) -> không hiện popup
+    return;
+  }
+
+  if(!cfg || cfg.enabled === false) return;
+  if(!cfg.title) return;
+
+  const storageKey = cfg.storageKey || 'announce_hide_v1';
+  try{
+    const raw = localStorage.getItem(storageKey);
+    if(raw){
+      const saved = JSON.parse(raw);
+      // Còn trong 24h kể từ lần bấm Bỏ qua/xem gần nhất -> chưa báo lại
+      // (Nếu admin tăng version storageKey, key này sẽ không khớp nữa -> báo lại ngay)
+      if(saved?.hideUntil && Date.now() < saved.hideUntil) return;
+    }
+  } catch(e){}
+
+  const overlay = document.getElementById('announceOverlay');
+  const content = document.getElementById('announceContent');
+
+  const safeKey = storageKey.replace(/'/g,"");
+  const btnHtml = cfg.btnUrl
+    ? `<a class="ap-btn" href="${escapeHtmlAnn(cfg.btnUrl)}" onclick="closeAnnouncePopup('${safeKey}')">${escapeHtmlAnn(cfg.btnText || 'Xem ngay')}</a>`
+    : `<span class="ap-btn" style="cursor:pointer;" onclick="closeAnnouncePopup('${safeKey}')">${escapeHtmlAnn(cfg.btnText || 'Xem ngay')}</span>`;
+
+  content.innerHTML = `
+    ${cfg.image ? `<img class="ap-img" src="${escapeHtmlAnn(cfg.image)}" alt="Banner" onerror="this.style.display='none'">` : ''}
+    <div class="ap-body">
+      ${cfg.tag  ? `<div class="ap-tag">${escapeHtmlAnn(cfg.tag)}</div>` : ''}
+      <div class="ap-title">${escapeHtmlAnn(cfg.title)}</div>
+      ${cfg.desc ? `<div class="ap-desc">${escapeHtmlAnn(cfg.desc)}</div>` : ''}
+    </div>
+    <div class="ap-footer">
+      <button class="ap-skip" onclick="closeAnnouncePopup('${safeKey}')">Bỏ qua</button>
+      ${btnHtml}
+    </div>`;
+
+  const delay = Number(cfg.delay) >= 0 ? Number(cfg.delay) : 900;
+  setTimeout(() => overlay.classList.add('show'), delay);
+}
+
+// Bấm ra ngoài box để đóng popup (không lưu trạng thái "đã tắt")
+document.getElementById('announceOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAnnouncePopup();
+});
+
+initAnnounce();
 </script>
 
 </body>
