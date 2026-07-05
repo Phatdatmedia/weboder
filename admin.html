@@ -400,6 +400,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabAnnounce" onclick="switchTab('announce')">Thông báo</button>
     <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
+    <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -433,6 +434,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabContact" onclick="switchTab('contact')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         Liên hệ
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabTraffic" onclick="switchTab('traffic')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8 12 14.7l-3-3-4 4"/></svg>
+        Lượt truy cập
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -866,6 +871,46 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: LƯỢT TRUY CẬP -->
+    <div class="tab-panel" id="tabTraffic">
+      <div class="dash-top">
+        <div>
+          <h1>Lượt truy cập trang chủ</h1>
+          <p>Ghi nhận mỗi lần index.html được tải, kèm thiết bị/trình duyệt/nguồn truy cập.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadTrafficStats()">↻ Làm mới</button>
+      </div>
+
+      <div class="dash-stats" style="grid-template-columns:repeat(3,1fr); margin-bottom:22px;">
+        <div class="dash-stat-card"><div class="ds-label">Hôm nay</div><div class="ds-val" id="tfToday">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">7 ngày qua</div><div class="ds-val" id="tfWeek">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">Tổng cộng</div><div class="ds-val" id="tfTotal">—</div></div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head"><div><h3>Lượt xem theo ngày (14 ngày gần nhất)</h3></div></div>
+        <div class="cfg-body">
+          <div id="tfChart" style="min-height:180px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px;">Đang tải...</div>
+        </div>
+      </div>
+
+      <div class="cfg-row" style="align-items:flex-start;">
+        <div class="cfg-section" style="flex:1;">
+          <div class="cfg-section-head"><div><h3>Theo thiết bị</h3></div></div>
+          <div class="cfg-body"><div id="tfDevice" style="font-size:13px; color:var(--ink-soft);">Đang tải...</div></div>
+        </div>
+        <div class="cfg-section" style="flex:1;">
+          <div class="cfg-section-head"><div><h3>Theo trình duyệt</h3></div></div>
+          <div class="cfg-body"><div id="tfBrowser" style="font-size:13px; color:var(--ink-soft);">Đang tải...</div></div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head"><div><h3>Top nguồn truy cập</h3></div></div>
+        <div class="cfg-body"><div id="tfReferrer" style="font-size:13px; color:var(--ink-soft);">Đang tải...</div></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1272,7 +1317,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1289,6 +1334,7 @@ function switchTab(tab){
   if(tab === 'announce') loadAnnounceConfig();
   if(tab === 'payment')  loadPaymentConfig();
   if(tab === 'contact')  loadContactConfig();
+  if(tab === 'traffic')  loadTrafficStats();
 }
 
 /* =====================================================================
@@ -2111,6 +2157,136 @@ function renderContactPreview(){
 ['ct_phone','ct_email','ct_zalo','ct_facebook','ct_address'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderContactPreview);
 });
+
+/* =====================================================================
+   TRAFFIC STATS — đọc từ bảng `page_views` (ghi log từ index.html)
+===================================================================== */
+async function loadTrafficStats(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+
+  const since30 = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+  let rows = [];
+  try{
+    const { data, error } = await sb
+      .from('page_views')
+      .select('created_at, device, browser, referrer')
+      .gte('created_at', since30)
+      .order('created_at', { ascending: false })
+      .limit(20000);
+    if(error) throw error;
+    rows = data || [];
+  } catch(e){
+    document.getElementById('tfChart').innerHTML =
+      `<span style="color:var(--coral-deep);">Không tải được dữ liệu: ${escapeHtml(e.message)}<br>
+       (kiểm tra đã tạo bảng <code>page_views</code> và policy cho admin đọc chưa)</span>`;
+    document.getElementById('tfDevice').textContent   = '—';
+    document.getElementById('tfBrowser').textContent  = '—';
+    document.getElementById('tfReferrer').textContent = '—';
+    document.getElementById('tfToday').textContent = '—';
+    document.getElementById('tfWeek').textContent  = '—';
+    document.getElementById('tfTotal').textContent = '—';
+    return;
+  }
+
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('vi-VN');
+  const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
+
+  document.getElementById('tfTotal').textContent = rows.length.toLocaleString('vi-VN');
+  document.getElementById('tfToday').textContent = rows.filter(r =>
+    new Date(r.created_at).toLocaleDateString('vi-VN') === todayStr
+  ).length.toLocaleString('vi-VN');
+  document.getElementById('tfWeek').textContent = rows.filter(r =>
+    new Date(r.created_at) >= weekAgo
+  ).length.toLocaleString('vi-VN');
+
+  renderTrafficChart(rows);
+  renderTrafficBreakdown(rows, 'device',   'tfDevice');
+  renderTrafficBreakdown(rows, 'browser',  'tfBrowser');
+  renderTrafficReferrer(rows, 'tfReferrer');
+}
+
+function renderTrafficChart(rows){
+  const days = [];
+  for(let i = 13; i >= 0; i--){
+    const d = new Date(Date.now() - i*24*60*60*1000);
+    days.push({ key: d.toLocaleDateString('vi-VN'), label: `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`, count: 0 });
+  }
+  const map = {};
+  days.forEach(d => map[d.key] = d);
+  rows.forEach(r => {
+    const key = new Date(r.created_at).toLocaleDateString('vi-VN');
+    if(map[key]) map[key].count++;
+  });
+
+  const max = Math.max(1, ...days.map(d => d.count));
+  const W = 700, H = 170, padB = 24, padL = 4, barGap = 6;
+  const barW = (W - padL*2) / days.length - barGap;
+
+  let bars = '';
+  days.forEach((d, i) => {
+    const h = Math.round((d.count / max) * (H - padB - 10));
+    const x = padL + i * (barW + barGap);
+    const y = H - padB - h;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h,1)}" rx="3" fill="var(--coral)">
+      <title>${d.label}: ${d.count} lượt</title>
+    </rect>`;
+    if(i % 2 === 0){
+      bars += `<text x="${x + barW/2}" y="${H-6}" font-size="9.5" text-anchor="middle" fill="var(--ink-soft)">${d.label}</text>`;
+    }
+  });
+
+  document.getElementById('tfChart').innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:190px; --coral:#FF4B2E;">${bars}</svg>`;
+}
+
+const DEVICE_ICON  = { 'Mobile':'📱', 'Tablet':'💻', 'Desktop':'🖥️' };
+function renderTrafficBreakdown(rows, field, elId){
+  const box = document.getElementById(elId);
+  if(!rows.length){ box.textContent = 'Chưa có dữ liệu.'; return; }
+  const counts = {};
+  rows.forEach(r => {
+    const v = r[field] || 'Khác';
+    counts[v] = (counts[v]||0) + 1;
+  });
+  const total = rows.length;
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+
+  box.innerHTML = sorted.map(([label, n]) => {
+    const pct = Math.round(n/total*100);
+    const icon = field === 'device' ? (DEVICE_ICON[label]||'📟') : '';
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;">
+          <span>${icon} ${escapeHtml(label)}</span>
+          <span style="color:var(--ink-soft);">${n.toLocaleString('vi-VN')} (${pct}%)</span>
+        </div>
+        <div style="height:7px; background:var(--paper-deep); border-radius:99px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:var(--coral); border-radius:99px;"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderTrafficReferrer(rows, elId){
+  const box = document.getElementById(elId);
+  if(!rows.length){ box.textContent = 'Chưa có dữ liệu.'; return; }
+  const counts = {};
+  rows.forEach(r => {
+    const v = r.referrer || 'Trực tiếp';
+    counts[v] = (counts[v]||0) + 1;
+  });
+  const total = rows.length;
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+
+  box.innerHTML = `<table style="width:100%; font-size:12.5px;">
+    ${sorted.map(([label, n]) => `
+      <tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:7px 0;">${escapeHtml(label)}</td>
+        <td style="padding:7px 0; text-align:right; color:var(--ink-soft); white-space:nowrap;">${n.toLocaleString('vi-VN')} lượt (${Math.round(n/total*100)}%)</td>
+      </tr>`).join('')}
+  </table>`;
+}
 
 /* =====================================================================
    SQL HELPER — hiển thị SQL tạo bảng site_config nếu chưa có
