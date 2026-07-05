@@ -893,6 +893,17 @@ textarea.field{ resize:vertical; min-height:70px; }
           <input type="number" class="field" id="svc_order" placeholder="1" value="1">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Giá trị đơn (VNĐ)</label>
+          <input type="number" class="field" id="svc_price_amount" placeholder="VD: 2500000" min="0">
+          <p class="field-hint" style="margin-top:5px;">Số tiền cụ thể để khách chọn đặt cọc/thanh toán toàn bộ. Để trống nếu giá "Liên hệ".</p>
+        </div>
+        <div class="form-group">
+          <label>Cọc tối thiểu (VNĐ)</label>
+          <input type="number" class="field" id="svc_min_deposit" placeholder="VD: 500000" min="0">
+        </div>
+      </div>
       <div class="form-group">
         <label>Trạng thái</label>
         <select class="field" id="svc_status">
@@ -1078,6 +1089,11 @@ async function loadDashboard(){
       "SĐT": o.phone,
       "Email": o.email,
       "Loại dịch vụ": o.service_type,
+      "Ngân sách": o.budget,
+      "Mô tả yêu cầu": o.description,
+      "Số tiền": o.amount,
+      "Loại TT": o.payment_type,
+      "Giá trị đơn": o.total_price,
       "Phương thức TT": o.payment_method,
       "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
       "Trạng thái": o.status
@@ -1101,16 +1117,23 @@ function renderDashboard(orders){
   }
 
   let html = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
 
   orders.forEach(o=>{
     const status = o["Trạng thái"] || "Chờ xác nhận";
     const code = escapeHtml(o["Mã đơn"]);
+    const descFull = o["Mô tả yêu cầu"] || '';
+    const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
+    const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
+    const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
     html += `<tr>
       <td class="dt-code">${code}</td>
       <td>${escapeHtml(o["Họ tên"])}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o["SĐT"]||'')}</span></td>
       <td>${escapeHtml(o["Loại dịch vụ"]||'')}</td>
+      <td style="font-size:12px; font-family:var(--font-mono); color:var(--ink-soft); white-space:nowrap;">${escapeHtml(o["Ngân sách"]||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft); max-width:220px;" title="${escapeHtml(descFull)}">${escapeHtml(descShort||'—')}</td>
+      <td style="font-size:12px; font-family:var(--font-mono); white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft); font-size:10.5px;">${escapeHtml(o["Loại TT"]||'')}</span></td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Phương thức TT"]||'—')}</td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Thời gian đặt"]||'')}</td>
       <td>${renderStatusSelect(code, status)}</td>
@@ -1229,7 +1252,8 @@ async function loadServicesTable(){
     }
     allServices = (data||[]).map(s => ({
       "ID": s.id, "Tên dịch vụ": s.name, "Mô tả": s.description,
-      "Giá hiển thị": s.price_label, "Trạng thái": s.status, "Thứ tự": s.sort_order
+      "Giá hiển thị": s.price_label, "Trạng thái": s.status, "Thứ tự": s.sort_order,
+      "Giá trị đơn": s.price_amount, "Cọc tối thiểu": s.min_deposit
     }));
     renderServicesTable(allServices);
   } catch(err){
@@ -1255,7 +1279,10 @@ function renderServicesTable(services){
     html += `<tr>
       <td style="font-family:var(--font-mono); color:var(--ink-soft);">${escapeHtml(s["Thứ tự"])}</td>
       <td><b>${escapeHtml(s["Tên dịch vụ"])}</b><br><span style="font-size:12px; color:var(--ink-soft);">${escapeHtml((s["Mô tả"]||'').slice(0,60))}${(s["Mô tả"]||'').length>60?'…':''}</span></td>
-      <td style="font-family:var(--font-mono); font-size:12.5px;">${escapeHtml(s["Giá hiển thị"]||'—')}</td>
+      <td style="font-family:var(--font-mono); font-size:12.5px;">
+        ${escapeHtml(s["Giá hiển thị"]||'—')}
+        ${s["Giá trị đơn"] != null ? `<br><span style="font-size:11px; color:var(--sage);">${Number(s["Giá trị đơn"]).toLocaleString('vi-VN')}đ${s["Cọc tối thiểu"] != null ? ` · cọc từ ${Number(s["Cọc tối thiểu"]).toLocaleString('vi-VN')}đ` : ''}</span>` : `<br><span style="font-size:11px; color:var(--ink-soft);">Chưa có giá số (Liên hệ)</span>`}
+      </td>
       <td><span class="svc-status-pill ${isActive ? 'svc-status-active' : 'svc-status-inactive'}">${escapeHtml(s["Trạng thái"])}</span></td>
       <td>
         <div class="svc-actions">
@@ -1281,6 +1308,8 @@ function openServiceModal(id){
     document.getElementById('svc_desc').value = svc ? svc["Mô tả"] : '';
     document.getElementById('svc_price').value = svc ? svc["Giá hiển thị"] : '';
     document.getElementById('svc_order').value = svc ? svc["Thứ tự"] : 1;
+    document.getElementById('svc_price_amount').value = svc && svc["Giá trị đơn"] != null ? svc["Giá trị đơn"] : '';
+    document.getElementById('svc_min_deposit').value = svc && svc["Cọc tối thiểu"] != null ? svc["Cọc tối thiểu"] : '';
     document.getElementById('svc_status').value = svc ? svc["Trạng thái"] : 'Đang bán';
   } else {
     document.getElementById('serviceModalTitle').textContent = "Thêm dịch vụ";
@@ -1288,6 +1317,8 @@ function openServiceModal(id){
     document.getElementById('svc_desc').value = '';
     document.getElementById('svc_price').value = '';
     document.getElementById('svc_order').value = allServices.length + 1;
+    document.getElementById('svc_price_amount').value = '';
+    document.getElementById('svc_min_deposit').value = '';
     document.getElementById('svc_status').value = 'Đang bán';
   }
 
@@ -1308,10 +1339,29 @@ async function handleSaveService(){
   const price = document.getElementById('svc_price').value.trim();
   const order = Number(document.getElementById('svc_order').value) || 1;
   const status = document.getElementById('svc_status').value;
+  const priceAmountRaw = document.getElementById('svc_price_amount').value.trim();
+  const minDepositRaw = document.getElementById('svc_min_deposit').value.trim();
+  const priceAmount = priceAmountRaw === '' ? null : Number(priceAmountRaw);
+  const minDeposit = minDepositRaw === '' ? null : Number(minDepositRaw);
   const errBox = document.getElementById('serviceModalError');
 
   if(!name){
     errBox.textContent = "Vui lòng nhập tên dịch vụ.";
+    errBox.classList.add('show');
+    return;
+  }
+  if(priceAmount != null && priceAmount < 0){
+    errBox.textContent = "Giá trị đơn không được nhỏ hơn 0.";
+    errBox.classList.add('show');
+    return;
+  }
+  if(minDeposit != null && minDeposit < 0){
+    errBox.textContent = "Cọc tối thiểu không được nhỏ hơn 0.";
+    errBox.classList.add('show');
+    return;
+  }
+  if(priceAmount != null && minDeposit != null && minDeposit > priceAmount){
+    errBox.textContent = "Cọc tối thiểu không được lớn hơn giá trị đơn.";
     errBox.classList.add('show');
     return;
   }
@@ -1322,7 +1372,10 @@ async function handleSaveService(){
   btn.disabled = true;
   btn.textContent = "Đang lưu...";
 
-  const row = { name, description: desc, price_label: price, status, sort_order: order };
+  const row = {
+    name, description: desc, price_label: price, status, sort_order: order,
+    price_amount: priceAmount, min_deposit: minDeposit
+  };
 
   try{
     let error;

@@ -1082,6 +1082,25 @@ textarea.field{ resize:vertical; min-height:90px; }
           </div>
         </div>
 
+        <div class="form-group full" id="amountSection" style="margin-bottom:18px; display:none;">
+          <label>Số tiền thanh toán <span class="req">*</span></label>
+          <div class="service-pills" id="amountModePills">
+            <button type="button" class="service-pill" data-mode="deposit">💰 Đặt cọc</button>
+            <button type="button" class="service-pill" data-mode="full">✅ Thanh toán toàn bộ</button>
+          </div>
+          <div id="amountFullNote" style="font-size:12.5px; color:var(--ink-soft); margin-top:8px; display:none;"></div>
+          <div id="amountDepositWrap" style="margin-top:10px; display:none;">
+            <input type="number" class="field" id="f_deposit_amount" placeholder="Nhập số tiền đặt cọc (VNĐ)">
+            <p class="payment-hint" id="depositHint"></p>
+          </div>
+        </div>
+
+        <div class="form-group full" id="amountContactNote" style="margin-bottom:18px; display:none;">
+          <div style="font-size:12.5px; color:var(--ink-soft); background:var(--paper-deep); padding:12px 14px; border-radius:10px;">
+            📞 Dịch vụ này chưa có giá cụ thể — đội ngũ sẽ liên hệ tư vấn và báo giá trước khi bạn xác nhận đặt cọc.
+          </div>
+        </div>
+
         <div class="form-group full" style="margin-bottom:18px;">
           <label>Phương thức thanh toán <span class="req">*</span></label>
           <div class="service-pills" id="paymentPills">
@@ -1141,6 +1160,9 @@ textarea.field{ resize:vertical; min-height:90px; }
           <div class="pc-label">Mã đơn hàng của bạn</div>
           <div class="pc-code" id="payOrderCode">DH-260620-1234</div>
           <div class="pc-copy"><a href="javascript:void(0)" onclick="copyOrderCode()" style="text-decoration:underline; color:var(--coral-deep);">Sao chép mã</a></div>
+          <div id="payAmountBox" style="margin-top:14px; font-size:13.5px; color:var(--ink-soft); display:none;">
+            Số tiền cần thanh toán: <b id="payAmountVal" style="color:var(--ink); font-family:var(--font-mono);"></b>
+          </div>
         </div>
 
         <!-- Hiện khi chọn "Thanh toán trước" -->
@@ -1238,6 +1260,8 @@ function showToast(msg){
 let selectedService = null;
 let selectedPayment = null;
 let cachedServices = [];
+let currentServiceObj = null;
+let selectedAmountMode = null; // 'deposit' | 'full'
 
 function openOrderModal(presetService){
   document.getElementById('orderModalOverlay').classList.add('show');
@@ -1291,6 +1315,67 @@ function selectService(service){
   document.querySelectorAll('#servicePills .service-pill').forEach(p=>{
     p.classList.toggle('active', p.dataset.service === service);
   });
+  currentServiceObj = cachedServices.find(s => s["Tên dịch vụ"] === service) || null;
+  updateAmountSection();
+}
+
+function updateAmountSection(){
+  const amountSection = document.getElementById('amountSection');
+  const contactNote = document.getElementById('amountContactNote');
+  const fullNote = document.getElementById('amountFullNote');
+  const depositWrap = document.getElementById('amountDepositWrap');
+
+  // reset lựa chọn mỗi khi đổi dịch vụ
+  selectedAmountMode = null;
+  document.querySelectorAll('#amountModePills .service-pill').forEach(p=> p.classList.remove('active'));
+  depositWrap.style.display = 'none';
+  fullNote.style.display = 'none';
+  document.getElementById('f_deposit_amount').value = '';
+
+  const priceAmount = currentServiceObj ? Number(currentServiceObj["Giá trị đơn"]) : null;
+
+  if(!currentServiceObj || !priceAmount || priceAmount <= 0){
+    amountSection.style.display = 'none';
+    contactNote.style.display = 'block';
+    return;
+  }
+
+  contactNote.style.display = 'none';
+  amountSection.style.display = 'block';
+}
+
+document.getElementById('amountModePills').querySelectorAll('.service-pill').forEach(pill=>{
+  pill.addEventListener('click', ()=> selectAmountMode(pill.dataset.mode));
+});
+
+function selectAmountMode(mode){
+  selectedAmountMode = mode;
+  document.querySelectorAll('#amountModePills .service-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.mode === mode);
+  });
+
+  const priceAmount = Number(currentServiceObj["Giá trị đơn"]);
+  const minDeposit = currentServiceObj["Cọc tối thiểu"] != null && Number(currentServiceObj["Cọc tối thiểu"]) > 0
+    ? Number(currentServiceObj["Cọc tối thiểu"])
+    : Math.round(priceAmount * 0.2); // fallback: 20% nếu admin chưa đặt cọc tối thiểu
+
+  const fullNote = document.getElementById('amountFullNote');
+  const depositWrap = document.getElementById('amountDepositWrap');
+  const depositInput = document.getElementById('f_deposit_amount');
+  const depositHint = document.getElementById('depositHint');
+
+  if(mode === 'full'){
+    depositWrap.style.display = 'none';
+    fullNote.style.display = 'block';
+    fullNote.textContent = `Bạn sẽ thanh toán toàn bộ giá trị đơn: ${priceAmount.toLocaleString('vi-VN')}đ`;
+  } else {
+    fullNote.style.display = 'none';
+    depositWrap.style.display = 'block';
+    depositInput.min = minDeposit;
+    depositInput.max = priceAmount;
+    depositInput.value = minDeposit;
+    depositHint.textContent = `Giá trị đơn: ${priceAmount.toLocaleString('vi-VN')}đ — cọc tối thiểu ${minDeposit.toLocaleString('vi-VN')}đ`;
+  }
 }
 
 document.querySelectorAll('#paymentPills .service-pill').forEach(pill=>{
@@ -1314,13 +1399,19 @@ function selectPayment(method){
 }
 
 function resetOrderForm(){
-  ['f_name','f_phone','f_email','f_budget','f_deadline','f_desc'].forEach(id=>{
+  ['f_name','f_phone','f_email','f_budget','f_deadline','f_desc','f_deposit_amount'].forEach(id=>{
     document.getElementById(id).value = '';
   });
   selectedService = null;
   selectedPayment = null;
+  currentServiceObj = null;
+  selectedAmountMode = null;
   document.querySelectorAll('.service-pill').forEach(p=> p.classList.remove('active'));
   document.getElementById('paymentHint').textContent = '';
+  document.getElementById('amountSection').style.display = 'none';
+  document.getElementById('amountContactNote').style.display = 'none';
+  document.getElementById('amountFullNote').style.display = 'none';
+  document.getElementById('amountDepositWrap').style.display = 'none';
   document.getElementById('formError').classList.remove('show');
 }
 
@@ -1338,6 +1429,39 @@ async function handleSubmitOrder(){
     errBox.classList.add('show');
     return;
   }
+
+  // Tính số tiền thanh toán thực tế dựa trên lựa chọn Đặt cọc / Toàn bộ
+  const priceAmount = currentServiceObj ? Number(currentServiceObj["Giá trị đơn"]) : null;
+  let amount, paymentType, totalPrice = null;
+
+  if(priceAmount && priceAmount > 0){
+    if(!selectedAmountMode){
+      errBox.textContent = "Vui lòng chọn Đặt cọc hoặc Thanh toán toàn bộ.";
+      errBox.classList.add('show');
+      return;
+    }
+    totalPrice = priceAmount;
+    if(selectedAmountMode === 'full'){
+      amount = priceAmount;
+      paymentType = 'Thanh toán toàn bộ';
+    } else {
+      const minDeposit = currentServiceObj["Cọc tối thiểu"] != null && Number(currentServiceObj["Cọc tối thiểu"]) > 0
+        ? Number(currentServiceObj["Cọc tối thiểu"])
+        : Math.round(priceAmount * 0.2);
+      amount = Number(document.getElementById('f_deposit_amount').value);
+      if(!amount || amount < minDeposit || amount > priceAmount){
+        errBox.textContent = `Số tiền đặt cọc phải từ ${minDeposit.toLocaleString('vi-VN')}đ đến ${priceAmount.toLocaleString('vi-VN')}đ.`;
+        errBox.classList.add('show');
+        return;
+      }
+      paymentType = 'Đặt cọc';
+    }
+  } else {
+    // Dịch vụ chưa có giá cụ thể -> dùng mức đặt cọc mặc định, tư vấn sau
+    amount = CONFIG.DEPOSIT_AMOUNT;
+    paymentType = 'Đặt cọc (mặc định, chưa có giá)';
+  }
+
   errBox.classList.remove('show');
 
   const btn = document.getElementById('submitOrderBtn');
@@ -1350,17 +1474,18 @@ async function handleSubmitOrder(){
     service: selectedService,
     description: desc,
     budget, deadline,
-    amount: CONFIG.DEPOSIT_AMOUNT,
+    amount, paymentType, totalPrice,
     // Lưu vào DB: PayOS và VietQR đều là "Thanh toán trước"
     paymentMethod: (selectedPayment === 'PayOS' || selectedPayment === 'VietQR')
       ? 'Thanh toán trước (' + selectedPayment + ')'
       : selectedPayment
   };
 
-  // Lưu để truyền sang PayOS
+  // Lưu để truyền sang PayOS / VietQR
   window._lastBuyerName  = name;
   window._lastBuyerEmail = email;
   window._lastBuyerPhone = phone;
+  window._lastAmount     = amount;
 
   try{
     const result = await createOrderSupabase(orderData);
@@ -1385,6 +1510,14 @@ function showPaymentView(code, paymentMethod){
   document.getElementById('payOrderCode').textContent = code;
   window._lastOrderCode = code;
 
+  const amountBox = document.getElementById('payAmountBox');
+  if(window._lastAmount){
+    amountBox.style.display = 'block';
+    document.getElementById('payAmountVal').textContent = Number(window._lastAmount).toLocaleString('vi-VN') + 'đ';
+  } else {
+    amountBox.style.display = 'none';
+  }
+
   if(paymentMethod === 'PayOS'){
     renderPayOSSection(code);
   } else if(paymentMethod === 'VietQR'){
@@ -1408,7 +1541,7 @@ function renderVietQRSection(code){
   document.getElementById('payTransferNote').textContent = code;
 
   const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png`
-    + `?amount=${CONFIG.DEPOSIT_AMOUNT}`
+    + `?amount=${window._lastAmount || CONFIG.DEPOSIT_AMOUNT}`
     + `&addInfo=${encodeURIComponent(code)}`
     + `&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
   document.getElementById('payQrImg').src = qrUrl;
@@ -1523,7 +1656,8 @@ async function fetchActiveServices(){
   if(error) return { ok:false, error: error.message };
   // map về tên cột tiếng Việt cũ để không phải sửa lại UI rendering
   const mapped = (data||[]).map(s => ({
-    "Tên dịch vụ": s.name, "Mô tả": s.description, "Giá hiển thị": s.price_label
+    "Tên dịch vụ": s.name, "Mô tả": s.description, "Giá hiển thị": s.price_label,
+    "Giá trị đơn": s.price_amount, "Cọc tối thiểu": s.min_deposit
   }));
   return { ok:true, services: mapped };
 }
@@ -1553,6 +1687,8 @@ async function createOrderSupabase(data){
     budget: data.budget,
     deadline: data.deadline || null,
     amount: data.amount,
+    payment_type: data.paymentType || null,
+    total_price: data.totalPrice || null,
     payment_method: data.paymentMethod,
     user_id: userId
   });
@@ -1573,8 +1709,8 @@ async function createPayOSLink(orderCode){
 
   const { data, error } = await sb.functions.invoke('create-payos-link', {
     body: {
-      orderCode,                          // mã đơn, VD: DH-250704-1234
-      amount: CONFIG.DEPOSIT_AMOUNT,      // số tiền đặt cọc (VNĐ)
+      orderCode,                                    // mã đơn, VD: DH-250704-1234
+      amount: window._lastAmount || CONFIG.DEPOSIT_AMOUNT, // số tiền thanh toán (VNĐ)
       description: CONFIG.PAYOS_DESCRIPTION, // tối đa 25 ký tự, không dấu
       returnUrl: CONFIG.PAYOS_RETURN_URL,
       cancelUrl: CONFIG.PAYOS_CANCEL_URL,

@@ -229,8 +229,8 @@ table.orders-table tr:hover td{ background:var(--paper); }
 .mobile-tabbar button.m-logout{ margin-left:auto; border-color:transparent; }
 
 @media (max-width:880px){
-  #dashWrap.show{ flex-direction:column; }
   .dash-side{ display:none; }
+  #dashWrap.show{ flex-direction:column; }
   .mobile-tabbar{ display:flex; }
   .dash-main{ padding:22px 18px; }
   .stat-row{ grid-template-columns:1fr 1fr; }
@@ -263,7 +263,8 @@ table.orders-table tr:hover td{ background:var(--paper); }
   <div class="nav-inner">
     <a href="index.html" class="nav-brand">Phatdatagency<span class="dot">.</span></a>
     <div class="nav-right">
-     
+      <a href="index.html">Trang chủ</a>
+      <a href="showcase.html">Showcase</a>
       <a href="index.html#services" class="btn btn-primary btn-sm">Đặt đơn</a>
     </div>
   </div>
@@ -777,7 +778,7 @@ async function loadUserOrders(){
   try{
     const { data, error } = await sb
       .from('orders')
-      .select('order_code, service_type, payment_method, created_at, status')
+      .select('order_code, service_type, budget, description, amount, payment_type, total_price, payment_method, created_at, status')
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false });
 
@@ -789,6 +790,11 @@ async function loadUserOrders(){
     const mapped = (data||[]).map(o => ({
       "Mã đơn": o.order_code,
       "Loại dịch vụ": o.service_type,
+      "Ngân sách": o.budget,
+      "Mô tả yêu cầu": o.description,
+      "Số tiền": o.amount,
+      "Loại TT": o.payment_type,
+      "Giá trị đơn": o.total_price,
       "Phương thức TT": o.payment_method,
       "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
       "Trạng thái": o.status
@@ -811,14 +817,21 @@ function renderUserOrders(orders){
   }
 
   let html = `<table class="orders-table"><thead><tr>
-    <th>Mã đơn</th><th>Dịch vụ</th><th>Phương thức TT</th><th>Thời gian</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Phương thức TT</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
 
   orders.forEach(o => {
     const st = o["Trạng thái"] || "Chờ xác nhận";
+    const descFull = o["Mô tả yêu cầu"] || '';
+    const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
+    const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
+    const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
     html += `<tr>
       <td class="order-code">${esc(o["Mã đơn"])}</td>
       <td>${esc(o["Loại dịch vụ"]||"")}</td>
+      <td style="font-size:12.5px;font-family:var(--font-mono);color:var(--ink-soft);white-space:nowrap;">${esc(o["Ngân sách"]||"—")}</td>
+      <td style="font-size:12.5px;color:var(--ink-soft);max-width:220px;" title="${esc(descFull)}">${esc(descShort||"—")}</td>
+      <td style="font-size:12.5px;font-family:var(--font-mono);white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft);font-size:10.5px;">${esc(o["Loại TT"]||"")}</span></td>
       <td style="font-size:12.5px;color:var(--ink-soft);">${esc(o["Phương thức TT"]||"—")}</td>
       <td style="font-size:12px;color:var(--ink-soft);">${esc(o["Thời gian đặt"]||"")}</td>
       <td><span class="status-pill ${STATUS_MAP[st]||'s-pending'}">${esc(st)}</span></td>
