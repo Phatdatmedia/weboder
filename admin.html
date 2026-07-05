@@ -399,6 +399,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabUsers"    onclick="switchTab('users')">Người dùng</button>
     <button id="mobileTabAnnounce" onclick="switchTab('announce')">Thông báo</button>
     <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
+    <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -428,6 +429,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabPayment" onclick="switchTab('payment')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
         Thanh toán
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabContact" onclick="switchTab('contact')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Liên hệ
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -636,6 +641,11 @@ textarea.field{ resize:vertical; min-height:70px; }
             <input type="text" class="field" id="ann_image" placeholder="https://images.unsplash.com/... hoặc để trống">
             <small>Khuyến nghị tỉ lệ 16:9 hoặc 4:3, chiều rộng tối thiểu 900px</small>
           </div>
+          <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ann_imageFile').click()">📁 Chọn ảnh từ máy</button>
+            <span id="ann_uploadStatus" style="font-size:12.5px; color:var(--ink-soft);"></span>
+          </div>
+          <input type="file" id="ann_imageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" onchange="handleAnnounceImageUpload(this)">
           <div id="ann_imgPreview" style="display:none; margin-top:10px;">
             <img id="ann_imgPreviewEl" src="" alt="Preview ảnh" style="max-height:140px; border-radius:8px; border:1px solid var(--line);">
           </div>
@@ -792,6 +802,66 @@ textarea.field{ resize:vertical; min-height:70px; }
         </div>
         <div class="cfg-body">
           <div id="payConfigHistory" style="font-size:13px; color:var(--ink-soft);">Chưa có thay đổi nào trong phiên này.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: CẤU HÌNH LIÊN HỆ -->
+    <div class="tab-panel" id="tabContact">
+      <div class="dash-top">
+        <div>
+          <h1>Cấu hình liên hệ</h1>
+          <p>Hiện ở cuối trang chủ và popup góc phải. Ô nào để trống sẽ tự ẩn, không hiện ra ngoài trang chủ.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveContactConfig()">💾 Lưu cấu hình</button>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Thông tin liên hệ</h3>
+            <p>Điền kênh nào thì trang chủ hiện đúng kênh đó</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Số điện thoại / Hotline</label>
+              <input type="text" class="field" id="ct_phone" placeholder="09xxxxxxxx">
+            </div>
+            <div class="cfg-form-group">
+              <label>Email</label>
+              <input type="email" class="field" id="ct_email" placeholder="lienhe@phatdatagency.id.vn">
+            </div>
+          </div>
+          <div class="cfg-row">
+            <div class="cfg-form-group">
+              <label>Zalo</label>
+              <input type="text" class="field" id="ct_zalo" placeholder="Số Zalo hoặc link zalo.me/...">
+            </div>
+            <div class="cfg-form-group">
+              <label>Facebook / Messenger</label>
+              <input type="text" class="field" id="ct_facebook" placeholder="https://facebook.com/...">
+            </div>
+          </div>
+          <div class="cfg-form-group">
+            <label>Địa chỉ</label>
+            <input type="text" class="field" id="ct_address" placeholder="VD: 123 Đường ABC, Quận 1, TP.HCM">
+          </div>
+          <div class="cfg-row" style="margin-top:6px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; cursor:pointer;">
+              <input type="checkbox" id="ct_popupEnabled" checked style="width:16px; height:16px;">
+              Hiện nút liên hệ nổi (góc phải) trên trang chủ
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="cfg-section">
+        <div class="cfg-section-head"><div><h3>Xem trước</h3></div></div>
+        <div class="cfg-body">
+          <div id="contactPreviewBox" style="font-size:13px; color:var(--ink-soft);">Nhập thông tin để xem preview.</div>
         </div>
       </div>
     </div>
@@ -1202,7 +1272,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1218,6 +1288,7 @@ function switchTab(tab){
   if(tab === 'users'    && allUsers.length    === 0) loadUsersTable();
   if(tab === 'announce') loadAnnounceConfig();
   if(tab === 'payment')  loadPaymentConfig();
+  if(tab === 'contact')  loadContactConfig();
 }
 
 /* =====================================================================
@@ -1777,6 +1848,53 @@ function updateImagePreview(url){
   else   { wrap.style.display='none';  img.src=''; }
 }
 
+/* Upload ảnh minh hoạ từ máy lên Supabase Storage (bucket "site-assets", public)
+   Nếu bucket chưa tồn tại, tạo trong Supabase Dashboard → Storage → New bucket
+   → tên "site-assets" → tick "Public bucket". */
+const ANNOUNCE_BUCKET = 'site-assets';
+
+async function handleAnnounceImageUpload(input){
+  const file = input.files?.[0];
+  if(!file) return;
+  const statusEl = document.getElementById('ann_uploadStatus');
+
+  if(!isBackendConfigured()){
+    statusEl.textContent = 'Chưa cấu hình Supabase.';
+    return;
+  }
+  if(file.size > 5 * 1024 * 1024){
+    statusEl.textContent = 'Ảnh quá lớn (tối đa 5MB).';
+    input.value = '';
+    return;
+  }
+
+  statusEl.textContent = 'Đang tải lên...';
+  try{
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `announce/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+    const { error: upErr } = await sb.storage.from(ANNOUNCE_BUCKET).upload(path, file, {
+      cacheControl: '3600', upsert: false
+    });
+    if(upErr) throw upErr;
+
+    const { data: pub } = sb.storage.from(ANNOUNCE_BUCKET).getPublicUrl(path);
+    const publicUrl = pub?.publicUrl;
+    if(!publicUrl) throw new Error('Không lấy được URL ảnh sau khi tải lên.');
+
+    document.getElementById('ann_image').value = publicUrl;
+    updateImagePreview(publicUrl);
+    statusEl.textContent = '✅ Đã tải ảnh lên. Nhớ bấm "Lưu cấu hình" để áp dụng.';
+  } catch(e){
+    statusEl.textContent = 'Lỗi tải ảnh: ' + e.message
+      + (e.message?.includes('not found') || e.message?.includes('Bucket')
+        ? ' (kiểm tra đã tạo bucket "site-assets" là public trong Supabase Storage chưa)'
+        : '');
+  } finally {
+    input.value = '';
+  }
+}
+
 /* Tự động tăng version storage key */
 function bumpStorageKey(){
   const el  = document.getElementById('ann_storageKey');
@@ -1921,6 +2039,78 @@ function previewVietQR(){
   wrap.style.display = 'block';
   showToast('Đang tải QR preview...');
 }
+
+/* =====================================================================
+   CONTACT CONFIG — lưu vào bảng `site_config`
+===================================================================== */
+const CONTACT_KEY = 'contact_info';
+
+async function loadContactConfig(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', CONTACT_KEY).single();
+    if(data?.value){
+      const c = data.value;
+      document.getElementById('ct_phone').value        = c.phone       || '';
+      document.getElementById('ct_email').value        = c.email       || '';
+      document.getElementById('ct_zalo').value          = c.zalo        || '';
+      document.getElementById('ct_facebook').value      = c.facebook    || '';
+      document.getElementById('ct_address').value       = c.address     || '';
+      document.getElementById('ct_popupEnabled').checked = c.popupEnabled !== false;
+    }
+  } catch(e){ /* bảng/row chưa có → dùng giá trị trống mặc định */ }
+  renderContactPreview();
+}
+
+async function saveContactConfig(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+
+  const cfg = {
+    phone       : document.getElementById('ct_phone').value.trim(),
+    email       : document.getElementById('ct_email').value.trim(),
+    zalo        : document.getElementById('ct_zalo').value.trim(),
+    facebook    : document.getElementById('ct_facebook').value.trim(),
+    address     : document.getElementById('ct_address').value.trim(),
+    popupEnabled: document.getElementById('ct_popupEnabled').checked,
+  };
+
+  const btn = document.querySelector('#tabContact .btn-primary');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key: CONTACT_KEY, value: cfg, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+    showToast('✅ Đã lưu cấu hình liên hệ!');
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+function renderContactPreview(){
+  const box = document.getElementById('contactPreviewBox');
+  const rows = [
+    ['📞', document.getElementById('ct_phone').value.trim()],
+    ['✉️', document.getElementById('ct_email').value.trim()],
+    ['💬', document.getElementById('ct_zalo').value.trim() ? 'Zalo: ' + document.getElementById('ct_zalo').value.trim() : ''],
+    ['📘', document.getElementById('ct_facebook').value.trim() ? 'Facebook: ' + document.getElementById('ct_facebook').value.trim() : ''],
+    ['📍', document.getElementById('ct_address').value.trim()],
+  ].filter(r => r[1]);
+
+  if(!rows.length){
+    box.textContent = 'Chưa có kênh liên hệ nào — trang chủ sẽ không hiện mục liên hệ.';
+    return;
+  }
+  box.innerHTML = rows.map(r => `<div style="padding:4px 0;">${r[0]} ${escapeHtml(r[1])}</div>`).join('');
+}
+['ct_phone','ct_email','ct_zalo','ct_facebook','ct_address'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderContactPreview);
+});
 
 /* =====================================================================
    SQL HELPER — hiển thị SQL tạo bảng site_config nếu chưa có

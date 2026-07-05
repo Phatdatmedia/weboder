@@ -606,6 +606,48 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .footer-links a{ font-size:13px; color:var(--ink-soft); }
 .footer-links a:hover{ color:var(--ink); }
 
+/* Footer - khối liên hệ */
+.footer-contact{ display:flex; flex-wrap:wrap; gap:18px; margin-bottom:14px; }
+.footer-contact a, .footer-contact span{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13px; color:var(--ink-soft);
+}
+.footer-contact a:hover{ color:var(--coral-deep); }
+
+/* Nút liên hệ nổi góc phải */
+.contact-fab{
+  position:fixed; right:22px; bottom:22px; z-index:60;
+  width:56px; height:56px; border-radius:50%;
+  background:var(--coral); color:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:var(--shadow-pop); cursor:pointer; border:none;
+  transition:transform .15s ease;
+}
+.contact-fab:hover{ transform:scale(1.06); }
+.contact-fab svg{ width:24px; height:24px; }
+
+.contact-card{
+  position:fixed; right:22px; bottom:90px; z-index:60;
+  width:280px; max-width:calc(100vw - 44px);
+  background:var(--white); border:1px solid var(--line); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-pop); padding:18px 20px;
+  opacity:0; transform:translateY(12px) scale(.98); pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+}
+.contact-card.show{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+.contact-card h4{ font-family:var(--font-display); font-size:17px; margin-bottom:12px; }
+.contact-card .cc-row{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 0; border-bottom:1px solid var(--line);
+  font-size:13.5px; color:var(--ink); text-decoration:none;
+}
+.contact-card .cc-row:last-child{ border-bottom:none; }
+.contact-card .cc-row span.cc-ic{ font-size:16px; }
+.contact-card .cc-close{
+  position:absolute; top:12px; right:14px; cursor:pointer;
+  color:var(--ink-soft); font-size:18px; line-height:1; background:none; border:none;
+}
+
 /* ====================== ORDER MODAL ====================== */
 .modal-overlay{
   position:fixed; inset:0;
@@ -1048,17 +1090,30 @@ textarea.field{ resize:vertical; min-height:90px; }
 </section>
 
 <footer class="footer">
-  <div class="container footer-inner">
-    <p>© 2026 PHATDATAGENCY.</p>
-    <div class="footer-links">
-      <a href="#services">Dịch vụ</a>
-      <a href="showcase.html">Showcase</a>
-      <a href="#lookup">Tra cứu đơn</a>
-      <a href="https://www.dmca.com/compliance/phatdatagency.id.vn" title="DMCA Compliance information for phatdatagency.id.vn"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
-      <a href="//www.dmca.com/Protection/Status.aspx?ID=add8c5bf-f097-4395-a395-030ffe881508" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca-badge-w200-5x1-11.png?ID=add8c5bf-f097-4395-a395-030ffe881508"  alt="DMCA.com Protection Status" /></a>  <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"> </script>
+  <div class="container footer-inner" style="flex-direction:column; align-items:flex-start;">
+    <div class="footer-contact" id="footerContact"></div>
+    <div class="footer-inner" style="width:100%;">
+      <p>© 2026 PHATDATAGENCY.</p>
+      <div class="footer-links">
+        <a href="#services">Dịch vụ</a>
+        <a href="showcase.html">Showcase</a>
+        <a href="#lookup">Tra cứu đơn</a>
+        <a href="https://www.dmca.com/compliance/phatdatagency.id.vn" title="DMCA Compliance information for phatdatagency.id.vn"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
+        <a href="//www.dmca.com/Protection/Status.aspx?ID=add8c5bf-f097-4395-a395-030ffe881508" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca-badge-w200-5x1-11.png?ID=add8c5bf-f097-4395-a395-030ffe881508"  alt="DMCA.com Protection Status" /></a>  <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"> </script>
+      </div>
     </div>
   </div>
 </footer>
+
+<!-- NÚT LIÊN HỆ NỔI GÓC PHẢI (nội dung đọc từ Supabase, bảng site_config, key = contact_info) -->
+<button class="contact-fab" id="contactFab" style="display:none;" onclick="toggleContactCard()" aria-label="Liên hệ">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+</button>
+<div class="contact-card" id="contactCard">
+  <button class="cc-close" onclick="toggleContactCard()">&times;</button>
+  <h4>Liên hệ với chúng tôi</h4>
+  <div id="contactCardBody"></div>
+</div>
 
 </div> <!-- /#main-page -->
 
@@ -2237,6 +2292,60 @@ document.getElementById('announceOverlay').addEventListener('click', function(e)
 });
 
 initAnnounce();
+
+/* =====================================================================
+   CONTACT INFO — đọc cấu hình từ Supabase, bảng `site_config`,
+   key = 'contact_info' (được set từ trang admin, tab "Liên hệ").
+   Kênh nào admin để trống sẽ tự ẩn, không hiện ra trang chủ.
+===================================================================== */
+const CONTACT_KEY = 'contact_info';
+
+function toggleContactCard(){
+  document.getElementById('contactCard').classList.toggle('show');
+}
+
+async function initContactInfo(){
+  if(!isBackendConfigured()) return;
+
+  let cfg = null;
+  try{
+    const { data, error } = await sb.from('site_config').select('value').eq('key', CONTACT_KEY).single();
+    if(error) throw error;
+    cfg = data?.value || null;
+  } catch(e){
+    return; // chưa có cấu hình -> không hiện gì cả
+  }
+  if(!cfg) return;
+
+  const channels = [
+    cfg.phone    ? { icon:'📞', label: cfg.phone,    href: 'tel:' + cfg.phone.replace(/[^\d+]/g,'') } : null,
+    cfg.email    ? { icon:'✉️', label: cfg.email,    href: 'mailto:' + cfg.email } : null,
+    cfg.zalo     ? { icon:'💬', label: 'Zalo: ' + cfg.zalo, href: cfg.zalo.startsWith('http') ? cfg.zalo : 'https://zalo.me/' + cfg.zalo.replace(/[^\d]/g,'') } : null,
+    cfg.facebook ? { icon:'📘', label: 'Facebook', href: cfg.facebook } : null,
+    cfg.address  ? { icon:'📍', label: cfg.address,  href: null } : null,
+  ].filter(Boolean);
+
+  if(!channels.length) return; // admin chưa điền kênh nào -> ẩn hết
+
+  // Footer
+  document.getElementById('footerContact').innerHTML = channels.map(c =>
+    c.href
+      ? `<a href="${escapeHtmlAnn(c.href)}" target="_blank" rel="noopener">${c.icon} ${escapeHtmlAnn(c.label)}</a>`
+      : `<span>${c.icon} ${escapeHtmlAnn(c.label)}</span>`
+  ).join('');
+
+  // Nút nổi + card (nếu admin không tắt)
+  if(cfg.popupEnabled === false) return;
+
+  document.getElementById('contactFab').style.display = 'flex';
+  document.getElementById('contactCardBody').innerHTML = channels.map(c =>
+    c.href
+      ? `<a class="cc-row" href="${escapeHtmlAnn(c.href)}" target="_blank" rel="noopener"><span class="cc-ic">${c.icon}</span> ${escapeHtmlAnn(c.label)}</a>`
+      : `<div class="cc-row"><span class="cc-ic">${c.icon}</span> ${escapeHtmlAnn(c.label)}</div>`
+  ).join('');
+}
+
+initContactInfo();
 </script>
 
 </body>

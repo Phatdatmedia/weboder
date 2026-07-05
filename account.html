@@ -294,6 +294,9 @@ table.orders-table tr:hover td{ background:var(--paper); }
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
+        <p style="text-align:right; margin-top:6px;">
+          <a href="javascript:void(0)" onclick="showForgot()" style="font-size:12.5px; color:var(--ink-soft); text-decoration:underline;">Quên mật khẩu?</a>
+        </p>
       </div>
 
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="loginBtn" onclick="handleLogin()">Đăng nhập</button>
@@ -351,6 +354,62 @@ table.orders-table tr:hover td{ background:var(--paper); }
   </div>
 
 </div><!-- /#authWrap -->
+
+  <!-- FORGOT PASSWORD -->
+  <div class="auth-wrap" id="forgotWrap" style="display:none;">
+    <div class="auth-card">
+      <div class="eyebrow" style="margin-bottom:16px;">Tài khoản</div>
+      <h2>Quên mật khẩu</h2>
+      <p class="auth-sub">Nhập email tài khoản, chúng tôi sẽ gửi link đặt lại mật khẩu.</p>
+
+      <div class="err-msg" id="forgotErr"></div>
+      <div class="ok-msg"  id="forgotOk"></div>
+
+      <div class="form-group">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" class="field" id="forgot_email" placeholder="ban@email.com" autocomplete="email">
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="forgotBtn" onclick="handleForgotPassword()">Gửi email khôi phục</button>
+
+      <div class="auth-footer">
+        <a href="javascript:void(0)" onclick="showLogin()">← Quay lại đăng nhập</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESET PASSWORD (mở từ link trong email) -->
+  <div class="auth-wrap" id="resetWrap" style="display:none;">
+    <div class="auth-card">
+      <div class="eyebrow" style="margin-bottom:16px;">Tài khoản</div>
+      <h2>Đặt lại mật khẩu</h2>
+      <p class="auth-sub">Nhập mật khẩu mới cho tài khoản của bạn.</p>
+
+      <div class="err-msg" id="resetErr"></div>
+      <div class="ok-msg"  id="resetOk"></div>
+
+      <div class="form-group">
+        <label>Mật khẩu mới <span class="req">*</span></label>
+        <div class="input-pass-wrap">
+          <input type="password" class="field" id="reset_pass" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+          <button type="button" onclick="togglePass('reset_pass',this)" tabindex="-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Xác nhận mật khẩu mới <span class="req">*</span></label>
+        <div class="input-pass-wrap">
+          <input type="password" class="field" id="reset_pass2" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password">
+          <button type="button" onclick="togglePass('reset_pass2',this)" tabindex="-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="resetBtn" onclick="handleResetPassword()">Đặt lại mật khẩu</button>
+    </div>
+  </div>
 
 <!-- ── DASHBOARD ── -->
 <div id="dashWrap">
@@ -505,6 +564,23 @@ const CONFIG = {
 };
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
+/* Đăng ký NGAY sau khi tạo client — Supabase xử lý token khôi phục trong URL
+   và có thể bắn event PASSWORD_RECOVERY ngay lúc này, nên phải lắng nghe
+   trước, không thể chờ tới lúc gọi init() ở cuối file (sẽ bị miss event). */
+let isRecoveryFlow = false;
+sb.auth.onAuthStateChange((event) => {
+  if(event === 'PASSWORD_RECOVERY'){
+    isRecoveryFlow = true;
+    document.getElementById("authWrap").style.display = "block";
+    document.getElementById("loginWrap").style.display    = "none";
+    document.getElementById("registerWrap").style.display = "none";
+    document.getElementById("forgotWrap").style.display   = "none";
+    document.getElementById("resetWrap").style.display    = "flex";
+    exitDashboard();
+  }
+  if(event === 'SIGNED_OUT'){ exitDashboard(); }
+});
+
 /* ============================================================
    STATE
 ============================================================ */
@@ -553,13 +629,25 @@ function togglePass(inputId, btn){
 function showLogin(){
   document.getElementById("loginWrap").style.display    = "flex";
   document.getElementById("registerWrap").style.display = "none";
+  document.getElementById("forgotWrap").style.display   = "none";
+  document.getElementById("resetWrap").style.display    = "none";
   document.getElementById("loginErr").classList.remove("show");
 }
 function showRegister(){
   document.getElementById("loginWrap").style.display    = "none";
   document.getElementById("registerWrap").style.display = "flex";
+  document.getElementById("forgotWrap").style.display   = "none";
+  document.getElementById("resetWrap").style.display    = "none";
   document.getElementById("registerErr").classList.remove("show");
   document.getElementById("registerOk").classList.remove("show");
+}
+function showForgot(){
+  document.getElementById("loginWrap").style.display    = "none";
+  document.getElementById("registerWrap").style.display = "none";
+  document.getElementById("forgotWrap").style.display   = "flex";
+  document.getElementById("resetWrap").style.display    = "none";
+  document.getElementById("forgotErr").classList.remove("show");
+  document.getElementById("forgotOk").classList.remove("show");
 }
 
 /* ============================================================
@@ -568,6 +656,14 @@ function showRegister(){
 ["login_email","login_pass"].forEach(id => {
   document.getElementById(id).addEventListener("keydown", e => {
     if(e.key === "Enter") handleLogin();
+  });
+});
+document.getElementById("forgot_email").addEventListener("keydown", e => {
+  if(e.key === "Enter") handleForgotPassword();
+});
+["reset_pass","reset_pass2"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", e => {
+    if(e.key === "Enter") handleResetPassword();
   });
 });
 ["reg_name","reg_email","reg_pass","reg_pass2"].forEach(id => {
@@ -675,6 +771,78 @@ async function handleLogin(){
     errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
     errBox.classList.add("show");
   } finally { setBtn("loginBtn", false, "Đăng nhập"); }
+}
+
+/* ============================================================
+   QUÊN MẬT KHẨU — gửi email reset qua Supabase Auth
+============================================================ */
+async function handleForgotPassword(){
+  const email  = document.getElementById("forgot_email").value.trim();
+  const errBox = document.getElementById("forgotErr");
+  const okBox  = document.getElementById("forgotOk");
+  errBox.classList.remove("show"); okBox.classList.remove("show");
+
+  if(!email){
+    errBox.textContent = "Vui lòng nhập email."; errBox.classList.add("show"); return;
+  }
+  if(!isConfigured()){
+    errBox.textContent = "Chưa cấu hình Supabase."; errBox.classList.add("show"); return;
+  }
+
+  setBtn("forgotBtn", true, "Gửi email khôi phục");
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if(error){
+      errBox.textContent = translateAuthError(error.message);
+      errBox.classList.add("show");
+      return;
+    }
+    okBox.textContent = "Đã gửi email khôi phục! Vui lòng kiểm tra hộp thư (kể cả mục spam) và bấm vào link để đặt lại mật khẩu.";
+    okBox.classList.add("show");
+    document.getElementById("forgot_email").value = "";
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
+    errBox.classList.add("show");
+  } finally { setBtn("forgotBtn", false, "Gửi email khôi phục"); }
+}
+
+/* ============================================================
+   ĐẶT LẠI MẬT KHẨU — mở từ link trong email (event PASSWORD_RECOVERY)
+============================================================ */
+async function handleResetPassword(){
+  const newP  = document.getElementById("reset_pass").value;
+  const newP2 = document.getElementById("reset_pass2").value;
+  const errBox = document.getElementById("resetErr");
+  const okBox  = document.getElementById("resetOk");
+  errBox.classList.remove("show"); okBox.classList.remove("show");
+
+  if(!newP || !newP2){
+    errBox.textContent = "Vui lòng điền đầy đủ các trường."; errBox.classList.add("show"); return;
+  }
+  if(newP !== newP2){
+    errBox.textContent = "Hai mật khẩu không khớp nhau."; errBox.classList.add("show"); return;
+  }
+  if(newP.length < 6){
+    errBox.textContent = "Mật khẩu phải có ít nhất 6 ký tự."; errBox.classList.add("show"); return;
+  }
+
+  setBtn("resetBtn", true, "Đặt lại mật khẩu");
+  try{
+    const { error } = await sb.auth.updateUser({ password: newP });
+    if(error){
+      errBox.textContent = translateAuthError(error.message);
+      errBox.classList.add("show");
+      return;
+    }
+    okBox.textContent = "Đặt lại mật khẩu thành công! Đang vào tài khoản...";
+    okBox.classList.add("show");
+    setTimeout(async () => { await enterDashboard(); }, 1200);
+  } catch(err){
+    errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";
+    errBox.classList.add("show");
+  } finally { setBtn("resetBtn", false, "Đặt lại mật khẩu"); }
 }
 
 /**
@@ -919,18 +1087,19 @@ async function handleChangePassword(){
    cần tự quản lý token vì supabase-js tự lưu trong localStorage)
 ============================================================ */
 (async function init(){
-  if(!isConfigured()){ showLogin(); return; }
+  if(!isConfigured()){ if(!isRecoveryFlow) showLogin(); return; }
+
+  // Chờ 1 nhịp để supabase-js xử lý xong token trong URL (nếu có) trước khi
+  // quyết định hiện dashboard hay màn đăng nhập.
+  await new Promise(r => setTimeout(r, 80));
+  if(isRecoveryFlow) return; // listener ở trên đã xử lý hiện form đặt lại mật khẩu
+
   const { data } = await sb.auth.getSession();
   if(data?.session){
     await enterDashboard();
   } else {
     showLogin();
   }
-
-  // Tự cập nhật khi trạng thái đăng nhập đổi (vd: xác nhận email ở tab khác)
-  sb.auth.onAuthStateChange((event) => {
-    if(event === 'SIGNED_OUT'){ exitDashboard(); }
-  });
 })();
 </script>
 </body>
