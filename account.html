@@ -90,6 +90,37 @@ a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid va
 .nav-right a{ font-size:13.5px; color:var(--ink-soft); font-weight:500; }
 .nav-right a:hover{ color:var(--ink); }
 
+.notif-bell{
+  position:relative; background:none; border:none; cursor:pointer;
+  color:var(--ink-soft); display:flex; align-items:center; padding:4px;
+  transition:color .15s ease;
+}
+.notif-bell:hover{ color:var(--ink); }
+.notif-badge{
+  position:absolute; top:-2px; right:-2px; min-width:16px; height:16px; padding:0 4px;
+  background:var(--coral); color:var(--white); border-radius:99px;
+  font-size:10px; font-weight:700; line-height:16px; text-align:center;
+}
+.notif-dropdown{
+  position:absolute; top:calc(100% + 14px); right:0; z-index:70;
+  width:320px; max-width:calc(100vw - 32px); max-height:420px; overflow-y:auto;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-pop);
+  opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease;
+}
+.notif-dropdown.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+.notif-dropdown-head{
+  padding:14px 18px; font-family:var(--font-display); font-size:15.5px;
+  border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--white);
+}
+.notif-item{ padding:12px 18px; border-bottom:1px solid var(--line); }
+.notif-item:last-child{ border-bottom:none; }
+.notif-item .ni-title{ font-size:13.5px; font-weight:600; color:var(--ink); }
+.notif-item .ni-msg{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; line-height:1.5; }
+.notif-item .ni-time{ font-size:10.5px; color:var(--ink-soft); margin-top:5px; }
+.notif-item.unread{ background:var(--coral-tint); }
+
 /* ── AUTH SCREENS (login / register) ── */
 .auth-wrap{
   min-height:calc(100vh - 57px);
@@ -253,10 +284,96 @@ table.orders-table tr:hover td{ background:var(--paper); }
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
 .toast .t-dot{ width:7px; height:7px; border-radius:50%; background:var(--coral); }
+
+/* =====================================================================
+   KHÁCH HÀNG ƯU TIÊN — overlay chào mừng
+===================================================================== */
+.vip-welcome-overlay{
+  position:fixed; inset:0; z-index:3000;
+  background:radial-gradient(circle at 50% 30%, #1a1710 0%, #000 75%);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .5s ease;
+}
+.vip-welcome-overlay.show{ opacity:1; pointer-events:auto; }
+.vip-welcome-inner{ text-align:center; transform:translateY(14px); opacity:0; transition:all .7s cubic-bezier(.2,.8,.3,1.1); }
+.vip-welcome-overlay.show .vip-welcome-inner{ transform:translateY(0); opacity:1; }
+.vip-welcome-crest{ font-size:38px; margin-bottom:18px; filter:drop-shadow(0 0 14px rgba(232,200,126,.55)); }
+.vip-welcome-tag{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+  color:#B8952E; margin-bottom:14px;
+}
+.vip-welcome-name{
+  font-family:var(--font-display); font-size:34px; color:#F3E9C9;
+  background:linear-gradient(120deg,#E8C87E,#FFF6DC,#B8952E);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:10px;
+}
+.vip-welcome-sub{ font-size:13.5px; color:#8A805F; max-width:340px; margin:0 auto; line-height:1.6; }
+.vip-welcome-line{ width:64px; height:1px; background:linear-gradient(90deg,transparent,#B8952E,transparent); margin:22px auto; }
+
+/* =====================================================================
+   KHÁCH HÀNG ƯU TIÊN — theme đen/vàng cho toàn bộ dashboard
+===================================================================== */
+#dashWrap.vip-mode{ background:#0B0B0C; }
+#dashWrap.vip-mode .dash-side{ background:#000; }
+#dashWrap.vip-mode .dash-avatar{ background:linear-gradient(135deg,#E8C87E,#B8952E); color:#171408; }
+#dashWrap.vip-mode .dash-user-name{ color:#F3E9C9; }
+#dashWrap.vip-mode .dash-user-email{ color:#7A715A; }
+#dashWrap.vip-mode .dash-nav-item{ color:#B8AC90; }
+#dashWrap.vip-mode .dash-nav-item:hover{ background:rgba(232,200,126,.08); color:#F3E9C9; }
+#dashWrap.vip-mode .dash-nav-item.active{ background:linear-gradient(135deg,#E8C87E,#B8952E); color:#171408; }
+
+#dashWrap.vip-mode .dash-main{ background:#0B0B0C; }
+#dashWrap.vip-mode .section-head h2{ color:#F3E9C9; }
+#dashWrap.vip-mode .section-head p{ color:#7A715A; }
+
+#dashWrap.vip-mode .stat-card{ background:#141416; border-color:#26262A; }
+#dashWrap.vip-mode .stat-card .s-label{ color:#7A715A; }
+#dashWrap.vip-mode .stat-card .s-val{ color:#E8C87E; }
+
+#dashWrap.vip-mode .orders-table-wrap,
+#dashWrap.vip-mode .profile-card{ background:#141416; border-color:#26262A; }
+#dashWrap.vip-mode .orders-table-head{ border-color:#26262A; }
+#dashWrap.vip-mode .orders-table-head h3{ color:#EDE6D6; }
+#dashWrap.vip-mode table.orders-table th{ background:#1B1B1E; color:#B8AC90; border-color:#26262A; }
+#dashWrap.vip-mode table.orders-table td{ border-color:#212124; color:#D8CFC0; }
+#dashWrap.vip-mode table.orders-table tr:hover td{ background:#1A1A1C; }
+#dashWrap.vip-mode .order-code{ color:#E8C87E; }
+#dashWrap.vip-mode .orders-empty, #dashWrap.vip-mode .orders-loading{ color:#7A715A; }
+
+#dashWrap.vip-mode .btn-primary{ background:linear-gradient(135deg,#E8C87E,#B8952E); color:#171408; }
+#dashWrap.vip-mode .btn-ghost{ border-color:#33333A; color:#D8CFC0; }
+#dashWrap.vip-mode .field{ background:#1B1B1E; border-color:#2A2A2E; color:#EDE6D6; }
+#dashWrap.vip-mode label{ color:#B8AC90; }
+#dashWrap.vip-mode .profile-card h3{ color:#F3E9C9; }
+
+#dashWrap.vip-mode .cta-order{ background:linear-gradient(135deg,#1B1B1E,#0B0B0C); border:1px solid #2A2416; }
+#dashWrap.vip-mode .cta-order::before{ background:radial-gradient(circle,rgba(232,200,126,.22),transparent 70%); }
+#dashWrap.vip-mode .cta-order h3{ color:#F3E9C9; }
+#dashWrap.vip-mode .cta-order p{ color:#8A805F; }
+
+#dashWrap.vip-mode .notif-item.unread{ background:#241F12; }
+
+.vip-badge-pill{
+  display:inline-flex; align-items:center; gap:5px; padding:2px 10px; margin-left:8px;
+  border-radius:999px; font-size:10.5px; font-weight:700; letter-spacing:.03em;
+  background:linear-gradient(135deg,#E8C87E,#B8952E); color:#171408; vertical-align:middle;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+
+<!-- OVERLAY CHÀO MỪNG KHÁCH HÀNG ƯU TIÊN -->
+<div class="vip-welcome-overlay" id="vipWelcomeOverlay">
+  <div class="vip-welcome-inner">
+    <div class="vip-welcome-crest">✨</div>
+    <div class="vip-welcome-tag">Khách hàng ưu tiên</div>
+    <div class="vip-welcome-name" id="vipWelcomeName">Chào mừng trở lại</div>
+    <div class="vip-welcome-line"></div>
+    <div class="vip-welcome-sub">Cảm ơn bạn đã đồng hành cùng Phatdatagency. Trải nghiệm dịch vụ ưu tiên của bạn đang được chuẩn bị.</div>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav class="nav">
@@ -265,6 +382,18 @@ table.orders-table tr:hover td{ background:var(--paper); }
     <div class="nav-right">
       <a href="index.html">Trang chủ</a>
       <a href="showcase.html">Showcase</a>
+
+      <div style="position:relative;">
+        <button class="notif-bell" id="notifBell" style="display:none;" onclick="toggleNotifDropdown()" aria-label="Thông báo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-dropdown-head">Thông báo</div>
+          <div id="notifDropdownBody"><div style="padding:18px; font-size:13px; color:var(--ink-soft);">Đang tải...</div></div>
+        </div>
+      </div>
+
       <a href="index.html#services" class="btn btn-primary btn-sm">Đặt đơn</a>
     </div>
   </div>
@@ -556,6 +685,14 @@ table.orders-table tr:hover td{ background:var(--paper); }
 
 <script>
 /* ============================================================
+   PHÁT HIỆN LINK KHÔI PHỤC MẬT KHẨU
+   Đọc thẳng URL hash NGAY LÚC NÀY (trước khi tạo Supabase client),
+   vì Supabase sẽ tự xử lý và XOÁ token khỏi URL rất nhanh sau đó —
+   nếu chờ tới lúc bắt event onAuthStateChange thì có thể đã bị trôi mất.
+============================================================ */
+const isRecoveryFlow = /type=recovery/.test(window.location.hash);
+
+/* ============================================================
    CONFIG
 ============================================================ */
 const CONFIG = {
@@ -564,20 +701,9 @@ const CONFIG = {
 };
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
-/* Đăng ký NGAY sau khi tạo client — Supabase xử lý token khôi phục trong URL
-   và có thể bắn event PASSWORD_RECOVERY ngay lúc này, nên phải lắng nghe
-   trước, không thể chờ tới lúc gọi init() ở cuối file (sẽ bị miss event). */
-let isRecoveryFlow = false;
+/* Vẫn giữ listener này như lớp bảo vệ thứ 2 (đăng xuất tự động khi user
+   đăng xuất ở tab khác) — nhưng không còn dùng để phát hiện recovery nữa. */
 sb.auth.onAuthStateChange((event) => {
-  if(event === 'PASSWORD_RECOVERY'){
-    isRecoveryFlow = true;
-    document.getElementById("authWrap").style.display = "block";
-    document.getElementById("loginWrap").style.display    = "none";
-    document.getElementById("registerWrap").style.display = "none";
-    document.getElementById("forgotWrap").style.display   = "none";
-    document.getElementById("resetWrap").style.display    = "flex";
-    exitDashboard();
-  }
   if(event === 'SIGNED_OUT'){ exitDashboard(); }
 });
 
@@ -878,7 +1004,7 @@ async function enterDashboard(){
   // Lấy thông tin hiển thị từ bảng profiles
   const { data: profile } = await sb
     .from('profiles')
-    .select('full_name, email, is_locked')
+    .select('full_name, email, is_locked, is_priority')
     .eq('id', session.user.id)
     .single();
 
@@ -894,25 +1020,58 @@ async function enterDashboard(){
   currentUser = {
     id: session.user.id,
     name: profile?.full_name || session.user.email,
-    email: profile?.email || session.user.email
+    email: profile?.email || session.user.email,
+    isPriority: !!profile?.is_priority
   };
 
   document.getElementById("authWrap").style.display = "none";
   document.getElementById("dashWrap").classList.add("show");
+  document.getElementById("dashWrap").classList.toggle("vip-mode", currentUser.isPriority);
 
   const initial = (currentUser.name || "U")[0].toUpperCase();
   document.getElementById("sideAvatar").textContent = initial;
-  document.getElementById("sideName").textContent   = currentUser.name  || "Người dùng";
+  document.getElementById("sideName").innerHTML = escHtml(currentUser.name || "Người dùng")
+    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Priority</span>' : '');
   document.getElementById("sideEmail").textContent  = currentUser.email || "";
   document.getElementById("p_name").value  = currentUser.name  || "";
   document.getElementById("p_email").value = currentUser.email || "";
 
   switchDashTab("orders");
   loadUserOrders();
+
+  document.getElementById("notifBell").style.display = "flex";
+  loadNotifications();
+
+  // Khách hàng ưu tiên -> hiện hiệu ứng chào mừng trước khi vào dashboard
+  if(currentUser.isPriority && !sessionStorage.getItem('vipWelcomeShown_' + currentUser.id)){
+    showVipWelcome(currentUser.name);
+    sessionStorage.setItem('vipWelcomeShown_' + currentUser.id, '1');
+  }
+}
+
+function showVipWelcome(name){
+  const overlay = document.getElementById('vipWelcomeOverlay');
+  document.getElementById('vipWelcomeName').textContent = 'Chào mừng trở lại, ' + (name || '');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }, 2600);
+}
+
+/* Escape HTML nhỏ gọn dùng cho tên hiển thị kèm badge (khác với hàm esc() dùng cho text thuần) */
+function escHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
 }
 function exitDashboard(){
   document.getElementById("dashWrap").classList.remove("show");
+  document.getElementById("dashWrap").classList.remove("vip-mode");
   document.getElementById("authWrap").style.display = "block";
+  document.getElementById("notifBell").style.display = "none";
+  document.getElementById("notifDropdown").classList.remove("show");
   showLogin();
 }
 
@@ -1032,7 +1191,8 @@ async function handleUpdateProfile(){
       return;
     }
     currentUser.name = name;
-    document.getElementById("sideName").textContent = name;
+    document.getElementById("sideName").innerHTML = escHtml(name)
+      + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
     document.getElementById("sideAvatar").textContent = name[0].toUpperCase();
     okBox.textContent = "Đã cập nhật thông tin."; okBox.classList.add("show");
   } catch(err){
@@ -1086,13 +1246,101 @@ async function handleChangePassword(){
    INIT — kiểm tra session Supabase hiện có (tự khôi phục, không
    cần tự quản lý token vì supabase-js tự lưu trong localStorage)
 ============================================================ */
-(async function init(){
-  if(!isConfigured()){ if(!isRecoveryFlow) showLogin(); return; }
+/* ============================================================
+   CHUÔNG THÔNG BÁO — đọc từ bảng `notifications` (admin đăng ở
+   admin.html, tab "Thông báo KH"). Trạng thái "đã đọc" lưu theo
+   trình duyệt (localStorage), không cần bảng riêng cho từng user.
+============================================================ */
+const NOTIF_SEEN_KEY = 'pda_notif_last_seen';
+let cachedNotifs = [];
 
-  // Chờ 1 nhịp để supabase-js xử lý xong token trong URL (nếu có) trước khi
-  // quyết định hiện dashboard hay màn đăng nhập.
-  await new Promise(r => setTimeout(r, 80));
-  if(isRecoveryFlow) return; // listener ở trên đã xử lý hiện form đặt lại mật khẩu
+async function loadNotifications(){
+  if(!isConfigured()) return;
+  try{
+    const { data, error } = await sb
+      .from('notifications')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if(error) throw error;
+    cachedNotifs = data || [];
+  } catch(e){
+    document.getElementById('notifDropdownBody').innerHTML =
+      `<div style="padding:18px; font-size:12.5px; color:var(--ink-soft);">Không tải được thông báo.</div>`;
+    return;
+  }
+  renderNotifBadge();
+  renderNotifDropdown();
+}
+
+function renderNotifBadge(){
+  const lastSeen = localStorage.getItem(NOTIF_SEEN_KEY);
+  const unread = lastSeen
+    ? cachedNotifs.filter(n => new Date(n.created_at) > new Date(lastSeen)).length
+    : cachedNotifs.length;
+
+  const badge = document.getElementById('notifBadge');
+  if(unread > 0){
+    badge.style.display = 'block';
+    badge.textContent = unread > 9 ? '9+' : unread;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderNotifDropdown(){
+  const body = document.getElementById('notifDropdownBody');
+  if(!cachedNotifs.length){
+    body.innerHTML = `<div style="padding:18px; font-size:12.5px; color:var(--ink-soft);">Chưa có thông báo nào.</div>`;
+    return;
+  }
+  const lastSeen = localStorage.getItem(NOTIF_SEEN_KEY);
+  body.innerHTML = cachedNotifs.map(n => {
+    const isUnread = !lastSeen || new Date(n.created_at) > new Date(lastSeen);
+    return `<div class="notif-item ${isUnread ? 'unread' : ''}">
+      <div class="ni-title">${isUnread ? '🔵 ' : ''}${esc(n.title)}</div>
+      <div class="ni-msg">${esc(n.message)}</div>
+      <div class="ni-time">${new Date(n.created_at).toLocaleString('vi-VN')}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleNotifDropdown(){
+  const dd = document.getElementById('notifDropdown');
+  const willShow = !dd.classList.contains('show');
+  dd.classList.toggle('show', willShow);
+
+  if(willShow){
+    // Đánh dấu đã đọc tất cả khi mở dropdown
+    if(cachedNotifs.length){
+      localStorage.setItem(NOTIF_SEEN_KEY, cachedNotifs[0].created_at);
+    }
+    setTimeout(() => { renderNotifBadge(); renderNotifDropdown(); }, 300);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('notifDropdown');
+  const bell = document.getElementById('notifBell');
+  if(dd && dd.classList.contains('show') && !dd.contains(e.target) && !bell.contains(e.target)){
+    dd.classList.remove('show');
+  }
+});
+
+(async function init(){
+  if(isRecoveryFlow){
+    // Link khôi phục mật khẩu -> hiện form đặt mật khẩu mới, không vào dashboard.
+    document.getElementById("authWrap").style.display     = "block";
+    document.getElementById("loginWrap").style.display    = "none";
+    document.getElementById("registerWrap").style.display = "none";
+    document.getElementById("forgotWrap").style.display   = "none";
+    document.getElementById("resetWrap").style.display    = "flex";
+    document.getElementById("dashWrap").classList.remove("show");
+    return;
+  }
+
+  if(!isConfigured()){ showLogin(); return; }
 
   const { data } = await sb.auth.getSession();
   if(data?.session){

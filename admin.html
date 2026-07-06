@@ -401,6 +401,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
+    <button id="mobileTabNotifs"   onclick="switchTab('notifs')">Thông báo KH</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -438,6 +439,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabTraffic" onclick="switchTab('traffic')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8 12 14.7l-3-3-4 4"/></svg>
         Lượt truy cập
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabNotifs" onclick="switchTab('notifs')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Thông báo KH
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -543,7 +548,7 @@ textarea.field{ resize:vertical; min-height:70px; }
         <button class="btn btn-ghost btn-sm" onclick="loadUsersTable()">↻ Làm mới</button>
       </div>
 
-      <div class="dash-stats" style="grid-template-columns:repeat(3,1fr);">
+      <div class="dash-stats" style="grid-template-columns:repeat(4,1fr);">
         <div class="dash-stat-card">
           <div class="ds-label">Tổng tài khoản</div>
           <div class="ds-val" id="uStatAll">—</div>
@@ -555,6 +560,10 @@ textarea.field{ resize:vertical; min-height:70px; }
         <div class="dash-stat-card">
           <div class="ds-label">Đã khoá</div>
           <div class="ds-val" id="uStatLocked">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">✨ Khách ưu tiên</div>
+          <div class="ds-val" id="uStatPriority">—</div>
         </div>
       </div>
 
@@ -911,6 +920,44 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: THÔNG BÁO / TIPS GỬI CHO KHÁCH HÀNG (chuông ở account.html) -->
+    <div class="tab-panel" id="tabNotifs">
+      <div class="dash-top">
+        <div>
+          <h1>Thông báo cho khách hàng</h1>
+          <p>Hiện dưới dạng chuông 🔔 ở góc phải trang "Tài khoản" của khách. Dùng để gửi tin nhắn, tips bảo mật, thông báo chung.</p>
+        </div>
+      </div>
+
+      <div class="cfg-section" style="margin-bottom:24px;">
+        <div class="cfg-section-head"><div><h3>Đăng thông báo mới</h3></div></div>
+        <div class="cfg-body">
+          <div class="form-group">
+            <label>Tiêu đề</label>
+            <input type="text" class="field" id="ntf_title" placeholder="VD: Mẹo bảo mật tài khoản">
+          </div>
+          <div class="form-group">
+            <label>Nội dung</label>
+            <textarea class="field" id="ntf_message" rows="3" placeholder="Nội dung thông báo hiển thị cho khách hàng..."></textarea>
+          </div>
+          <div class="modal-error" id="ntfError"></div>
+          <button class="btn btn-primary" id="ntfSubmitBtn" onclick="handleCreateNotif()">📣 Đăng thông báo</button>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Đã đăng</h3>
+            <p>Tắt (ẩn) hoặc xoá thông báo cũ</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="ntfList" style="font-size:13px; color:var(--ink-soft);">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -960,11 +1007,21 @@ textarea.field{ resize:vertical; min-height:70px; }
         <label>Ảnh thumbnail (URL ảnh, hiển thị trên card)</label>
         <input type="text" class="field" id="prj_thumb" placeholder="https://images.unsplash.com/...">
         <small style="color:var(--ink-soft);font-size:11.5px;margin-top:4px;">URL ảnh trực tiếp (.jpg/.png) hoặc để trống</small>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('prj_thumbFile').click()">📁 Chọn ảnh từ máy</button>
+          <span id="prj_thumbStatus" style="font-size:12px; color:var(--ink-soft);"></span>
+        </div>
+        <input type="file" id="prj_thumbFile" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" onchange="handleProjectImageUpload(this,'prj_thumb','prj_thumbStatus')">
       </div>
       <div class="form-group">
         <label>Ảnh chi tiết / Link preview (URL ảnh lớn hoặc URL trang demo để embed)</label>
         <input type="text" class="field" id="prj_detail" placeholder="https://...">
         <small style="color:var(--ink-soft);font-size:11.5px;margin-top:4px;">Để trống thì dùng ảnh thumbnail. Nếu là URL trang web sẽ embed bằng iframe.</small>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('prj_detailFile').click()">📁 Chọn ảnh từ máy</button>
+          <span id="prj_detailStatus" style="font-size:12px; color:var(--ink-soft);"></span>
+        </div>
+        <input type="file" id="prj_detailFile" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" onchange="handleProjectImageUpload(this,'prj_detail','prj_detailStatus')">
       </div>
       <div class="form-group">
         <label>Trạng thái</label>
@@ -1317,7 +1374,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1335,6 +1392,7 @@ function switchTab(tab){
   if(tab === 'payment')  loadPaymentConfig();
   if(tab === 'contact')  loadContactConfig();
   if(tab === 'traffic')  loadTrafficStats();
+  if(tab === 'notifs')   loadCustomerNotifs();
 }
 
 /* =====================================================================
@@ -1648,6 +1706,8 @@ function openProjectModal(id){
     document.getElementById('prj_type').value   = 'Website';
     document.getElementById('prj_status').value = 'Hiển thị';
     document.getElementById('prj_order').value  = allProjects.length + 1;
+    document.getElementById('prj_thumbStatus').textContent  = '';
+    document.getElementById('prj_detailStatus').textContent = '';
   }
 
   document.getElementById('projectModalOverlay').classList.add('show');
@@ -1757,22 +1817,24 @@ async function loadUsersTable(){
     allUsers = (data||[]).map(u => ({
       id: u.id, name: u.full_name, email: u.email,
       registeredAt: new Date(u.created_at).toLocaleDateString('vi-VN'),
-      status: u.is_locked ? 'Đã khoá' : 'Hoạt động'
+      status: u.is_locked ? 'Đã khoá' : 'Hoạt động',
+      isPriority: !!u.is_priority
     }));
     renderUsersTable(allUsers);
   } catch{ body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`; }
 }
 
 function renderUsersTable(users){
-  document.getElementById('uStatAll').textContent    = users.length;
-  document.getElementById('uStatActive').textContent = users.filter(u => u.status === 'Hoạt động').length;
-  document.getElementById('uStatLocked').textContent = users.filter(u => u.status === 'Đã khoá').length;
+  document.getElementById('uStatAll').textContent      = users.length;
+  document.getElementById('uStatActive').textContent   = users.filter(u => u.status === 'Hoạt động').length;
+  document.getElementById('uStatLocked').textContent   = users.filter(u => u.status === 'Đã khoá').length;
+  document.getElementById('uStatPriority').textContent = users.filter(u => u.isPriority).length;
 
   const body = document.getElementById('usersTableBody');
   if(!users.length){ body.innerHTML = `<div class="dash-empty">Chưa có tài khoản nào.</div>`; return; }
 
   let html = `<table class="dash-table"><thead><tr>
-    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Thao tác</th>
+    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Thao tác</th>
   </tr></thead><tbody>`;
   users.forEach(u => {
     const locked = u.status === 'Đã khoá';
@@ -1781,10 +1843,17 @@ function renderUsersTable(users){
       <td style="font-family:var(--font-mono);font-size:12.5px;">${escapeHtml(u.email||'')}</td>
       <td style="font-size:12px;color:var(--ink-soft);">${escapeHtml(u.registeredAt||'')}</td>
       <td><span class="svc-status-pill ${locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
+      <td>${u.isPriority
+          ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:#1a1a1a;color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
+          : `<span style="font-size:11.5px;color:var(--ink-soft);">Thường</span>`}
+      </td>
       <td>
         <div class="svc-actions">
           <button onclick="handleToggleUser('${u.id}')" style="${locked?'color:var(--sage);':'color:#A8311A;'}">
             ${locked ? 'Mở khoá' : 'Khoá'}
+          </button>
+          <button onclick="handleTogglePriority('${u.id}')" style="color:${u.isPriority ? 'var(--ink-soft)' : '#B8860B'};">
+            ${u.isPriority ? 'Hạ hạng' : '✨ Thăng hạng'}
           </button>
         </div>
       </td>
@@ -1792,6 +1861,21 @@ function renderUsersTable(users){
   });
   html += `</tbody></table>`;
   body.innerHTML = html;
+}
+
+async function handleTogglePriority(id){
+  const user = allUsers.find(u => u.id === id);
+  const willPromote = user && !user.isPriority;
+  const actionLabel = willPromote ? 'thăng hạng lên Ưu tiên' : 'chuyển về hạng Thường';
+  if(!confirm(`Bạn muốn ${actionLabel} tài khoản "${user?.email || id}"?`)) return;
+  try{
+    const { error } = await sb.from('profiles').update({ is_priority: willPromote }).eq('id', id);
+    if(!error){
+      showToast(`Đã ${actionLabel}.`);
+      allUsers = [];
+      loadUsersTable();
+    } else showToast('Lỗi: ' + error.message);
+  } catch{ showToast('Không thể kết nối.'); }
 }
 
 async function handleToggleUser(id){
@@ -1880,6 +1964,49 @@ async function saveAnnounceConfig(){
     showToast('Lỗi: ' + e.message);
   } finally {
     btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+/* Upload ảnh dự án (thumbnail / ảnh chi tiết) từ máy lên Supabase Storage,
+   dùng chung bucket "site-assets" đã tạo cho ảnh popup thông báo. */
+async function handleProjectImageUpload(input, targetFieldId, statusElId){
+  const file = input.files?.[0];
+  if(!file) return;
+  const statusEl = document.getElementById(statusElId);
+
+  if(!isBackendConfigured()){
+    statusEl.textContent = 'Chưa cấu hình Supabase.';
+    return;
+  }
+  if(file.size > 5 * 1024 * 1024){
+    statusEl.textContent = 'Ảnh quá lớn (tối đa 5MB).';
+    input.value = '';
+    return;
+  }
+
+  statusEl.textContent = 'Đang tải lên...';
+  try{
+    const ext = file.name.split('.').pop().toLowerCase();
+    const path = `projects/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+
+    const { error: upErr } = await sb.storage.from(ANNOUNCE_BUCKET).upload(path, file, {
+      cacheControl: '3600', upsert: false
+    });
+    if(upErr) throw upErr;
+
+    const { data: pub } = sb.storage.from(ANNOUNCE_BUCKET).getPublicUrl(path);
+    const publicUrl = pub?.publicUrl;
+    if(!publicUrl) throw new Error('Không lấy được URL ảnh sau khi tải lên.');
+
+    document.getElementById(targetFieldId).value = publicUrl;
+    statusEl.textContent = '✅ Đã tải ảnh lên.';
+  } catch(e){
+    statusEl.textContent = 'Lỗi tải ảnh: ' + e.message
+      + (e.message?.includes('not found') || e.message?.includes('Bucket')
+        ? ' (kiểm tra bucket "site-assets" đã tạo public chưa)'
+        : '');
+  } finally {
+    input.value = '';
   }
 }
 
@@ -2286,6 +2413,97 @@ function renderTrafficReferrer(rows, elId){
         <td style="padding:7px 0; text-align:right; color:var(--ink-soft); white-space:nowrap;">${n.toLocaleString('vi-VN')} lượt (${Math.round(n/total*100)}%)</td>
       </tr>`).join('')}
   </table>`;
+}
+
+/* =====================================================================
+   THÔNG BÁO KHÁCH HÀNG — bảng `notifications`, hiện dạng chuông ở account.html
+===================================================================== */
+let allNotifs = [];
+
+async function loadCustomerNotifs(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  const listEl = document.getElementById('ntfList');
+  try{
+    const { data, error } = await sb
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if(error) throw error;
+    allNotifs = data || [];
+  } catch(e){
+    listEl.innerHTML = `<span style="color:var(--coral-deep);">Không tải được: ${escapeHtml(e.message)}<br>
+      (kiểm tra đã tạo bảng <code>notifications</code> chưa)</span>`;
+    return;
+  }
+  renderNotifList();
+}
+
+function renderNotifList(){
+  const listEl = document.getElementById('ntfList');
+  if(!allNotifs.length){ listEl.textContent = 'Chưa đăng thông báo nào.'; return; }
+
+  listEl.innerHTML = allNotifs.map(n => `
+    <div style="padding:12px 0; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+      <div style="flex:1;">
+        <div style="font-weight:600; color:var(--ink); font-size:14px; ${n.is_active ? '' : 'opacity:.5; text-decoration:line-through;'}">${escapeHtml(n.title)}</div>
+        <div style="margin-top:3px; color:var(--ink-soft);">${escapeHtml(n.message)}</div>
+        <div style="margin-top:4px; font-size:11px; color:var(--ink-soft);">${new Date(n.created_at).toLocaleString('vi-VN')}</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-shrink:0;">
+        <button class="btn btn-ghost btn-sm" onclick="toggleNotifActive(${n.id}, ${!n.is_active})">${n.is_active ? 'Ẩn' : 'Hiện lại'}</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--coral-deep);" onclick="deleteNotif(${n.id})">Xoá</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function handleCreateNotif(){
+  const title   = document.getElementById('ntf_title').value.trim();
+  const message = document.getElementById('ntf_message').value.trim();
+  const errBox  = document.getElementById('ntfError');
+  errBox.classList.remove('show');
+
+  if(!title || !message){
+    errBox.textContent = "Vui lòng nhập đầy đủ tiêu đề và nội dung.";
+    errBox.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('ntfSubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang đăng...';
+
+  try{
+    const { error } = await sb.from('notifications').insert({ title, message, is_active: true });
+    if(error) throw error;
+    document.getElementById('ntf_title').value = '';
+    document.getElementById('ntf_message').value = '';
+    showToast('✅ Đã đăng thông báo!');
+    await loadCustomerNotifs();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function toggleNotifActive(id, newVal){
+  try{
+    const { error } = await sb.from('notifications').update({ is_active: newVal }).eq('id', id);
+    if(error) throw error;
+    await loadCustomerNotifs();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+async function deleteNotif(id){
+  if(!confirm('Xoá thông báo này? Không thể hoàn tác.')) return;
+  try{
+    const { error } = await sb.from('notifications').delete().eq('id', id);
+    if(error) throw error;
+    await loadCustomerNotifs();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
 }
 
 /* =====================================================================
