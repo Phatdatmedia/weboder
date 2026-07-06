@@ -800,10 +800,53 @@ textarea.field{ resize:vertical; min-height:90px; }
   transition: background .18s ease, border-color .18s ease, transform .18s ease;
 }
 .announce-close:hover{ background: var(--ink); border-color:var(--ink); color:var(--white); transform: rotate(90deg); }
+
+/* =====================================================================
+   KHÁCH HÀNG ƯU TIÊN — overlay chào mừng (đồng bộ với account.html)
+===================================================================== */
+.vip-welcome-overlay{
+  position:fixed; inset:0; z-index:3000;
+  background:radial-gradient(circle at 50% 30%, #1a1710 0%, #000 75%);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .5s ease;
+}
+.vip-welcome-overlay.show{ opacity:1; pointer-events:auto; }
+.vip-welcome-inner{ text-align:center; transform:translateY(14px); opacity:0; transition:all .7s cubic-bezier(.2,.8,.3,1.1); padding:0 24px; }
+.vip-welcome-overlay.show .vip-welcome-inner{ transform:translateY(0); opacity:1; }
+.vip-welcome-crest{ font-size:38px; margin-bottom:18px; filter:drop-shadow(0 0 14px rgba(232,200,126,.55)); }
+.vip-welcome-tag{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+  color:#B8952E; margin-bottom:14px;
+}
+.vip-welcome-name{
+  font-family:var(--font-display); font-size:34px; color:#F3E9C9;
+  background:linear-gradient(120deg,#E8C87E,#FFF6DC,#B8952E);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:10px;
+}
+.vip-welcome-sub{ font-size:13.5px; color:#8A805F; max-width:340px; margin:0 auto; line-height:1.6; }
+.vip-welcome-line{ width:64px; height:1px; background:linear-gradient(90deg,transparent,#B8952E,transparent); margin:22px auto; }
+
+.vip-nav-badge{
+  display:inline-flex; align-items:center; gap:4px;
+  background:linear-gradient(135deg,#E8C87E,#B8952E); color:#171408 !important;
+  border-color:transparent !important;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+
+<!-- OVERLAY CHÀO MỪNG KHÁCH HÀNG ƯU TIÊN -->
+<div class="vip-welcome-overlay" id="vipWelcomeOverlay">
+  <div class="vip-welcome-inner">
+    <div class="vip-welcome-crest">✨</div>
+    <div class="vip-welcome-tag">Khách hàng ưu tiên</div>
+    <div class="vip-welcome-name" id="vipWelcomeName">Chào mừng trở lại</div>
+    <div class="vip-welcome-line"></div>
+    <div class="vip-welcome-sub">Cảm ơn bạn đã đồng hành cùng Phatdatagency. Rất vui được phục vụ bạn hôm nay.</div>
+  </div>
+</div>
 
 <!-- ======================= MAIN PAGE ======================= -->
 <div id="main-page">
@@ -1298,6 +1341,37 @@ const CONFIG = {
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* =====================================================================
+   Nạp cấu hình thanh toán thực tế từ Supabase (site_config, key
+   'payment_config') — đây là nơi admin sửa ở tab "Thanh toán". Nếu chưa
+   cấu hình gì thì giữ nguyên giá trị mặc định khai báo cứng ở trên.
+   Gọi hàm này và CHỜ XONG trước khi cho phép mở form đặt hàng / thanh toán.
+===================================================================== */
+let paymentConfigReady = null; // Promise, dùng để đảm bảo load xong trước khi submit đơn
+function loadPaymentConfigFromSupabase(){
+  if(!isBackendConfigured()) return Promise.resolve();
+  paymentConfigReady = (async () => {
+    try{
+      const { data, error } = await sb.from('site_config').select('value').eq('key', 'payment_config').single();
+      if(error) throw error;
+      const c = data?.value;
+      if(!c) return;
+      if(c.depositAmount) CONFIG.DEPOSIT_AMOUNT   = Number(c.depositAmount);
+      if(c.depositDesc)   CONFIG.PAYOS_DESCRIPTION = c.depositDesc;
+      if(c.bankName)      CONFIG.BANK_NAME        = c.bankName;
+      if(c.bankId)        CONFIG.BANK_ID          = c.bankId;
+      if(c.accNum)        CONFIG.ACCOUNT_NUMBER   = c.accNum;
+      if(c.accName)       CONFIG.ACCOUNT_NAME     = c.accName;
+      if(c.returnUrl)     CONFIG.PAYOS_RETURN_URL = c.returnUrl;
+      if(c.cancelUrl)     CONFIG.PAYOS_CANCEL_URL = c.cancelUrl;
+    } catch(e){
+      console.warn('Không tải được payment_config, dùng giá trị mặc định trong code:', e.message);
+    }
+  })();
+  return paymentConfigReady;
+}
+loadPaymentConfigFromSupabase();
+
+/* =====================================================================
    TOAST
 ===================================================================== */
 let toastTimer = null;
@@ -1471,6 +1545,8 @@ function resetOrderForm(){
 }
 
 async function handleSubmitOrder(){
+  if(paymentConfigReady) await paymentConfigReady; // đảm bảo dùng đúng cấu hình mới nhất từ admin
+
   const name = document.getElementById('f_name').value.trim();
   const phone = document.getElementById('f_phone').value.trim();
   const email = document.getElementById('f_email').value.trim();
@@ -2165,19 +2241,46 @@ async function initNavAuth(){
     // Lấy tên hiển thị từ bảng profiles
     const { data: profile } = await sb
       .from('profiles')
-      .select('full_name')
+      .select('full_name, is_priority')
       .eq('id', session.user.id)
       .single();
     const displayName = profile?.full_name || session.user.email;
-    accountBtn.textContent = '👤 ' + displayName.split(' ').pop();
+    const isPriority  = !!profile?.is_priority;
+
+    accountBtn.textContent = (isPriority ? '✨ ' : '👤 ') + displayName.split(' ').pop();
+    accountBtn.classList.toggle('vip-nav-badge', isPriority);
     accountBtn.style.display = 'inline-flex';
     loginBtn.style.display   = 'none';
+
+    // Khách hàng ưu tiên -> hiện hiệu ứng chào mừng, tự reset lại sau mỗi 3 tiếng
+    // (dùng chung key với account.html nên không bị chào lặp lại khi khách chuyển trang)
+    if(isPriority){
+      const vipKey = 'vipWelcomeLastShown_' + session.user.id;
+      const lastShown = Number(localStorage.getItem(vipKey) || 0);
+      const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+      if(Date.now() - lastShown > THREE_HOURS_MS){
+        showVipWelcome(displayName);
+        localStorage.setItem(vipKey, String(Date.now()));
+      }
+    }
   } else {
     accountBtn.style.display = 'none';
     loginBtn.style.display   = 'inline-flex';
   }
 }
 initNavAuth();
+
+function showVipWelcome(name){
+  const overlay = document.getElementById('vipWelcomeOverlay');
+  if(!overlay) return;
+  document.getElementById('vipWelcomeName').textContent = 'Chào mừng trở lại, ' + (name || '');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }, 2600);
+}
 
 // Tự cập nhật nav khi trạng thái đăng nhập thay đổi
 // Đồng thời reload grid dịch vụ nếu đang trống (xảy ra khi auth session

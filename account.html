@@ -1031,7 +1031,7 @@ async function enterDashboard(){
   const initial = (currentUser.name || "U")[0].toUpperCase();
   document.getElementById("sideAvatar").textContent = initial;
   document.getElementById("sideName").innerHTML = escHtml(currentUser.name || "Người dùng")
-    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Priority</span>' : '');
+    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
   document.getElementById("sideEmail").textContent  = currentUser.email || "";
   document.getElementById("p_name").value  = currentUser.name  || "";
   document.getElementById("p_email").value = currentUser.email || "";
@@ -1042,10 +1042,15 @@ async function enterDashboard(){
   document.getElementById("notifBell").style.display = "flex";
   loadNotifications();
 
-  // Khách hàng ưu tiên -> hiện hiệu ứng chào mừng trước khi vào dashboard
-  if(currentUser.isPriority && !sessionStorage.getItem('vipWelcomeShown_' + currentUser.id)){
-    showVipWelcome(currentUser.name);
-    sessionStorage.setItem('vipWelcomeShown_' + currentUser.id, '1');
+  // Khách hàng ưu tiên -> hiện hiệu ứng chào mừng, tự reset lại sau mỗi 3 tiếng
+  if(currentUser.isPriority){
+    const vipKey = 'vipWelcomeLastShown_' + currentUser.id;
+    const lastShown = Number(localStorage.getItem(vipKey) || 0);
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+    if(Date.now() - lastShown > THREE_HOURS_MS){
+      showVipWelcome(currentUser.name);
+      localStorage.setItem(vipKey, String(Date.now()));
+    }
   }
 }
 
