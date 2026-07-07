@@ -10,15 +10,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:        #F2EEE6;
-  --paper-deep:   #E9E2D4;
-  --ink:          #211C16;
-  --ink-soft:     #5B5347;
-  --line:         #D8D0BF;
-  --coral:        #FF4B2E;
-  --coral-deep:   #D6391E;
-  --coral-tint:   #FFE4DB;
-  --sage:         #6B7A5E;
+  --paper:        #121110;   /* nền chính — than đen ấm */
+  --paper-deep:   #19100D;   /* nền phụ (header bảng, hover nhẹ) — hơi ngả nâu cháy */
+  --surface:      #1E1B18;   /* bề mặt nổi khối: card, modal, ô nhập liệu */
+  --surface-2:    #26221D;   /* bề mặt nổi khối cấp 2 (hover trên surface) */
+  --ink-deep:     #0A0908;   /* đen sâu nhất — dùng cho nút chính, sidebar, toast */
+  --ink:          #F4EFE6;   /* chữ chính — kem sáng ấm */
+  --ink-soft:     #9C9284;   /* chữ phụ — xám ấm */
+  --line:         #322D27;   /* viền — xám than tinh tế */
+  --coral:        #FF5A3C;   /* điểm nhấn — cam rực, tương phản tốt trên nền tối */
+  --coral-deep:   #FF8A6B;   /* biến thể sáng hơn dùng làm chữ/nhãn trên nền tối */
+  --coral-tint:   rgba(255,90,60,0.13);
+  --sage:         #8FB07E;
+  --danger:       #FF6B5C;
   --white:        #FFFCF6;
 
   --font-display: 'Fraunces', serif;
@@ -29,8 +33,8 @@
   --radius-md: 10px;
   --radius-lg: 22px;
 
-  --shadow-card: 0 1px 2px rgba(33,28,22,0.04), 0 8px 24px -8px rgba(33,28,22,0.10);
-  --shadow-pop:  0 4px 8px rgba(33,28,22,0.06), 0 24px 48px -16px rgba(33,28,22,0.20);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px -8px rgba(0,0,0,0.5);
+  --shadow-pop:  0 4px 14px rgba(0,0,0,0.45), 0 32px 64px -20px rgba(0,0,0,0.65);
 }
 
 *{ box-sizing: border-box; margin:0; padding:0; }
@@ -60,20 +64,21 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
   transition: transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
   white-space:nowrap;
 }
-.btn-primary{ background: var(--ink); color: var(--white); }
-.btn-primary:hover{ background: var(--coral); transform: translateY(-2px); box-shadow: 0 10px 24px -8px rgba(255,75,46,0.55); }
+.btn-primary{ background: var(--ink-deep); color: var(--white); }
+.btn-primary:hover{ background: var(--coral); transform: translateY(-2px); box-shadow: 0 10px 24px -8px rgba(255,90,60,0.55); }
 .btn-ghost{ background: transparent; border-color: var(--ink); color: var(--ink); }
-.btn-ghost:hover{ background: var(--ink); color: var(--white); transform: translateY(-2px); }
+.btn-ghost:hover{ background: var(--ink-deep); color: var(--white); transform: translateY(-2px); }
 .btn-sm{ padding: 10px 18px; font-size: 13px; }
 .btn:active{ transform: translateY(0); }
 .btn[disabled]{ opacity:.5; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
 
 .field{
   width:100%; padding: 14px 16px; border:1.5px solid var(--line); border-radius: var(--radius-sm);
-  background: var(--paper); font-size:14.5px;
+  background: var(--paper); color: var(--ink); font-size:14.5px;
   transition: border-color .18s ease, background .18s ease;
 }
-.field:focus{ outline:none; border-color: var(--ink); background: var(--white); }
+.field::placeholder{ color: var(--ink-soft); opacity:0.75; }
+.field:focus{ outline:none; border-color: var(--coral); background: var(--surface-2); }
 
 ::-webkit-scrollbar{ width:10px; }
 ::-webkit-scrollbar-track{ background: var(--paper); }
@@ -91,7 +96,7 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .login-box{
   width:100%;
   max-width: 380px;
-  background: var(--white);
+  background: var(--surface);
   border:1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 40px 36px;
@@ -107,7 +112,7 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .login-box .login-sub{ font-size:13.5px; color: var(--ink-soft); margin-bottom:28px; }
 .login-box label{ font-size:12.5px; font-weight:600; color: var(--ink-soft); display:block; margin-bottom:7px; }
 .login-box .field{ margin-bottom:8px; }
-.login-error{ color:#A8311A; font-size:13px; min-height:18px; margin-bottom:10px; display:none; }
+.login-error{ color:var(--danger); font-size:13px; min-height:18px; margin-bottom:10px; display:none; }
 .login-error.show{ display:block; }
 .login-box button{ width:100%; margin-top:8px; }
 
@@ -116,8 +121,8 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .dash-sidebar{
   width: 240px;
   flex-shrink:0;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--ink-deep);
+  color: var(--ink);
   padding: 28px 20px;
   display:flex;
   flex-direction:column;
@@ -147,12 +152,12 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .dash-top p{ color: var(--ink-soft); font-size:13.5px; margin-top:4px; }
 
 .dash-stats{ display:grid; grid-template-columns: repeat(4,1fr); gap:18px; margin-bottom:32px; }
-.dash-stat-card{ background: var(--white); border:1px solid var(--line); border-radius: var(--radius-md); padding:20px; }
+.dash-stat-card{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius-md); padding:20px; }
 .dash-stat-card .ds-label{ font-family: var(--font-mono); font-size:11px; color: var(--ink-soft); text-transform:uppercase; }
 .dash-stat-card .ds-val{ font-family: var(--font-display); font-size:32px; margin-top:8px; }
 .dash-stat-card .ds-sub{ font-size:12px; color: var(--sage); margin-top:4px; }
 
-.dash-table-wrap{ background: var(--white); border:1px solid var(--line); border-radius: var(--radius-md); overflow:hidden; }
+.dash-table-wrap{ background: var(--surface); border:1px solid var(--line); border-radius: var(--radius-md); overflow:hidden; }
 .dash-table-head{ display:flex; justify-content:space-between; align-items:center; padding: 18px 22px; border-bottom:1px solid var(--line); }
 .dash-table-head h3{ font-size:16px; font-family: var(--font-body); font-weight:600; }
 .dash-search{ position:relative; }
@@ -166,15 +171,15 @@ table.dash-table th{
 }
 table.dash-table td{ padding: 14px 22px; border-bottom:1px solid var(--line); font-size:13.5px; }
 table.dash-table tr:last-child td{ border-bottom:none; }
-table.dash-table tr:hover td{ background: var(--paper); }
+table.dash-table tr:hover td{ background: var(--surface-2); }
 .dt-code{ font-family: var(--font-mono); font-size:12.5px; }
 .or-status{
   display:inline-flex; padding:6px 14px; border-radius:999px; font-size:12.5px; font-weight:600; font-family: var(--font-mono);
 }
-.status-pending{ background:#FFF0DC; color:#9A6300; }
-.status-progress{ background:#DCEBFF; color:#1A53A8; }
-.status-done{ background:#DFF3E1; color:#226B30; }
-.status-cancel{ background:#FBE0DC; color:#A8311A; }
+.status-pending{ background:rgba(224,181,104,0.15); color:#E7C083; }
+.status-progress{ background:rgba(127,168,224,0.15); color:#93B8ED; }
+.status-done{ background:rgba(127,192,137,0.15); color:#8FD09E; }
+.status-cancel{ background:rgba(224,139,122,0.15); color:#F0A290; }
 .dash-empty{ padding: 60px 20px; text-align:center; color: var(--ink-soft); font-size:14px; }
 .dash-loading{ padding: 60px 20px; text-align:center; color: var(--ink-soft); font-size:14px; font-family: var(--font-mono); }
 
@@ -183,7 +188,7 @@ table.dash-table tr:hover td{ background: var(--paper); }
   display:none;
   gap:8px;
   padding: 12px 16px;
-  background: var(--ink);
+  background: var(--ink-deep);
   position:sticky;
   top:0;
   z-index:50;
@@ -223,7 +228,7 @@ table.dash-table tr:hover td{ background: var(--paper); }
 /* ====================== STATUS SELECT (trong bảng) ====================== */
 .status-select{
   font-family: var(--font-mono); font-size:11.5px; padding:6px 10px; border-radius:999px;
-  border:1.5px solid var(--line); background:var(--white); cursor:pointer;
+  border:1.5px solid var(--line); background:var(--surface-2); color:var(--ink); cursor:pointer;
 }
 .status-select.status-pending{ border-color:#E0B568; }
 .status-select.status-progress{ border-color:#7FA8E0; }
@@ -239,47 +244,47 @@ table.dash-table tr:hover td{ background: var(--paper); }
 .svc-status-pill{
   font-family: var(--font-mono); font-size:11.5px; padding:5px 12px; border-radius:999px; font-weight:600;
 }
-.svc-status-active{ background:#DFF3E1; color:#226B30; }
-.svc-status-inactive{ background:#EFE8DA; color:#7A7060; }
+.svc-status-active{ background:rgba(127,192,137,0.15); color:#8FD09E; }
+.svc-status-inactive{ background:rgba(156,146,132,0.15); color:var(--ink-soft); }
 .svc-actions{ display:flex; gap:8px; }
 .svc-actions button{
-  font-size:12px; padding:7px 12px; border-radius:8px; border:1.5px solid var(--line); background:var(--white);
+  font-size:12px; padding:7px 12px; border-radius:8px; border:1.5px solid var(--line); background:var(--surface-2); color:var(--ink);
   display:inline-flex; align-items:center; gap:5px;
 }
-.svc-actions button:hover{ border-color: var(--ink); }
-.svc-actions button.danger:hover{ border-color:#A8311A; color:#A8311A; }
+.svc-actions button:hover{ border-color: var(--coral); color: var(--coral-deep); }
+.svc-actions button.danger:hover{ border-color:var(--danger); color:var(--danger); }
 
 /* ====================== SERVICE MODAL ====================== */
 .modal-overlay{
-  position:fixed; inset:0; background: rgba(33,28,22,0.55); backdrop-filter: blur(3px);
+  position:fixed; inset:0; background: rgba(0,0,0,0.65); backdrop-filter: blur(3px);
   z-index:1000; display:none; align-items:flex-start; justify-content:center;
   padding: 40px 20px; overflow-y:auto;
 }
 .modal-overlay.show{ display:flex; }
 .modal{
-  background: var(--paper); border-radius: var(--radius-lg); max-width: 520px; width:100%;
-  margin-top: 60px; box-shadow: var(--shadow-pop);
+  background: var(--surface); border-radius: var(--radius-lg); max-width: 520px; width:100%;
+  margin-top: 60px; box-shadow: var(--shadow-pop); border:1px solid var(--line);
 }
 .modal-head{ display:flex; justify-content:space-between; align-items:center; padding: 22px 26px; border-bottom: 1px solid var(--line); }
 .modal-head h3{ font-size:19px; font-family: var(--font-display); font-weight:600; }
 .modal-close{
-  width:32px; height:32px; border-radius:50%; border:1.5px solid var(--line); background:var(--white);
+  width:32px; height:32px; border-radius:50%; border:1.5px solid var(--line); background:var(--surface-2); color:var(--ink);
   display:flex; align-items:center; justify-content:center;
 }
-.modal-close:hover{ background: var(--ink); border-color:var(--ink); color:var(--white); }
+.modal-close:hover{ background: var(--ink-deep); border-color:var(--ink-deep); color:var(--white); }
 .modal-body{ padding: 22px 26px 26px; }
 .form-group{ display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
 .form-group label{ font-size:12.5px; font-weight:600; color: var(--ink-soft); }
 .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 textarea.field{ resize:vertical; min-height:70px; }
-.modal-error{ color:#A8311A; font-size:13px; margin-bottom:10px; display:none; }
+.modal-error{ color:var(--danger); font-size:13px; margin-bottom:10px; display:none; }
 .modal-error.show{ display:block; }
 .modal-submit-row{ display:flex; justify-content:flex-end; gap:10px; margin-top:6px; }
 
 /* ====================== TOAST ====================== */
 .toast{
   position:fixed; bottom:24px; left:50%; transform: translateX(-50%) translateY(20px);
-  background: var(--ink); color: var(--white);
+  background: var(--surface-2); color: var(--white); border:1px solid var(--line);
   padding: 14px 22px; border-radius: 999px; font-size:13.5px;
   display:flex; align-items:center; gap:10px;
   box-shadow: var(--shadow-pop);
@@ -292,7 +297,7 @@ textarea.field{ resize:vertical; min-height:70px; }
 
 /* ====================== ANNOUNCE & PAYMENT CONFIG ====================== */
 .cfg-section{
-  background: var(--white);
+  background: var(--surface);
   border:1px solid var(--line);
   border-radius: var(--radius-md);
   margin-bottom: 22px;
@@ -341,7 +346,7 @@ textarea.field{ resize:vertical; min-height:70px; }
   margin-top:16px; font-size:13px; color:var(--ink-soft);
 }
 .announce-preview.has-content{
-  background:var(--white); text-align:left; padding:0; overflow:hidden;
+  background:var(--surface-2); text-align:left; padding:0; overflow:hidden;
 }
 .ap-img{ width:100%; max-height:160px; object-fit:cover; display:block; }
 .ap-body{ padding:16px 18px 10px; }
@@ -349,7 +354,7 @@ textarea.field{ resize:vertical; min-height:70px; }
 .ap-title{ font-family:var(--font-display); font-size:17px; font-weight:600; margin-bottom:5px; }
 .ap-desc{ font-size:13px; color:var(--ink-soft); line-height:1.55; }
 .ap-footer{ padding:12px 18px 14px; display:flex; justify-content:flex-end; gap:10px; }
-.ap-btn{ display:inline-block; padding:9px 18px; border-radius:999px; background:var(--ink); color:var(--white); font-size:13px; font-weight:600; }
+.ap-btn{ display:inline-block; padding:9px 18px; border-radius:999px; background:var(--ink-deep); color:var(--white); font-size:13px; font-weight:600; }
 
 /* Payment method cards */
 .pay-method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
@@ -366,8 +371,8 @@ textarea.field{ resize:vertical; min-height:70px; }
   font-family:var(--font-mono); font-size:11px; padding:4px 10px; border-radius:999px;
   border:1px solid var(--line); color:var(--ink-soft); background:var(--paper);
 }
-.chip.on{ background:rgba(34,107,48,.08); border-color:#7FC089; color:#226B30; }
-.chip.off{ background:rgba(168,49,26,.08); border-color:#E08B7A; color:#A8311A; }
+.chip.on{ background:rgba(127,192,137,0.12); border-color:#7FC089; color:#8FD09E; }
+.chip.off{ background:rgba(224,139,122,0.12); border-color:#E08B7A; color:#F0A290; }
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -458,18 +463,27 @@ textarea.field{ resize:vertical; min-height:70px; }
       <div class="dash-top">
         <div>
           <h1>Tổng quan đơn hàng</h1>
-          <p>Dữ liệu đồng bộ trực tiếp từ Google Sheet.</p>
+          <p>Ưu tiên hiển thị việc cần xử lý trước, số liệu chi tiết bên dưới.</p>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Làm mới dữ liệu</button>
       </div>
 
-      <div class="dash-stats">
-        <div class="dash-stat-card">
-          <div class="ds-label">Tổng đơn</div>
-          <div class="ds-val" id="statTotal">—</div>
+      <!-- CẢNH BÁO ƯU TIÊN — chỉ hiện khi có đơn cần xử lý -->
+      <div id="attentionBanner" style="display:none; margin-bottom:22px; padding:16px 20px; background:var(--coral-tint); border:1px solid var(--coral); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:22px;">⚠️</span>
+          <div>
+            <div style="font-weight:700; color:var(--coral-deep);" id="attentionText">Có đơn đang chờ xác nhận</div>
+            <div style="font-size:12.5px; color:var(--ink-soft);">Xử lý sớm để không làm khách chờ lâu</div>
+          </div>
         </div>
-        <div class="dash-stat-card">
-          <div class="ds-label">Chờ xác nhận</div>
+        <button class="btn btn-primary btn-sm" onclick="scrollToPendingOrders()">Xem ngay →</button>
+      </div>
+
+      <!-- THỐNG KÊ ƯU TIÊN — đơn cần xử lý lên đầu -->
+      <div class="dash-stats">
+        <div class="dash-stat-card" style="border-color:var(--coral);">
+          <div class="ds-label">🔴 Chờ xác nhận</div>
           <div class="ds-val" id="statPending">—</div>
         </div>
         <div class="dash-stat-card">
@@ -480,9 +494,33 @@ textarea.field{ resize:vertical; min-height:70px; }
           <div class="ds-label">Hoàn thành</div>
           <div class="ds-val" id="statDone">—</div>
         </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">Tổng đơn</div>
+          <div class="ds-val" id="statTotal">—</div>
+        </div>
       </div>
 
-      <div class="dash-table-wrap" id="dashOrdersTable">
+      <!-- SỐ LIỆU NHANH: doanh thu + lượt truy cập -->
+      <div class="dash-stats" style="margin-top:14px;">
+        <div class="dash-stat-card">
+          <div class="ds-label">💰 Doanh thu hôm nay</div>
+          <div class="ds-val" id="statRevenueToday" style="font-size:22px;">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">💰 Doanh thu 7 ngày</div>
+          <div class="ds-val" id="statRevenueWeek" style="font-size:22px;">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">👀 Truy cập hôm nay</div>
+          <div class="ds-val" id="statViewsToday" style="font-size:22px;">—</div>
+        </div>
+        <div class="dash-stat-card">
+          <div class="ds-label">💰 Tổng doanh thu</div>
+          <div class="ds-val" id="statRevenueTotal" style="font-size:22px;">—</div>
+        </div>
+      </div>
+
+      <div class="dash-table-wrap" id="dashOrdersTable" style="margin-top:24px;">
         <div class="dash-table-head">
           <h3>Danh sách đơn hàng</h3>
           <div class="dash-search">
@@ -491,7 +529,7 @@ textarea.field{ resize:vertical; min-height:70px; }
           </div>
         </div>
         <div id="dashTableBody">
-          <div class="dash-loading">Chưa kết nối Google Sheet — xem hướng dẫn trong file apps-script-backend.gs</div>
+          <div class="dash-loading">Đang tải dữ liệu...</div>
         </div>
       </div>
     </div>
@@ -1268,6 +1306,7 @@ async function loadDashboard(){
       "Giá trị đơn": o.total_price,
       "Phương thức TT": o.payment_method,
       "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
+      "_createdAtRaw": o.created_at,
       "Trạng thái": o.status
     }));
     renderDashboard(allOrders);
@@ -1278,9 +1317,35 @@ async function loadDashboard(){
 
 function renderDashboard(orders){
   document.getElementById('statTotal').textContent = orders.length;
-  document.getElementById('statPending').textContent = orders.filter(o=> o["Trạng thái"] === "Chờ xác nhận").length;
+  const pendingCount = orders.filter(o=> o["Trạng thái"] === "Chờ xác nhận").length;
+  document.getElementById('statPending').textContent = pendingCount;
   document.getElementById('statProgress').textContent = orders.filter(o=> ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
   document.getElementById('statDone').textContent = orders.filter(o=> o["Trạng thái"] === "Hoàn thành").length;
+
+  // Banner ưu tiên: chỉ hiện khi có đơn chờ xác nhận
+  const banner = document.getElementById('attentionBanner');
+  if(pendingCount > 0){
+    banner.style.display = 'flex';
+    document.getElementById('attentionText').textContent =
+      `Có ${pendingCount} đơn đang chờ xác nhận`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Doanh thu (dựa trên "Số tiền" thực nhận, không tính "Giá trị đơn" chưa thu)
+  const todayStr = new Date().toLocaleDateString('vi-VN');
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
+  const sum = (list) => list.reduce((s,o)=> s + (Number(o["Số tiền"]) || 0), 0);
+
+  const revToday = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
+  const revWeek  = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
+  const revTotal = sum(orders);
+
+  document.getElementById('statRevenueToday').textContent = revToday.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
+
+  loadTodayViewsQuickStat();
 
   const tableBody = document.getElementById('dashTableBody');
   if(orders.length === 0){
@@ -1342,9 +1407,17 @@ async function handleStatusChange(code, newStatus, selectEl){
       const meta = STATUS_MAP[newStatus] || { cls: "status-pending" };
       selectEl.className = "status-select " + meta.cls;
       document.getElementById('statTotal').textContent = allOrders.length;
-      document.getElementById('statPending').textContent = allOrders.filter(o=> o["Trạng thái"] === "Chờ xác nhận").length;
+      const newPendingCount = allOrders.filter(o=> o["Trạng thái"] === "Chờ xác nhận").length;
+      document.getElementById('statPending').textContent = newPendingCount;
       document.getElementById('statProgress').textContent = allOrders.filter(o=> ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
       document.getElementById('statDone').textContent = allOrders.filter(o=> o["Trạng thái"] === "Hoàn thành").length;
+      const banner2 = document.getElementById('attentionBanner');
+      if(newPendingCount > 0){
+        banner2.style.display = 'flex';
+        document.getElementById('attentionText').textContent = `Có ${newPendingCount} đơn đang chờ xác nhận`;
+      } else {
+        banner2.style.display = 'none';
+      }
     } else {
       showToast("Lỗi: " + error.message);
     }
@@ -1353,6 +1426,68 @@ async function handleStatusChange(code, newStatus, selectEl){
   } finally {
     selectEl.disabled = false;
   }
+}
+
+/* Lấy nhanh số lượt truy cập hôm nay cho thẻ ở Tổng quan (không phụ thuộc tab Lượt truy cập) */
+async function loadTodayViewsQuickStat(){
+  const el = document.getElementById('statViewsToday');
+  if(!isBackendConfigured() || !currentAdmin){ el.textContent = '—'; return; }
+  try{
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const { count, error } = await sb
+      .from('page_views')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', startOfDay.toISOString());
+    if(error) throw error;
+    el.textContent = (count ?? 0).toLocaleString('vi-VN');
+  } catch(e){
+    el.textContent = '—';
+  }
+}
+
+/* Cuộn xuống bảng đơn hàng và tự lọc theo "Chờ xác nhận" khi bấm nút ở banner ưu tiên */
+function scrollToPendingOrders(){
+  const input = document.getElementById('dashSearchInput');
+  document.getElementById('dashOrdersTable').scrollIntoView({ behavior:'smooth', block:'start' });
+  const pending = allOrders.filter(o => o["Trạng thái"] === "Chờ xác nhận");
+  renderOrdersOnly(pending);
+  if(input) input.value = '';
+}
+
+/* Render lại chỉ phần bảng (không đụng tới thống kê phía trên) — dùng khi lọc nhanh */
+function renderOrdersOnly(orders){
+  const tableBody = document.getElementById('dashTableBody');
+  if(orders.length === 0){
+    tableBody.innerHTML = `<div class="dash-empty">Không có đơn nào khớp.</div>`;
+    return;
+  }
+  let html = `<table class="dash-table"><thead><tr>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
+  </tr></thead><tbody>`;
+  orders.forEach(o=>{
+    const status = o["Trạng thái"] || "Chờ xác nhận";
+    const code = escapeHtml(o["Mã đơn"]);
+    const descFull = o["Mô tả yêu cầu"] || '';
+    const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
+    const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
+    const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
+    html += `<tr>
+      <td class="dt-code">${code}</td>
+      <td>${escapeHtml(o["Họ tên"])}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o["SĐT"]||'')}</span></td>
+      <td>${escapeHtml(o["Loại dịch vụ"]||'')}</td>
+      <td style="font-size:12px; font-family:var(--font-mono); color:var(--ink-soft); white-space:nowrap;">${escapeHtml(o["Ngân sách"]||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft); max-width:220px;" title="${escapeHtml(descFull)}">${escapeHtml(descShort||'—')}</td>
+      <td style="font-size:12px; font-family:var(--font-mono); white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft); font-size:10.5px;">${escapeHtml(o["Loại TT"]||'')}</span></td>
+      <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Phương thức TT"]||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Thời gian đặt"]||'')}</td>
+      <td>${renderStatusSelect(code, status)}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  tableBody.innerHTML = html;
+  tableBody.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', (e)=> handleStatusChange(e.target.dataset.code, e.target.value, e.target));
+  });
 }
 
 function escapeHtml(str){
@@ -1666,7 +1801,7 @@ function renderProjectsTable(projects){
         <b>${escapeHtml(p["Tên dự án"])}</b><br>
         <span style="font-size:12px;color:var(--ink-soft);">${escapeHtml((p["Mô tả"]||"").slice(0,55))}${(p["Mô tả"]||"").length>55?"…":""}</span>
       </td>
-      <td><span class="svc-status-pill svc-status-active" style="background:#EFF0FF;color:#3A3AD6;">${escapeHtml(p["Loại"]||"")}</span></td>
+      <td><span class="svc-status-pill svc-status-active" style="background:rgba(122,122,255,0.15);color:#A0A0FF;">${escapeHtml(p["Loại"]||"")}</span></td>
       <td style="font-size:12px;">${demo ? `<a href="${escapeHtml(demo)}" target="_blank" style="color:var(--coral);">Xem ↗</a>` : "—"}</td>
       <td><span class="svc-status-pill ${isVisible ? 'svc-status-active' : 'svc-status-inactive'}">${escapeHtml(p["Trạng thái"])}</span></td>
       <td>
@@ -1844,7 +1979,7 @@ function renderUsersTable(users){
       <td style="font-size:12px;color:var(--ink-soft);">${escapeHtml(u.registeredAt||'')}</td>
       <td><span class="svc-status-pill ${locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
       <td>${u.isPriority
-          ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:#1a1a1a;color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
+          ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:var(--ink-deep);color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
           : `<span style="font-size:11.5px;color:var(--ink-soft);">Thường</span>`}
       </td>
       <td>
@@ -2364,7 +2499,7 @@ function renderTrafficChart(rows){
   });
 
   document.getElementById('tfChart').innerHTML =
-    `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:190px; --coral:#FF4B2E;">${bars}</svg>`;
+    `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:190px; --coral:#FF5A3C;">${bars}</svg>`;
 }
 
 const DEVICE_ICON  = { 'Mobile':'📱', 'Tablet':'💻', 'Desktop':'🖥️' };
