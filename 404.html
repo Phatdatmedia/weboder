@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 — Không tìm thấy trang | Phatdatagency</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2EEE6; --ink:#211C16; --ink-soft:#5B5347;
+  --line:#D8D0BF; --coral:#FF4B2E; --coral-deep:#D6391E; --white:#FFFCF6;
+  --font-display:'Fraunces',serif; --font-body:'Inter',sans-serif;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{
+  font-family:var(--font-body); background:var(--paper); color:var(--ink);
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:24px;
+}
+.wrap{ max-width:460px; }
+.code{
+  font-family:var(--font-display); font-size:96px; font-weight:700; color:var(--coral);
+  line-height:1; margin-bottom:8px;
+}
+h1{ font-family:var(--font-display); font-size:24px; margin-bottom:12px; }
+p{ font-size:15px; color:var(--ink-soft); margin-bottom:28px; line-height:1.6; }
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border-radius:999px;
+  background:var(--ink); color:var(--white); font-weight:600; font-size:14.5px; text-decoration:none;
+  transition:transform .15s ease;
+}
+.btn:hover{ transform:translateY(-2px); }
+.links{ margin-top:22px; font-size:13px; color:var(--ink-soft); }
+.links a{ color:var(--coral-deep); text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="code">404</div>
+    <h1>Trang bạn tìm không tồn tại</h1>
+    <p>Có thể đường link đã sai hoặc trang đã được di chuyển. Quay về trang chủ để tiếp tục khám phá dịch vụ của Phatdatagency nhé.</p>
+    <a href="/" class="btn">← Về trang chủ</a>
+    <div class="links">
+      Hoặc thử: <a href="showcase.html">Showcase</a> · <a href="index.html#services">Dịch vụ</a> · <a href="account.html">Tài khoản</a>
+    </div>
+  </div>
+</body>
+</html>

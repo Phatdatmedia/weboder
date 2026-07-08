@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản trị đơn hàng</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -407,6 +408,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button id="mobileTabNotifs"   onclick="switchTab('notifs')">Thông báo KH</button>
+    <button id="mobileTabMarketing" onclick="switchTab('marketing')">Marketing</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -448,6 +450,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabNotifs" onclick="switchTab('notifs')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         Thông báo KH
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabMarketing" onclick="switchTab('marketing')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l18-5v14L3 15v-4z"/><path d="M11.6 16.9A5 5 0 1 1 9 7.9"/></svg>
+        Marketing
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -996,6 +1002,56 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: MARKETING (Facebook Pixel / TikTok Pixel) -->
+    <div class="tab-panel" id="tabMarketing">
+      <div class="dash-top">
+        <div>
+          <h1>Marketing</h1>
+          <p>Gắn Facebook Pixel / TikTok Pixel để đo lường hiệu quả quảng cáo (theo dõi lượt xem trang, gửi đơn, thanh toán thành công).</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveMarketingConfig()">💾 Lưu cấu hình</button>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>📘 Facebook Pixel</h3>
+            <p>Lấy ID tại Meta Events Manager → Nguồn dữ liệu → Pixel của bạn</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="form-group">
+            <label>Facebook Pixel ID</label>
+            <input type="text" class="field" id="mk_fbPixelId" placeholder="VD: 1234567890123456">
+          </div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>🎵 TikTok Pixel</h3>
+            <p>Lấy ID tại TikTok Ads Manager → Assets → Events → Web Events</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div class="form-group">
+            <label>TikTok Pixel ID</label>
+            <input type="text" class="field" id="mk_ttPixelId" placeholder="VD: CXXXXXXXXXXXXXXXXXXX">
+          </div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head"><div><h3>Trạng thái</h3></div></div>
+        <div class="cfg-body">
+          <div id="mkStatusBox" style="font-size:13px; color:var(--ink-soft);">
+            Sau khi lưu, 2 pixel này sẽ tự chạy trên trang chủ (mọi lượt xem trang), khi khách gửi đơn hàng (sự kiện Lead/SubmitForm), và khi thanh toán thành công (sự kiện Purchase/CompletePayment). Để trống ô nào thì pixel đó sẽ không chạy.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1512,7 +1568,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1531,6 +1587,7 @@ function switchTab(tab){
   if(tab === 'contact')  loadContactConfig();
   if(tab === 'traffic')  loadTrafficStats();
   if(tab === 'notifs')   loadCustomerNotifs();
+  if(tab === 'marketing') loadMarketingConfig();
 }
 
 /* =====================================================================
@@ -2642,6 +2699,40 @@ async function deleteNotif(id){
     if(error) throw error;
     await loadCustomerNotifs();
   } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+/* =====================================================================
+   MARKETING CONFIG — Facebook Pixel / TikTok Pixel, lưu vào `site_config`
+===================================================================== */
+const MARKETING_KEY = 'marketing_config';
+
+async function loadMarketingConfig(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', MARKETING_KEY).single();
+    if(data?.value){
+      document.getElementById('mk_fbPixelId').value = data.value.fbPixelId || '';
+      document.getElementById('mk_ttPixelId').value = data.value.ttPixelId || '';
+    }
+  } catch(e){ /* chưa có row -> để trống mặc định */ }
+}
+
+async function saveMarketingConfig(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+  const cfg = {
+    fbPixelId: document.getElementById('mk_fbPixelId').value.trim(),
+    ttPixelId: document.getElementById('mk_ttPixelId').value.trim(),
+  };
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key: MARKETING_KEY, value: cfg, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+    showToast('✅ Đã lưu cấu hình Marketing!');
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  }
 }
 
 /* =====================================================================

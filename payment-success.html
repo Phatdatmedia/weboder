@@ -1,12 +1,89 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head><meta charset="UTF-8"><title>Thanh toán thành công</title></head>
-<body style="font-family:sans-serif;text-align:center;padding:80px 20px">
-  <h1 style="color:#226B30">✅ Thanh toán thành công!</h1>
-  <p>Đội ngũ Phatdatagency sẽ liên hệ bạn sớm nhất.</p>
-  <a href="/" style="display:inline-block;margin-top:24px;padding:12px 28px;
-     background:#211C16;color:#fff;border-radius:999px;text-decoration:none">
-    ← Quay về trang chủ
-  </a>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thanh toán thành công — Phatdatagency</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --paper:#F2EEE6; --ink:#211C16; --ink-soft:#5B5347; --line:#D8D0BF; --sage:#6B7A5E; --white:#FFFCF6; }
+  *{ box-sizing:border-box; }
+  body{
+    font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:24px; margin:0;
+  }
+  .box{ max-width:420px; }
+  .icon{ font-size:52px; margin-bottom:8px; }
+  h1{ font-family:'Fraunces',serif; font-size:26px; color:var(--sage); margin-bottom:10px; }
+  p{ font-size:15px; color:var(--ink-soft); line-height:1.6; }
+  a.btn{
+    display:inline-block; margin-top:26px; padding:13px 28px;
+    background:var(--ink); color:var(--white); border-radius:999px; text-decoration:none; font-weight:600;
+  }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon">✅</div>
+    <h1>Thanh toán thành công!</h1>
+    <p>Đội ngũ Phatdatagency sẽ liên hệ bạn sớm nhất.</p>
+    <a href="/" class="btn">← Quay về trang chủ</a>
+  </div>
+
+<script>
+/* ====================================================================
+   Gắn sự kiện Purchase cho Facebook Pixel / TikTok Pixel (nếu admin đã
+   cấu hình ID ở tab Marketing). Nếu URL có orderCode (PayOS trả về), sẽ
+   tra cứu Supabase để lấy đúng số tiền cho sự kiện; nếu không có, vẫn
+   bắn sự kiện Purchase nhưng không kèm giá trị.
+==================================================================== */
+const sb = supabase.createClient(
+  "https://npsylbxggliczhtnzzgl.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig"
+);
+
+(async function trackPurchase(){
+  try{
+    const { data, error } = await sb.from('site_config').select('value').eq('key', 'marketing_config').single();
+    if(error || !data?.value) return;
+    const cfg = data.value;
+
+    let amount = null;
+    const params = new URLSearchParams(window.location.search);
+    const orderCode = params.get('orderCode') || params.get('orderId') || params.get('code');
+    if(orderCode){
+      try{
+        const { data: order } = await sb.from('orders').select('amount').eq('order_code', orderCode).single();
+        if(order?.amount) amount = Number(order.amount);
+      } catch(e){ /* không tìm thấy đơn cũng không sao */ }
+    }
+
+    if(cfg.fbPixelId){
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', cfg.fbPixelId);
+      fbq('track', 'Purchase', amount ? { value: amount, currency: 'VND' } : {});
+    }
+
+    if(cfg.ttPixelId){
+      !function (w, d, t) {
+        w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var s=d.createElement("script");s.type="text/javascript",s.async=!0,s.src=r+"?sdkid="+e+"&lib="+t;var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(s,a)};
+        ttq.load(cfg.ttPixelId);
+        ttq.page();
+      }(window, document, 'ttq');
+      ttq.track('CompletePayment', amount ? { value: amount, currency: 'VND' } : {});
+    }
+  } catch(e){ console.warn('Pixel purchase tracking lỗi:', e.message); }
+})();
+</script>
 </body>
 </html>

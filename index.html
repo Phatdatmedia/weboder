@@ -4,6 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Phatdatagency — Studio thiết kế web, profile, slide & dịch vụ mạng xã hội</title>
+
+<!-- SEO -->
+<meta name="description" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile chuyên nghiệp. Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn.">
+<link rel="canonical" href="https://phatdatagency.id.vn/">
+
+<!-- Open Graph (Facebook, Zalo, Messenger...) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile">
+<meta property="og:description" content="Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn. Xem showcase các dự án đã thực hiện.">
+<meta property="og:url" content="https://phatdatagency.id.vn/">
+<meta property="og:image" content="https://phatdatagency.id.vn/og-image.png">
+<meta property="og:locale" content="vi_VN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile">
+<meta name="twitter:description" content="Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn.">
+<meta name="twitter:image" content="https://phatdatagency.id.vn/og-image.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="favicon.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1141,6 +1165,9 @@ textarea.field{ resize:vertical; min-height:90px; }
         <a href="#services">Dịch vụ</a>
         <a href="showcase.html">Showcase</a>
         <a href="#lookup">Tra cứu đơn</a>
+        <a href="dieu-khoan-dich-vu.html">Điều khoản</a>
+        <a href="chinh-sach-bao-mat.html">Bảo mật</a>
+        <a href="chinh-sach-dat-coc.html">Chính sách cọc</a>
         <a href="https://www.dmca.com/compliance/phatdatagency.id.vn" title="DMCA Compliance information for phatdatagency.id.vn"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" /></a>
         <a href="//www.dmca.com/Protection/Status.aspx?ID=add8c5bf-f097-4395-a395-030ffe881508" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca-badge-w200-5x1-11.png?ID=add8c5bf-f097-4395-a395-030ffe881508"  alt="DMCA.com Protection Status" /></a>  <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"> </script>
       </div>
@@ -1370,6 +1397,53 @@ function loadPaymentConfigFromSupabase(){
   return paymentConfigReady;
 }
 loadPaymentConfigFromSupabase();
+
+/* =====================================================================
+   MARKETING PIXEL — nạp Facebook Pixel / TikTok Pixel từ Supabase
+   (site_config, key 'marketing_config', cấu hình ở admin tab "Marketing").
+   Chỉ chạy pixel nào admin đã dán ID; để trống thì bỏ qua, không lỗi.
+===================================================================== */
+window._pixelIds = { fb: null, tt: null };
+
+async function initMarketingPixels(){
+  if(!isBackendConfigured()) return;
+  try{
+    const { data, error } = await sb.from('site_config').select('value').eq('key', 'marketing_config').single();
+    if(error) throw error;
+    const cfg = data?.value;
+    if(!cfg) return;
+
+    if(cfg.fbPixelId){
+      window._pixelIds.fb = cfg.fbPixelId;
+      /* eslint-disable */
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+      document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', cfg.fbPixelId);
+      fbq('track', 'PageView');
+    }
+
+    if(cfg.ttPixelId){
+      window._pixelIds.tt = cfg.ttPixelId;
+      !function (w, d, t) {
+        w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var s=d.createElement("script");s.type="text/javascript",s.async=!0,s.src=r+"?sdkid="+e+"&lib="+t;var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(s,a)};
+        ttq.load(cfg.ttPixelId);
+        ttq.page();
+      }(window, document, 'ttq');
+    }
+  } catch(e){
+    console.warn('Không tải được marketing_config:', e.message);
+  }
+}
+initMarketingPixels();
+
+/* Bắn sự kiện "gửi đơn hàng" cho cả 2 pixel (gọi ngay sau khi tạo đơn thành công) */
+function trackOrderLeadEvent(){
+  try{ if(window._pixelIds.fb && typeof fbq === 'function') fbq('track', 'Lead'); } catch(e){}
+  try{ if(window._pixelIds.tt && typeof ttq !== 'undefined') ttq.track('SubmitForm'); } catch(e){}
+}
 
 /* =====================================================================
    TOAST
@@ -1621,6 +1695,7 @@ async function handleSubmitOrder(){
   try{
     const result = await createOrderSupabase(orderData);
     if(result.ok){
+      trackOrderLeadEvent();
       showPaymentView(result.code, selectedPayment);
     } else {
       errBox.textContent = result.error || "Có lỗi xảy ra, vui lòng thử lại.";
