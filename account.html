@@ -464,12 +464,15 @@ table.orders-table tr:hover td{ background:var(--paper); }
       <div class="form-group">
         <label>Mật khẩu <span class="req">*</span></label>
         <div class="input-pass-wrap">
-          <input type="password" class="field" id="reg_pass" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+          <input type="password" class="field" id="reg_pass" placeholder="Tối thiểu 8 ký tự, có chữ và số" autocomplete="new-password" oninput="updatePasswordStrength()">
           <button type="button" onclick="togglePass('reg_pass',this)" tabindex="-1">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <p class="field-hint">Ít nhất 6 ký tự</p>
+        <div style="height:4px; background:var(--line); border-radius:99px; margin-top:8px; overflow:hidden;">
+          <div id="pwStrengthBar" style="height:100%; width:0%; background:var(--coral-deep); transition:width .2s ease, background .2s ease;"></div>
+        </div>
+        <p class="field-hint" id="pwStrengthText">Tối thiểu 8 ký tự, có ít nhất 1 chữ và 1 số</p>
       </div>
       <div class="form-group">
         <label>Xác nhận mật khẩu <span class="req">*</span></label>
@@ -808,6 +811,32 @@ document.getElementById("forgot_email").addEventListener("keydown", e => {
 /* ============================================================
    REGISTER — dùng Supabase Auth (sb.auth.signUp)
 ============================================================ */
+function updatePasswordStrength(){
+  const pass = document.getElementById('reg_pass').value;
+  const bar = document.getElementById('pwStrengthBar');
+  const text = document.getElementById('pwStrengthText');
+
+  let score = 0;
+  if(pass.length >= 8) score++;
+  if(pass.length >= 12) score++;
+  if(/[a-z]/.test(pass) && /[A-Z]/.test(pass)) score++;
+  if(/[0-9]/.test(pass)) score++;
+  if(/[^a-zA-Z0-9]/.test(pass)) score++;
+
+  const levels = [
+    { pct: 0,   color: 'var(--line)',      label: 'Tối thiểu 8 ký tự, có ít nhất 1 chữ và 1 số' },
+    { pct: 20,  color: 'var(--coral-deep)',label: 'Yếu' },
+    { pct: 45,  color: 'var(--coral-deep)',label: 'Yếu' },
+    { pct: 70,  color: '#D6A32E',          label: 'Trung bình' },
+    { pct: 90,  color: '#3E9B4F',          label: 'Mạnh' },
+    { pct: 100, color: '#2E8B57',          label: 'Rất mạnh' },
+  ];
+  const lvl = pass.length === 0 ? levels[0] : (levels[score] || levels[levels.length-1]);
+  bar.style.width = lvl.pct + '%';
+  bar.style.background = lvl.color;
+  text.textContent = pass.length === 0 ? levels[0].label : 'Độ mạnh: ' + lvl.label;
+}
+
 async function handleRegister(){
   const name  = document.getElementById("reg_name").value.trim();
   const email = document.getElementById("reg_email").value.trim();
@@ -827,8 +856,8 @@ async function handleRegister(){
     errBox.textContent = "Hai mật khẩu không khớp nhau.";
     errBox.classList.add("show"); return;
   }
-  if(pass.length < 6){
-    errBox.textContent = "Mật khẩu phải có ít nhất 6 ký tự.";
+  if(pass.length < 8 || !/[a-zA-Z]/.test(pass) || !/[0-9]/.test(pass)){
+    errBox.textContent = "Mật khẩu phải có ít nhất 8 ký tự, gồm cả chữ và số.";
     errBox.classList.add("show"); return;
   }
   if(!isConfigured()){

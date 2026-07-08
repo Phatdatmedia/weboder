@@ -394,6 +394,19 @@ textarea.field{ resize:vertical; min-height:70px; }
   </div>
 </div>
 
+<!-- MÀN HÌNH NHẬP MÃ 2FA (chỉ hiện nếu tài khoản đã bật xác thực 2 lớp) -->
+<div class="login-screen" id="mfaScreen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">Phatdatagency<span class="dot">.</span></div>
+    <p class="login-sub">Nhập mã 6 số từ ứng dụng xác thực (Google Authenticator...) để hoàn tất đăng nhập.</p>
+    <label for="mfaCode">Mã xác thực</label>
+    <input type="text" class="field" id="mfaCode" placeholder="000000" inputmode="numeric" maxlength="6" style="letter-spacing:4px; font-family:var(--font-mono); text-align:center; font-size:18px;">
+    <div class="login-error" id="mfaError"></div>
+    <button class="btn btn-primary" id="mfaBtn" onclick="handleMfaVerifyLogin()" style="margin-top:14px;">Xác nhận</button>
+    <button class="btn btn-ghost btn-sm" style="width:100%; margin-top:10px;" onclick="cancelMfaLogin()">← Đăng nhập lại</button>
+  </div>
+</div>
+
 <!-- ACTUAL DASHBOARD (shown only after login) -->
 <div class="dash-shell" id="dashShell" style="display:none;">
 
@@ -409,6 +422,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button id="mobileTabNotifs"   onclick="switchTab('notifs')">Thông báo KH</button>
     <button id="mobileTabMarketing" onclick="switchTab('marketing')">Marketing</button>
+    <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -454,6 +468,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabMarketing" onclick="switchTab('marketing')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l18-5v14L3 15v-4z"/><path d="M11.6 16.9A5 5 0 1 1 9 7.9"/></svg>
         Marketing
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabSecurity" onclick="switchTab('security')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 6v6c0 5.5 3.4 9.7 8 10 4.6-.3 8-4.5 8-10V6l-8-4z"/></svg>
+        Bảo mật
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1052,6 +1070,84 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: BẢO MẬT -->
+    <div class="tab-panel" id="tabSecurity">
+      <div class="dash-top">
+        <div>
+          <h1>Bảo mật</h1>
+          <p>Các lớp bảo vệ cho tài khoản quản trị và dữ liệu.</p>
+        </div>
+      </div>
+
+      <!-- 2FA -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>🔐 Xác thực 2 lớp (2FA)</h3>
+            <p>Yêu cầu nhập thêm mã 6 số từ app xác thực (Google Authenticator, Authy...) mỗi lần đăng nhập admin — quan trọng nhất để chống bị đánh cắp tài khoản dù lộ mật khẩu.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="mfaStatusBox" style="margin-bottom:16px; font-size:13.5px;">Đang kiểm tra...</div>
+          <div id="mfaEnrollArea" style="display:none;">
+            <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+              <div id="mfaQrBox" style="background:#fff; padding:12px; border-radius:10px; width:180px; height:180px; display:flex; align-items:center; justify-content:center;"></div>
+              <div style="flex:1; min-width:220px;">
+                <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">1. Mở app Google Authenticator / Authy → Quét mã QR này (hoặc nhập mã thủ công bên dưới).</p>
+                <div id="mfaSecretBox" style="font-family:var(--font-mono); font-size:12px; background:var(--surface-2); padding:8px 12px; border-radius:8px; word-break:break-all; margin-bottom:14px;"></div>
+                <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:8px;">2. Nhập mã 6 số app vừa hiện để xác nhận kích hoạt:</p>
+                <input type="text" class="field" id="mfaEnrollCode" placeholder="000000" inputmode="numeric" maxlength="6" style="max-width:140px; font-family:var(--font-mono); letter-spacing:3px; text-align:center;">
+                <div class="modal-error" id="mfaEnrollError" style="margin-top:8px;"></div>
+                <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="handleMfaEnrollConfirm()">Xác nhận kích hoạt</button>
+                <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="cancelMfaEnroll()">Huỷ</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="mfaActionBtn" onclick="handleMfaAction()">Bật 2FA</button>
+        </div>
+      </div>
+
+      <!-- Phiên đăng nhập -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>🚪 Phiên đăng nhập</h3>
+            <p>Nếu nghi ngờ tài khoản bị đăng nhập từ nơi khác, đăng xuất khỏi tất cả thiết bị ngay.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="handleLogoutAllDevices()">Đăng xuất khỏi tất cả thiết bị</button>
+        </div>
+      </div>
+
+      <!-- Checklist RLS -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>🛡️ Kiểm tra khoá bảo vệ dữ liệu (RLS)</h3>
+            <p>Row Level Security phải luôn BẬT cho mọi bảng chứa dữ liệu, nếu không bất kỳ ai cũng có thể đọc/ghi trực tiếp qua API.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <button class="btn btn-ghost btn-sm" style="margin-bottom:14px;" onclick="checkRlsStatus()">↻ Kiểm tra ngay</button>
+          <div id="rlsCheckBox" style="font-size:13px; color:var(--ink-soft);">Bấm "Kiểm tra ngay" để quét trạng thái RLS các bảng chính.</div>
+        </div>
+      </div>
+
+      <!-- Audit log -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>📋 Nhật ký hoạt động admin</h3>
+            <p>Ghi lại các thao tác quan trọng: đổi trạng thái đơn, sửa/xoá dịch vụ, dự án, khoá/mở tài khoản khách.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="auditLogBox" style="font-size:13px; color:var(--ink-soft); max-height:400px; overflow-y:auto;">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1222,6 +1318,7 @@ function showDashShell(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashShell').style.display = 'flex';
   loadDashboard();
+  startForceLogoutWatcher();
 }
 
 async function handleAdminLogin(){
@@ -1268,6 +1365,22 @@ async function handleAdminLogin(){
       return;
     }
 
+    // Kiểm tra xem tài khoản đã bật 2FA chưa — nếu có, yêu cầu nhập mã trước khi vào dashboard
+    const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel){
+      const { data: factors } = await sb.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+      if(totpFactor){
+        window._pendingMfaFactorId = totpFactor.id;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mfaScreen').style.display = 'flex';
+        document.getElementById('mfaCode').value = '';
+        document.getElementById('mfaError').classList.remove('show');
+        setTimeout(()=> document.getElementById('mfaCode').focus(), 100);
+        return;
+      }
+    }
+
     currentAdmin = { id: data.user.id, email: data.user.email };
     showDashShell();
   } catch(err){
@@ -1279,7 +1392,54 @@ async function handleAdminLogin(){
   }
 }
 
+async function handleMfaVerifyLogin(){
+  const code = document.getElementById('mfaCode').value.trim();
+  const errBox = document.getElementById('mfaError');
+  const btn = document.getElementById('mfaBtn');
+
+  if(!code || code.length !== 6){
+    errBox.textContent = "Vui lòng nhập đủ 6 số.";
+    errBox.classList.add('show');
+    return;
+  }
+  errBox.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'Đang xác nhận...';
+
+  try{
+    const factorId = window._pendingMfaFactorId;
+    const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId });
+    if(chErr) throw chErr;
+
+    const { data: verifyData, error: vErr } = await sb.auth.mfa.verify({
+      factorId, challengeId: challenge.id, code
+    });
+    if(vErr) throw vErr;
+
+    const { data: sessionData } = await sb.auth.getSession();
+    currentAdmin = { id: sessionData.session.user.id, email: sessionData.session.user.email };
+    document.getElementById('mfaScreen').style.display = 'none';
+    showDashShell();
+  } catch(e){
+    errBox.textContent = "Mã không đúng hoặc đã hết hạn, thử lại.";
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Xác nhận';
+  }
+}
+
+async function cancelMfaLogin(){
+  try{ await sb.auth.signOut(); } catch{}
+  window._pendingMfaFactorId = null;
+  document.getElementById('mfaScreen').style.display = 'none';
+  showLoginScreen();
+}
+
+document.getElementById('mfaCode').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') handleMfaVerifyLogin();
+});
+
 async function handleAdminLogout(){
+  stopForceLogoutWatcher();
   if(isBackendConfigured()){
     try{ await sb.auth.signOut(); } catch{}
   }
@@ -1461,6 +1621,7 @@ async function handleStatusChange(code, newStatus, selectEl){
 
     if(!error){
       showToast(`Đã cập nhật trạng thái đơn ${code}.`);
+      logAdminAction('Đổi trạng thái đơn hàng', `${code} → ${newStatus}`);
       const order = allOrders.find(o => o["Mã đơn"] === code);
       if(order) order["Trạng thái"] = newStatus;
       const meta = STATUS_MAP[newStatus] || { cls: "status-pending" };
@@ -1568,7 +1729,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1588,6 +1749,7 @@ function switchTab(tab){
   if(tab === 'traffic')  loadTrafficStats();
   if(tab === 'notifs')   loadCustomerNotifs();
   if(tab === 'marketing') loadMarketingConfig();
+  if(tab === 'security') loadSecurityTab();
 }
 
 /* =====================================================================
@@ -1793,6 +1955,7 @@ async function handleDeleteService(id, name){
     const { error } = await sb.from('services').delete().eq('id', id);
     if(!error){
       showToast("Đã xoá dịch vụ.");
+      logAdminAction('Xoá dịch vụ', name);
       loadServicesTable();
     } else {
       showToast("Lỗi: " + error.message);
@@ -1983,6 +2146,7 @@ async function handleDeleteProject(id, name){
     const { error } = await sb.from('projects').delete().eq('id', id);
     if(!error){
       showToast("Đã xoá dự án.");
+      logAdminAction('Xoá dự án', name);
       allProjects = [];
       loadProjectsTable();
     } else { showToast("Lỗi: " + error.message); }
@@ -2082,6 +2246,7 @@ async function handleToggleUser(id){
     const { error } = await sb.from('profiles').update({ is_locked: willLock }).eq('id', id);
     if(!error){
       showToast(`Đã ${actionLabel} tài khoản.`);
+      logAdminAction(`${willLock ? 'Khoá' : 'Mở khoá'} tài khoản khách`, user?.email || id);
       allUsers = [];
       loadUsersTable();
     } else showToast('Lỗi: ' + error.message);
@@ -2733,6 +2898,210 @@ async function saveMarketingConfig(){
   } catch(e){
     showToast('Lỗi: ' + e.message);
   }
+}
+
+/* =====================================================================
+   AUDIT LOG — ghi lại thao tác quan trọng của admin vào `admin_audit_log`
+===================================================================== */
+async function logAdminAction(action, details){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    await sb.from('admin_audit_log').insert({
+      admin_email: currentAdmin.email,
+      action, details: details || null
+    });
+  } catch(e){ console.warn('Không ghi được audit log:', e.message); }
+}
+
+async function loadAuditLog(){
+  const box = document.getElementById('auditLogBox');
+  try{
+    const { data, error } = await sb
+      .from('admin_audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if(error) throw error;
+    if(!data.length){ box.textContent = 'Chưa có hoạt động nào được ghi nhận.'; return; }
+    box.innerHTML = data.map(l => `
+      <div style="padding:10px 0; border-bottom:1px solid var(--line);">
+        <div style="font-size:12.5px; color:var(--ink);"><strong>${escapeHtml(l.admin_email||'—')}</strong> — ${escapeHtml(l.action)}</div>
+        ${l.details ? `<div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">${escapeHtml(l.details)}</div>` : ''}
+        <div style="font-size:10.5px; color:var(--ink-soft); margin-top:3px;">${new Date(l.created_at).toLocaleString('vi-VN')}</div>
+      </div>`).join('');
+  } catch(e){
+    box.innerHTML = `<span style="color:var(--danger);">Không tải được nhật ký (kiểm tra đã tạo bảng <code>admin_audit_log</code> chưa): ${escapeHtml(e.message)}</span>`;
+  }
+}
+
+/* =====================================================================
+   2FA (TOTP) — dùng Supabase Auth MFA có sẵn, không cần bảng riêng
+===================================================================== */
+window._mfaEnrollFactorId = null;
+
+async function refreshMfaStatus(){
+  const box = document.getElementById('mfaStatusBox');
+  const btn = document.getElementById('mfaActionBtn');
+  try{
+    const { data, error } = await sb.auth.mfa.listFactors();
+    if(error) throw error;
+    const verified = data?.totp?.find(f => f.status === 'verified');
+    if(verified){
+      box.innerHTML = `<span style="color:#8FD09E;">✅ 2FA đang BẬT</span> — tài khoản của bạn được bảo vệ thêm 1 lớp.`;
+      btn.textContent = 'Tắt 2FA';
+      btn.dataset.mode = 'disable';
+      btn.dataset.factorId = verified.id;
+    } else {
+      box.innerHTML = `<span style="color:var(--danger);">⚠️ 2FA đang TẮT</span> — chỉ cần đúng mật khẩu là đăng nhập được, nên bật lên để an toàn hơn.`;
+      btn.textContent = 'Bật 2FA';
+      btn.dataset.mode = 'enable';
+    }
+  } catch(e){
+    box.textContent = 'Không kiểm tra được trạng thái 2FA: ' + e.message;
+  }
+}
+
+async function handleMfaAction(){
+  const btn = document.getElementById('mfaActionBtn');
+  if(btn.dataset.mode === 'disable'){
+    if(!confirm('Tắt 2FA sẽ giảm bảo mật tài khoản admin. Chắc chắn tắt?')) return;
+    try{
+      const { error } = await sb.auth.mfa.unenroll({ factorId: btn.dataset.factorId });
+      if(error) throw error;
+      showToast('Đã tắt 2FA.');
+      logAdminAction('Tắt 2FA', null);
+      refreshMfaStatus();
+    } catch(e){ showToast('Lỗi: ' + e.message); }
+    return;
+  }
+
+  // Bắt đầu enroll mới
+  try{
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp' });
+    if(error) throw error;
+    window._mfaEnrollFactorId = data.id;
+    document.getElementById('mfaQrBox').innerHTML = data.totp.qr_code
+      ? `<img src="${data.totp.qr_code}" style="width:100%;height:100%;object-fit:contain;">`
+      : '';
+    document.getElementById('mfaSecretBox').textContent = data.totp.secret;
+    document.getElementById('mfaEnrollArea').style.display = 'block';
+    document.getElementById('mfaActionBtn').style.display = 'none';
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+async function handleMfaEnrollConfirm(){
+  const code = document.getElementById('mfaEnrollCode').value.trim();
+  const errBox = document.getElementById('mfaEnrollError');
+  if(!code || code.length !== 6){
+    errBox.textContent = 'Nhập đủ 6 số.'; errBox.classList.add('show'); return;
+  }
+  try{
+    const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: window._mfaEnrollFactorId });
+    if(chErr) throw chErr;
+    const { error: vErr } = await sb.auth.mfa.verify({
+      factorId: window._mfaEnrollFactorId, challengeId: challenge.id, code
+    });
+    if(vErr) throw vErr;
+
+    showToast('✅ Đã bật 2FA thành công!');
+    logAdminAction('Bật 2FA', null);
+    document.getElementById('mfaEnrollArea').style.display = 'none';
+    document.getElementById('mfaActionBtn').style.display = 'inline-flex';
+    document.getElementById('mfaEnrollCode').value = '';
+    errBox.classList.remove('show');
+    refreshMfaStatus();
+  } catch(e){
+    errBox.textContent = 'Mã không đúng, thử lại.'; errBox.classList.add('show');
+  }
+}
+
+async function cancelMfaEnroll(){
+  try{ if(window._mfaEnrollFactorId) await sb.auth.mfa.unenroll({ factorId: window._mfaEnrollFactorId }); } catch(e){}
+  window._mfaEnrollFactorId = null;
+  document.getElementById('mfaEnrollArea').style.display = 'none';
+  document.getElementById('mfaActionBtn').style.display = 'inline-flex';
+}
+
+/* =====================================================================
+   ĐĂNG XUẤT TẤT CẢ THIẾT BỊ — kết hợp signOut global (chặn refresh token
+   về sau) + ghi force_logout_at vào profiles để các tab/thiết bị khác
+   đang mở nhận được tín hiệu realtime và tự đăng xuất gần như ngay lập tức,
+   không cần chờ access token cũ hết hạn (~1 tiếng).
+===================================================================== */
+window._forceLogoutChannel = null;
+window._sessionStartedAt = null;
+
+function startForceLogoutWatcher(){
+  if(!currentAdmin || !isBackendConfigured()) return;
+  window._sessionStartedAt = new Date().toISOString();
+  stopForceLogoutWatcher(); // tránh subscribe trùng nếu gọi lại
+
+  window._forceLogoutChannel = sb
+    .channel('force-logout-' + currentAdmin.id)
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${currentAdmin.id}`
+    }, (payload) => {
+      const forcedAt = payload.new?.force_logout_at;
+      if(forcedAt && new Date(forcedAt) > new Date(window._sessionStartedAt)){
+        alert('Tài khoản của bạn vừa bị đăng xuất từ 1 thiết bị khác (yêu cầu "Đăng xuất tất cả thiết bị").');
+        stopForceLogoutWatcher();
+        sb.auth.signOut().finally(() => { currentAdmin = null; showLoginScreen(); });
+      }
+    })
+    .subscribe();
+}
+
+function stopForceLogoutWatcher(){
+  if(window._forceLogoutChannel){
+    sb.removeChannel(window._forceLogoutChannel);
+    window._forceLogoutChannel = null;
+  }
+}
+
+async function handleLogoutAllDevices(){
+  if(!confirm('Đăng xuất khỏi TẤT CẢ thiết bị đang đăng nhập (kể cả thiết bị này)?')) return;
+  try{
+    if(currentAdmin){
+      await sb.from('profiles').update({ force_logout_at: new Date().toISOString() }).eq('id', currentAdmin.id);
+      logAdminAction('Đăng xuất tất cả thiết bị', null);
+    }
+    stopForceLogoutWatcher();
+    await sb.auth.signOut({ scope: 'global' });
+    showToast('Đã đăng xuất tất cả thiết bị.');
+    currentAdmin = null;
+    showLoginScreen();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+/* =====================================================================
+   KIỂM TRA RLS — gọi RPC check_rls_status() (cần tạo trong Supabase)
+===================================================================== */
+async function checkRlsStatus(){
+  const box = document.getElementById('rlsCheckBox');
+  box.textContent = 'Đang kiểm tra...';
+  try{
+    const { data, error } = await sb.rpc('check_rls_status');
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<span style="color:var(--danger);">Không lấy được dữ liệu — có thể chưa tạo hàm <code>check_rls_status()</code> trong Supabase.</span>`;
+      return;
+    }
+    box.innerHTML = data.map(r => `
+      <div style="display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px;">
+        <span style="font-family:var(--font-mono);">${escapeHtml(r.table_name)}</span>
+        <span style="color:${r.rls_enabled ? '#8FD09E' : 'var(--danger)'}; font-weight:600;">
+          ${r.rls_enabled ? '✅ Đã bật RLS' : '⚠️ CHƯA bật RLS'}
+        </span>
+      </div>`).join('');
+  } catch(e){
+    box.innerHTML = `<span style="color:var(--danger);">Lỗi: ${escapeHtml(e.message)} — cần tạo hàm <code>check_rls_status()</code>, xem hướng dẫn SQL đã gửi.</span>`;
+  }
+}
+
+function loadSecurityTab(){
+  refreshMfaStatus();
+  loadAuditLog();
+  document.getElementById('rlsCheckBox').textContent = 'Bấm "Kiểm tra ngay" để quét trạng thái RLS các bảng chính.';
 }
 
 /* =====================================================================
