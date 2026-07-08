@@ -2963,6 +2963,20 @@ async function refreshMfaStatus(){
 
 async function handleMfaAction(){
   const btn = document.getElementById('mfaActionBtn');
+
+  // Luôn làm mới phiên đăng nhập trước khi gọi API MFA — tránh lỗi
+  // "invalid claim: missing sub claim" do token cũ/gần hết hạn.
+  try{
+    const { data: refreshed, error: refreshErr } = await sb.auth.refreshSession();
+    if(refreshErr || !refreshed?.session){
+      showToast('Phiên đăng nhập đã hết hạn, vui lòng đăng xuất rồi đăng nhập lại.');
+      return;
+    }
+  } catch(e){
+    showToast('Không thể làm mới phiên đăng nhập, thử tải lại trang.');
+    return;
+  }
+
   if(btn.dataset.mode === 'disable'){
     if(!confirm('Tắt 2FA sẽ giảm bảo mật tài khoản admin. Chắc chắn tắt?')) return;
     try{
@@ -2974,6 +2988,15 @@ async function handleMfaAction(){
     } catch(e){ showToast('Lỗi: ' + e.message); }
     return;
   }
+
+  // Dọn các factor cũ còn "treo" (tạo dở nhưng chưa xác nhận từ lần trước) để tránh lỗi trùng tên
+  try{
+    const { data: existing } = await sb.auth.mfa.listFactors();
+    const stale = existing?.totp?.filter(f => f.status !== 'verified') || [];
+    for(const f of stale){
+      await sb.auth.mfa.unenroll({ factorId: f.id }).catch(()=>{});
+    }
+  } catch(e){ /* không sao nếu bước dọn dẹp lỗi, vẫn thử enroll tiếp */ }
 
   // Bắt đầu enroll mới
   try{
@@ -2996,6 +3019,7 @@ async function handleMfaEnrollConfirm(){
     errBox.textContent = 'Nhập đủ 6 số.'; errBox.classList.add('show'); return;
   }
   try{
+    await sb.auth.refreshSession();
     const { data: challenge, error: chErr } = await sb.auth.mfa.challenge({ factorId: window._mfaEnrollFactorId });
     if(chErr) throw chErr;
     const { error: vErr } = await sb.auth.mfa.verify({
