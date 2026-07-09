@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
 <style>
 :root{
   --paper:        #121110;   /* nền chính — than đen ấm */
@@ -375,8 +376,32 @@ textarea.field{ resize:vertical; min-height:70px; }
 .chip.on{ background:rgba(127,192,137,0.12); border-color:#7FC089; color:#8FD09E; }
 .chip.off{ background:rgba(224,139,122,0.12); border-color:#E08B7A; color:#F0A290; }
 
+/* ====================== QUILL EDITOR (tab Nội dung trang) — override theo tông tối ====================== */
+.ql-toolbar.ql-snow{
+  border-color: var(--line) !important; background: var(--paper-deep);
+  border-radius: 8px 8px 0 0;
+}
+.ql-container.ql-snow{
+  border-color: var(--line) !important; border-radius: 0 0 8px 8px;
+  font-family: var(--font-body); font-size:14.5px; color: var(--ink);
+}
+.ql-editor{ min-height:380px; color: var(--ink); }
+.ql-editor h2{ font-family: var(--font-display); color: var(--ink); }
+.ql-editor a{ color: var(--coral-deep); }
+.ql-snow .ql-stroke{ stroke: var(--ink-soft); }
+.ql-snow .ql-fill{ fill: var(--ink-soft); }
+.ql-snow .ql-picker{ color: var(--ink-soft); }
+.ql-snow .ql-picker-options{ background: var(--surface-2); border-color: var(--line) !important; }
+.ql-snow .ql-tooltip{ background: var(--surface-2); border-color: var(--line); color: var(--ink); box-shadow: var(--shadow-pop); }
+.ql-snow .ql-tooltip input[type=text]{ background: var(--paper); color: var(--ink); border-color: var(--line); }
+.ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label{ border-color: var(--line); }
+.ql-snow .ql-picker-label{ color: var(--ink-soft); }
+.ql-toolbar.ql-snow button:hover, .ql-toolbar.ql-snow button.ql-active{ color: var(--coral); }
+.ql-toolbar.ql-snow button:hover .ql-stroke, .ql-toolbar.ql-snow button.ql-active .ql-stroke{ stroke: var(--coral); }
+.ql-toolbar.ql-snow button:hover .ql-fill, .ql-toolbar.ql-snow button.ql-active .ql-fill{ fill: var(--coral); }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
 </head>
 <body>
 
@@ -423,6 +448,8 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabNotifs"   onclick="switchTab('notifs')">Thông báo KH</button>
     <button id="mobileTabMarketing" onclick="switchTab('marketing')">Marketing</button>
     <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
+    <button id="mobileTabPages" onclick="switchTab('pages')">Nội dung trang</button>
+    <button id="mobileTabLivechat" onclick="switchTab('livechat')">Live Chat</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -472,6 +499,14 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabSecurity" onclick="switchTab('security')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 6v6c0 5.5 3.4 9.7 8 10 4.6-.3 8-4.5 8-10V6l-8-4z"/></svg>
         Bảo mật
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabPages" onclick="switchTab('pages')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+        Nội dung trang
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabLivechat" onclick="switchTab('livechat')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Live Chat
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1148,6 +1183,75 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: NỘI DUNG TRANG (điều khoản, bảo mật, đặt cọc) -->
+    <div class="tab-panel" id="tabPages">
+      <div class="dash-top">
+        <div>
+          <h1>Nội dung trang</h1>
+          <p>Chỉnh sửa nội dung các trang chính sách hiển thị công khai — không cần sửa code, không cần deploy lại.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="savePolicyContent()">💾 Lưu thay đổi</button>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-body">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Chọn trang cần sửa</label>
+            <select class="field" id="pg_pageSelect" onchange="switchPolicyPage()">
+              <option value="policy_terms">Điều khoản dịch vụ (dieu-khoan-dich-vu.html)</option>
+              <option value="policy_privacy">Chính sách bảo mật (chinh-sach-bao-mat.html)</option>
+              <option value="policy_deposit">Chính sách đặt cọc &amp; hoàn tiền (chinh-sach-dat-coc.html)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Soạn nội dung</h3>
+            <p id="pg_statusText">Đang tải nội dung hiện tại...</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="pg_editor" style="background:var(--surface-2); border-radius:8px; min-height:420px;"></div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head"><div><h3>Xem trước trực tiếp trang thật</h3></div></div>
+        <div class="cfg-body">
+          <a id="pg_previewLink" href="dieu-khoan-dich-vu.html" target="_blank" class="btn btn-ghost btn-sm">↗ Mở trang thật ở tab mới</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: LIVE CHAT -->
+    <div class="tab-panel" id="tabLivechat">
+      <div class="dash-top">
+        <div>
+          <h1>Live Chat</h1>
+          <p>Case tự đóng sau 3 ngày, tự xoá vĩnh viễn sau 14 ngày. Danh sách tự làm mới khi có tin nhắn mới.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadLiveChatTab()">↻ Làm mới</button>
+      </div>
+
+      <div class="dash-stats" style="grid-template-columns:repeat(3,1fr); margin-bottom:22px;">
+        <div class="dash-stat-card"><div class="ds-label">🟢 Đang mở</div><div class="ds-val" id="lcOpenCount">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">⚪ Đã đóng</div><div class="ds-val" id="lcClosedCount">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">Tổng case (14 ngày)</div><div class="ds-val" id="lcTotalCount">—</div></div>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div class="dash-table-head">
+          <h3>Danh sách case</h3>
+        </div>
+        <div id="lcCaseList">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1231,6 +1335,32 @@ textarea.field{ resize:vertical; min-height:70px; }
     </div>
   </div>
 </div>
+
+<!-- ======================= CHAT CASE MODAL ======================= -->
+<div class="modal-overlay" id="chatModalOverlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <div>
+        <h3 id="chatModalTitle">Case chat</h3>
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:2px;" id="chatModalSub"></p>
+      </div>
+      <button class="modal-close" onclick="closeChatModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:0 26px;">
+      <div id="chatModalBody" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:16px 0;"></div>
+    </div>
+    <div style="padding:16px 26px 26px; border-top:1px solid var(--line); display:flex; gap:10px;" id="chatModalInputRow">
+      <input type="text" class="field" id="chatModalInput" placeholder="Nhập câu trả lời...">
+      <button class="btn btn-primary btn-sm" onclick="sendAdminChatReply()">Gửi</button>
+    </div>
+    <div id="chatModalClosedNote" style="display:none; padding:16px 26px 26px; font-size:12.5px; color:var(--ink-soft);">
+      Case này đã đóng, không thể trả lời thêm.
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="serviceModalOverlay">
   <div class="modal">
     <div class="modal-head">
@@ -1729,7 +1859,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1750,6 +1880,8 @@ function switchTab(tab){
   if(tab === 'notifs')   loadCustomerNotifs();
   if(tab === 'marketing') loadMarketingConfig();
   if(tab === 'security') loadSecurityTab();
+  if(tab === 'livechat') loadLiveChatTab();
+  if(tab === 'pages') initPagesTab();
 }
 
 /* =====================================================================
@@ -3127,6 +3259,202 @@ function loadSecurityTab(){
   loadAuditLog();
   document.getElementById('rlsCheckBox').textContent = 'Bấm "Kiểm tra ngay" để quét trạng thái RLS các bảng chính.';
 }
+
+/* =====================================================================
+   NỘI DUNG TRANG (CMS đơn giản) — Điều khoản / Bảo mật / Đặt cọc
+   Lưu vào `site_config` với key policy_terms / policy_privacy / policy_deposit,
+   value = { html: "...", updatedLabel: "Cập nhật lần cuối: ..." }
+===================================================================== */
+const POLICY_DEFAULTS = {"policy_terms": "<p>Điều khoản này áp dụng khi bạn sử dụng dịch vụ thiết kế Website, Tool, Slide, Profile và các dịch vụ liên quan (sau đây gọi là \"Dịch vụ\") do <strong>Phatdatagency</strong> (\"chúng tôi\") cung cấp qua website phatdatagency.id.vn. Khi đặt đơn hàng hoặc sử dụng Dịch vụ, bạn (\"khách hàng\") đồng ý với các điều khoản dưới đây.</p>\n\n  <h2>1. Phạm vi dịch vụ</h2>\n  <p>Chúng tôi cung cấp dịch vụ thiết kế theo yêu cầu (Website, Tool phần mềm nhỏ, Slide thuyết trình, Profile cá nhân/doanh nghiệp) và dịch vụ liên quan đến các nền tảng mạng xã hội (Facebook, TikTok, Instagram). Phạm vi công việc cụ thể, thời gian hoàn thành và chi phí sẽ được thống nhất trực tiếp với khách hàng trước khi bắt đầu thực hiện, dựa trên thông tin khách hàng cung cấp trong form đặt đơn.</p>\n\n  <h2>2. Đặt đơn và thanh toán</h2>\n  <ul>\n    <li>Khách hàng có thể lựa chọn đặt cọc một phần hoặc thanh toán toàn bộ giá trị đơn hàng tại thời điểm đặt đơn, tùy theo dịch vụ.</li>\n    <li>Thanh toán được thực hiện qua VietQR (chuyển khoản ngân hàng) hoặc PayOS (cổng thanh toán trực tuyến).</li>\n    <li>Đơn hàng chỉ được xác nhận xử lý sau khi khoản đặt cọc/thanh toán đã được ghi nhận thành công.</li>\n    <li>Với các dịch vụ chưa có bảng giá cụ thể, chúng tôi sẽ liên hệ tư vấn và báo giá trước khi khách hàng xác nhận đặt cọc.</li>\n  </ul>\n  <p>Chi tiết về hoàn cọc/hoàn tiền được quy định riêng tại <a href=\"chinh-sach-dat-coc.html\">Chính sách đặt cọc &amp; hoàn tiền</a>.</p>\n\n  <h2>3. Trách nhiệm của khách hàng</h2>\n  <ul>\n    <li>Cung cấp thông tin, nội dung, hình ảnh, tài khoản cần thiết (nếu có) đầy đủ và chính xác để chúng tôi thực hiện công việc.</li>\n    <li>Phản hồi các yêu cầu chỉnh sửa, xác nhận trong thời gian hợp lý để không ảnh hưởng tiến độ chung.</li>\n    <li>Đảm bảo nội dung/yêu cầu cung cấp không vi phạm pháp luật, không xâm phạm bản quyền hoặc quyền của bên thứ ba.</li>\n  </ul>\n\n  <h2>4. Bàn giao &amp; chỉnh sửa</h2>\n  <p>Sản phẩm sẽ được bàn giao theo tiến độ đã thống nhất. Số lần chỉnh sửa miễn phí (nếu có) sẽ được thông báo cụ thể theo từng gói dịch vụ. Các yêu cầu chỉnh sửa vượt phạm vi ban đầu đã thống nhất có thể phát sinh thêm chi phí, sẽ được trao đổi trước khi thực hiện.</p>\n\n  <h2>5. Quyền sở hữu trí tuệ</h2>\n  <p>Sau khi khách hàng thanh toán đầy đủ, quyền sử dụng sản phẩm bàn giao (mã nguồn, thiết kế, file...) thuộc về khách hàng cho mục đích sử dụng đã thỏa thuận. Phatdatagency có quyền giới thiệu sản phẩm (ẩn thông tin nhạy cảm nếu cần) trong portfolio/showcase, trừ khi khách hàng có yêu cầu khác bằng văn bản.</p>\n\n  <h2>6. Giới hạn trách nhiệm</h2>\n  <p>Chúng tôi nỗ lực đảm bảo chất lượng dịch vụ nhưng không chịu trách nhiệm với các thiệt hại gián tiếp phát sinh từ việc sử dụng sản phẩm (ví dụ: gián đoạn kinh doanh, mất dữ liệu do bên thứ ba, thay đổi chính sách nền tảng mạng xã hội...) nằm ngoài phạm vi công việc đã thống nhất.</p>\n\n  <h2>7. Thay đổi điều khoản</h2>\n  <p>Điều khoản này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại trang này.</p>\n\n  <h2>8. Liên hệ</h2>\n  <p>Mọi thắc mắc về điều khoản dịch vụ, vui lòng liên hệ qua thông tin ở cuối trang chủ.</p>", "policy_privacy": "<p><strong>Phatdatagency</strong> tôn trọng quyền riêng tư của khách hàng. Chính sách này giải thích chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân như thế nào khi bạn sử dụng website và dịch vụ của chúng tôi.</p>\n\n  <h2>1. Thông tin chúng tôi thu thập</h2>\n  <table>\n    <tr><th>Loại thông tin</th><th>Khi nào thu thập</th></tr>\n    <tr><td>Họ tên, số điện thoại, email</td><td>Khi đặt đơn hàng hoặc tạo tài khoản</td></tr>\n    <tr><td>Nội dung yêu cầu, ngân sách</td><td>Khi điền form đặt đơn</td></tr>\n    <tr><td>Lịch sử đơn hàng, trạng thái thanh toán</td><td>Trong quá trình sử dụng dịch vụ</td></tr>\n    <tr><td>Thiết bị, trình duyệt, nguồn truy cập</td><td>Tự động khi truy cập trang chủ (ẩn danh, không gắn với tài khoản)</td></tr>\n  </table>\n\n  <h2>2. Mục đích sử dụng</h2>\n  <ul>\n    <li>Liên hệ, tư vấn và thực hiện đơn hàng đã đặt.</li>\n    <li>Xử lý thanh toán qua đối tác VietQR/PayOS.</li>\n    <li>Gửi thông báo liên quan đến đơn hàng, tài khoản.</li>\n    <li>Cải thiện chất lượng dịch vụ và trải nghiệm website.</li>\n    <li>Đo lường hiệu quả quảng cáo (Facebook Pixel, TikTok Pixel) — chỉ ghi nhận hành vi tương tác trên trang, không thu thập thêm dữ liệu cá nhân ngoài mục đích quảng cáo.</li>\n  </ul>\n\n  <h2>3. Lưu trữ &amp; bảo mật</h2>\n  <p>Dữ liệu được lưu trữ trên hạ tầng Supabase với các lớp bảo vệ truy cập (Row Level Security), đảm bảo chỉ tài khoản của bạn hoặc quản trị viên được ủy quyền mới truy cập được thông tin đơn hàng/tài khoản của bạn. Mật khẩu tài khoản được mã hóa, chúng tôi không lưu trữ mật khẩu dưới dạng văn bản thô.</p>\n\n  <h2>4. Chia sẻ thông tin với bên thứ ba</h2>\n  <p>Chúng tôi không bán hoặc cho thuê thông tin cá nhân của bạn. Thông tin chỉ được chia sẻ với:</p>\n  <ul>\n    <li>Đối tác thanh toán (PayOS, ngân hàng liên kết VietQR) — để xử lý giao dịch.</li>\n    <li>Nền tảng quảng cáo (Meta/Facebook, TikTok) — chỉ dữ liệu sự kiện tương tác ẩn danh phục vụ đo lường quảng cáo.</li>\n    <li>Cơ quan nhà nước có thẩm quyền, khi có yêu cầu hợp pháp.</li>\n  </ul>\n\n  <h2>5. Quyền của bạn</h2>\n  <p>Bạn có quyền yêu cầu xem, chỉnh sửa hoặc xóa thông tin cá nhân của mình bất kỳ lúc nào bằng cách đăng nhập vào trang \"Tài khoản\" hoặc liên hệ trực tiếp với chúng tôi.</p>\n\n  <h2>6. Cookie</h2>\n  <p>Website có thể sử dụng cookie/localStorage để ghi nhớ trạng thái đăng nhập và cải thiện trải nghiệm sử dụng. Bạn có thể tắt cookie trong trình duyệt, tuy nhiên một số chức năng (như đăng nhập) có thể không hoạt động đầy đủ.</p>\n\n  <h2>7. Liên hệ</h2>\n  <p>Nếu có thắc mắc về chính sách bảo mật, vui lòng liên hệ qua thông tin ở cuối trang chủ.</p>", "policy_deposit": "<p>Chính sách này áp dụng cho tất cả đơn hàng đặt qua website phatdatagency.id.vn, thanh toán qua VietQR hoặc PayOS.</p>\n\n  <h2>1. Hình thức thanh toán</h2>\n  <p>Tùy theo dịch vụ, khách hàng có thể chọn:</p>\n  <div class=\"box good\">\n    <strong>Đặt cọc một phần</strong> — thanh toán trước một khoản (tối thiểu theo quy định từng dịch vụ), phần còn lại thanh toán khi nghiệm thu/bàn giao.\n  </div>\n  <div class=\"box good\">\n    <strong>Thanh toán toàn bộ</strong> — thanh toán 100% giá trị đơn ngay khi đặt, thường áp dụng cho gói giá trị nhỏ hoặc khách muốn hoàn tất một lần.\n  </div>\n\n  <h2>2. Khi nào được hoàn cọc</h2>\n  <ul>\n    <li>Chúng tôi từ chối nhận đơn sau khi khách đã thanh toán (do ngoài khả năng thực hiện) → hoàn <strong>100%</strong> số tiền đã thanh toán.</li>\n    <li>Khách hàng hủy đơn <strong>trước khi</strong> chúng tôi bắt đầu triển khai công việc → hoàn tối thiểu <strong>80%</strong>, phần còn lại là chi phí xử lý/tư vấn ban đầu.</li>\n    <li>Sản phẩm bàn giao sai hoàn toàn so với yêu cầu đã thống nhất bằng văn bản, và hai bên không thể thống nhất phương án chỉnh sửa → xem xét hoàn cọc theo tỷ lệ công việc chưa thực hiện.</li>\n  </ul>\n\n  <h2>3. Khi nào không hoàn cọc</h2>\n  <div class=\"box warn\">\n    <ul style=\"margin:0;\">\n      <li>Khách hàng hủy đơn <strong>sau khi</strong> công việc đã được triển khai (thiết kế, code, sản xuất nội dung...) — cọc được giữ lại tương ứng với phần công việc/thời gian đã thực hiện.</li>\n      <li>Khách hàng thay đổi yêu cầu nhiều lần vượt phạm vi ban đầu dẫn đến không thể hoàn thành trong thời hạn thỏa thuận.</li>\n      <li>Khách hàng ngưng phản hồi/liên lạc quá 15 ngày kể từ lần trao đổi cuối, không xác nhận tiếp tục hay hủy đơn.</li>\n    </ul>\n  </div>\n\n  <h2>4. Thời gian xử lý hoàn tiền</h2>\n  <p>Sau khi hai bên thống nhất phương án hoàn cọc, tiền sẽ được hoàn về đúng tài khoản/phương thức khách đã thanh toán trong vòng <strong>3–7 ngày làm việc</strong>, tùy thời gian xử lý của ngân hàng/PayOS.</p>\n\n  <h2>5. Cách yêu cầu hoàn tiền</h2>\n  <p>Khách hàng liên hệ qua thông tin ở cuối trang chủ (hoặc nhắn qua kênh liên hệ đã hiển thị), cung cấp <strong>mã đơn hàng</strong> (dạng DH-xxxxxx-xxxx, xem tại mục \"Đơn hàng của tôi\" hoặc email/màn hình xác nhận lúc đặt đơn) để chúng tôi tra cứu và xử lý.</p>\n\n  <h2>6. Tra cứu trạng thái đơn hàng</h2>\n  <p>Bạn có thể tự tra cứu trạng thái đơn hàng bất kỳ lúc nào tại mục <a href=\"index.html#lookup\">\"Tra cứu đơn\"</a> trên trang chủ, hoặc đăng nhập vào <a href=\"account.html\">trang Tài khoản</a> để xem đầy đủ lịch sử đơn hàng.</p>"};
+
+const POLICY_PAGE_URLS = {
+  policy_terms: 'dieu-khoan-dich-vu.html',
+  policy_privacy: 'chinh-sach-bao-mat.html',
+  policy_deposit: 'chinh-sach-dat-coc.html',
+};
+
+let pgQuill = null;
+let pgLoadedKey = null;
+
+function initPagesTab(){
+  if(!pgQuill){
+    pgQuill = new Quill('#pg_editor', {
+      theme: 'snow'
+    });
+  }
+  switchPolicyPage();
+}
+
+async function switchPolicyPage(){
+  const key = document.getElementById('pg_pageSelect').value;
+  document.getElementById('pg_previewLink').href = POLICY_PAGE_URLS[key];
+  document.getElementById('pg_statusText').textContent = 'Đang tải nội dung hiện tại...';
+
+  if(!pgQuill){
+    pgQuill = new Quill('#pg_editor', { theme: 'snow' });
+  }
+
+  let html = POLICY_DEFAULTS[key];
+  let sourceLabel = 'nội dung mặc định (chưa từng chỉnh sửa)';
+
+  if(isBackendConfigured() && currentAdmin){
+    try{
+      const { data, error } = await sb.from('site_config').select('value').eq('key', key).single();
+      if(!error && data?.value?.html){
+        html = data.value.html;
+        sourceLabel = 'đã lưu lúc ' + (data.value.updatedLabel || '');
+      }
+    } catch(e){ /* dùng mặc định nếu lỗi */ }
+  }
+
+  pgQuill.root.innerHTML = html;
+  pgLoadedKey = key;
+  document.getElementById('pg_statusText').textContent = 'Đang sửa: ' + sourceLabel;
+}
+
+async function savePolicyContent(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+  const key = document.getElementById('pg_pageSelect').value;
+  const html = pgQuill.root.innerHTML;
+  const updatedLabel = 'Cập nhật lần cuối: ' + new Date().toLocaleDateString('vi-VN', { year:'numeric', month:'long' });
+
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key, value: { html, updatedLabel }, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+    showToast('✅ Đã lưu nội dung trang!');
+    logAdminAction('Sửa nội dung trang', POLICY_PAGE_URLS[key]);
+    document.getElementById('pg_statusText').textContent = 'Đã lưu lúc ' + updatedLabel;
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  }
+}
+
+/* =====================================================================
+   LIVE CHAT (ADMIN) — danh sách case, dọn dẹp tự động, xem/trả lời
+===================================================================== */
+let lcCases = [];
+let lcActiveChannel = null;
+let lcActiveCaseId = null;
+
+async function loadLiveChatTab(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+
+  // Dọn dẹp tự động: đóng case >3 ngày, xoá hẳn case >14 ngày
+  // (chạy ngầm mỗi khi admin mở tab này — bù cho việc không có pg_cron)
+  try{
+    await sb.from('chat_cases')
+      .update({ status: 'closed' })
+      .eq('status', 'open')
+      .lt('created_at', new Date(Date.now() - 3*24*60*60*1000).toISOString());
+
+    await sb.from('chat_cases')
+      .delete()
+      .lt('created_at', new Date(Date.now() - 14*24*60*60*1000).toISOString());
+  } catch(e){ console.warn('Dọn dẹp chat lỗi:', e.message); }
+
+  const listEl = document.getElementById('lcCaseList');
+  try{
+    const { data, error } = await sb.from('chat_cases').select('*').order('last_message_at', { ascending: false }).limit(200);
+    if(error) throw error;
+    lcCases = data || [];
+  } catch(e){
+    listEl.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được (kiểm tra đã tạo bảng chat_cases chưa): ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+
+  const openCases = lcCases.filter(c => c.status === 'open' && (Date.now() - new Date(c.created_at).getTime()) < 3*24*60*60*1000);
+  document.getElementById('lcOpenCount').textContent = openCases.length;
+  document.getElementById('lcClosedCount').textContent = lcCases.length - openCases.length;
+  document.getElementById('lcTotalCount').textContent = lcCases.length;
+
+  if(!lcCases.length){
+    listEl.innerHTML = `<div class="dash-empty">Chưa có case chat nào.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Mã case</th><th>Khách hàng</th><th>Liên hệ</th><th>Tin nhắn gần nhất</th><th>Trạng thái</th>
+  </tr></thead><tbody>${lcCases.map(c => {
+    const isOpen = c.status === 'open' && (Date.now() - new Date(c.created_at).getTime()) < 3*24*60*60*1000;
+    return `<tr style="cursor:pointer;" onclick="openChatModal(${c.id})">
+      <td class="dt-code">${escapeHtml(c.case_code)}</td>
+      <td>${escapeHtml(c.customer_name)}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(c.customer_contact||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${new Date(c.last_message_at).toLocaleString('vi-VN')}</td>
+      <td><span class="svc-status-pill ${isOpen ? 'svc-status-active' : 'svc-status-inactive'}">${isOpen ? 'Đang mở' : 'Đã đóng'}</span></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+async function openChatModal(caseId){
+  const kase = lcCases.find(c => c.id === caseId);
+  if(!kase) return;
+  lcActiveCaseId = caseId;
+
+  const isOpen = kase.status === 'open' && (Date.now() - new Date(kase.created_at).getTime()) < 3*24*60*60*1000;
+  document.getElementById('chatModalTitle').textContent = kase.customer_name;
+  document.getElementById('chatModalSub').textContent = `${kase.case_code} · ${kase.customer_contact || 'không có liên hệ'}`;
+  document.getElementById('chatModalInputRow').style.display = isOpen ? 'flex' : 'none';
+  document.getElementById('chatModalClosedNote').style.display = isOpen ? 'none' : 'block';
+  document.getElementById('chatModalOverlay').classList.add('show');
+
+  await loadChatModalMessages(caseId);
+
+  if(lcActiveChannel) sb.removeChannel(lcActiveChannel);
+  lcActiveChannel = sb.channel('admin-chat-' + caseId)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages', filter:`case_id=eq.${caseId}` }, (payload) => {
+      const body = document.getElementById('chatModalBody');
+      body.insertAdjacentHTML('beforeend', renderAdminChatBubble(payload.new));
+      body.scrollTop = body.scrollHeight;
+    })
+    .subscribe();
+}
+
+function closeChatModal(){
+  document.getElementById('chatModalOverlay').classList.remove('show');
+  if(lcActiveChannel){ sb.removeChannel(lcActiveChannel); lcActiveChannel = null; }
+  lcActiveCaseId = null;
+}
+
+async function loadChatModalMessages(caseId){
+  const body = document.getElementById('chatModalBody');
+  body.innerHTML = 'Đang tải...';
+  const { data, error } = await sb.from('chat_messages').select('*').eq('case_id', caseId).order('created_at', { ascending: true });
+  if(error){ body.innerHTML = 'Lỗi tải tin nhắn.'; return; }
+  body.innerHTML = data.map(renderAdminChatBubble).join('');
+  body.scrollTop = body.scrollHeight;
+}
+
+function renderAdminChatBubble(m){
+  const time = new Date(m.created_at).toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+  const isAdmin = m.sender_type === 'admin';
+  return `<div style="align-self:${isAdmin ? 'flex-end' : 'flex-start'}; max-width:80%; padding:9px 13px; border-radius:14px; font-size:13.5px;
+    background:${isAdmin ? 'var(--coral)' : 'var(--surface-2)'}; color:${isAdmin ? 'var(--white)' : 'var(--ink)'};">
+    ${escapeHtml(m.message)}
+    <div style="font-size:9.5px; opacity:.7; margin-top:4px;">${time}</div>
+  </div>`;
+}
+
+async function sendAdminChatReply(){
+  const input = document.getElementById('chatModalInput');
+  const text = input.value.trim();
+  if(!text || !lcActiveCaseId) return;
+  input.value = '';
+  try{
+    const { error } = await sb.from('chat_messages').insert({
+      case_id: lcActiveCaseId, sender_type: 'admin',
+      sender_name: currentAdmin?.email || 'Admin', message: text
+    });
+    if(error) throw error;
+    await sb.from('chat_cases').update({ last_message_at: new Date().toISOString() }).eq('id', lcActiveCaseId);
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+document.getElementById('chatModalInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') sendAdminChatReply();
+});
 
 /* =====================================================================
    SQL HELPER — hiển thị SQL tạo bảng site_config nếu chưa có
