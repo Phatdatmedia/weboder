@@ -2671,10 +2671,11 @@ async function initContactInfo(){
 initContactInfo();
 
 /* =====================================================================
-   LIVE CHAT — khách mở "case" hỗ trợ (không cần đăng nhập), realtime
-   qua Supabase. Case tự đóng sau 3 ngày, admin xoá hẳn sau 14 ngày.
+   LIVE CHAT — khách mở "case" hỗ trợ, KHÔNG cần tự tạo tài khoản.
+   Bảo mật: dùng Supabase Anonymous Auth — mỗi trình duyệt được cấp 1
+   phiên đăng nhập ẩn danh (uid riêng), RLS chỉ cho phép đọc/ghi case
+   của đúng uid đó. Case tự đóng sau 3 ngày, admin xoá hẳn sau 14 ngày.
 ===================================================================== */
-const CHAT_STORAGE_KEY = 'pda_chat_case';
 let chatChannel = null;
 let chatPanelOpen = false;
 let chatWidgetInited = false;
@@ -2689,29 +2690,35 @@ function toggleChatPanel(){
   }
 }
 
+/* Đảm bảo trình duyệt có phiên đăng nhập (kể cả ẩn danh) trước khi chạm vào chat_cases/chat_messages */
+async function ensureChatAuth(){
+  const { data: sessionData } = await sb.auth.getSession();
+  if(sessionData?.session) return sessionData.session.user.id;
+
+  const { data, error } = await sb.auth.signInAnonymously();
+  if(error) throw error;
+  return data.user.id;
+}
+
 async function initChatWidget(){
   if(!isBackendConfigured()){
     document.getElementById('chatStartErr').textContent = 'Chat chưa khả dụng lúc này.';
     document.getElementById('chatStartErr').classList.add('show');
     return;
   }
-  const saved = localStorage.getItem(CHAT_STORAGE_KEY);
-  if(!saved) return showChatStartView();
-
-  let state;
-  try{ state = JSON.parse(saved); } catch(e){ return showChatStartView(); }
 
   try{
-    const { data: kase, error } = await sb.from('chat_cases').select('*').eq('id', state.caseId).single();
-    if(error || !kase) throw new Error('not found');
+    await ensureChatAuth();
+    // RLS tự lọc chỉ trả về case thuộc uid của trình duyệt này -> không cần tự quản lý "mã bí mật" nữa
+    const { data: cases, error } = await sb.from('chat_cases').select('*').order('created_at', { ascending:false }).limit(1);
+    if(error) throw error;
+    const kase = cases?.[0];
+    if(!kase) return showChatStartView();
 
     const ageMs = Date.now() - new Date(kase.created_at).getTime();
     const isOpen = kase.status === 'open' && ageMs < 3 * 24 * 60 * 60 * 1000;
 
-    if(!isOpen){
-      localStorage.removeItem(CHAT_STORAGE_KEY);
-      return showChatClosedView();
-    }
+    if(!isOpen) return showChatClosedView();
 
     window._activeChatCase = { id: kase.id, code: kase.case_code, name: kase.customer_name };
     document.getElementById('chatPanelSub').textContent = 'Mã case: ' + kase.case_code;
@@ -2719,7 +2726,7 @@ async function initChatWidget(){
     subscribeChatRealtime(kase.id);
     showChatThreadView();
   } catch(e){
-    localStorage.removeItem(CHAT_STORAGE_KEY);
+    console.warn('Chat init lỗi:', e.message);
     showChatStartView();
   }
 }
@@ -2747,7 +2754,6 @@ function showChatClosedView(){
 function resetChatToStart(){
   if(chatChannel){ sb.removeChannel(chatChannel); chatChannel = null; }
   window._activeChatCase = null;
-  localStorage.removeItem(CHAT_STORAGE_KEY);
   document.getElementById('chatStartName').value = '';
   document.getElementById('chatStartContact').value = '';
   showChatStartView();
@@ -2768,13 +2774,14 @@ async function handleStartChatCase(){
   const caseCode = 'CASE-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,6).toUpperCase();
 
   try{
+    const uid = await ensureChatAuth();
     const { data, error } = await sb.from('chat_cases').insert({
-      case_code: caseCode, customer_name: name, customer_contact: contact || null, status: 'open'
+      case_code: caseCode, customer_name: name, customer_contact: contact || null,
+      status: 'open', user_id: uid
     }).select().single();
     if(error) throw error;
 
     window._activeChatCase = { id: data.id, code: data.case_code, name };
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify({ caseId: data.id, caseCode: data.case_code, customerName: name }));
     document.getElementById('chatPanelSub').textContent = 'Mã case: ' + data.case_code;
 
     // Tin nhắn chào mừng tự động
