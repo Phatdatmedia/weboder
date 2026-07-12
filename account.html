@@ -453,6 +453,12 @@ table.orders-table tr:hover td{ background:var(--paper); }
       <div class="err-msg" id="registerErr"></div>
       <div class="ok-msg"  id="registerOk"></div>
 
+      <!-- Honeypot chống bot: người dùng thật không thấy field này -->
+      <div style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" aria-hidden="true">
+        <label for="reg_website">Website</label>
+        <input type="text" id="reg_website" name="website" tabindex="-1" autocomplete="off">
+      </div>
+
       <div class="form-group">
         <label>Họ và tên <span class="req">*</span></label>
         <input type="text" class="field" id="reg_name" placeholder="Nguyễn Văn A">
@@ -848,6 +854,12 @@ async function handleRegister(){
   errBox.classList.remove("show");
   okBox.classList.remove("show");
 
+  // Chống bot: honeypot bị điền -> chặn âm thầm
+  if(document.getElementById("reg_website").value.trim()){
+    console.warn('Register blocked: bot suspected.');
+    return;
+  }
+
   if(!name || !email || !pass || !pass2){
     errBox.textContent = "Vui lòng điền đầy đủ tất cả các trường.";
     errBox.classList.add("show"); return;
@@ -905,11 +917,52 @@ async function handleRegister(){
 /* ============================================================
    LOGIN — dùng Supabase Auth (sb.auth.signInWithPassword)
 ============================================================ */
+/* ============================================================
+   CHỐNG DÒ MẬT KHẨU (BRUTE-FORCE) — khoá tạm tăng dần theo trình duyệt.
+   Đây là lớp bảo vệ bổ sung ở client (dễ vượt qua nếu xoá localStorage),
+   Supabase Auth đã tự giới hạn tốc độ theo IP ở phía server; lớp này
+   thêm ma sát để cản trở việc dò mật khẩu bằng UI thông thường.
+============================================================ */
+const LOGIN_LOCK_KEY = 'pda_login_attempts';
+
+function getLoginLockState(){
+  try{ return JSON.parse(localStorage.getItem(LOGIN_LOCK_KEY)) || { fails: 0, lockUntil: 0 }; }
+  catch(e){ return { fails: 0, lockUntil: 0 }; }
+}
+function setLoginLockState(state){
+  localStorage.setItem(LOGIN_LOCK_KEY, JSON.stringify(state));
+}
+function checkLoginLocked(errBoxId){
+  const state = getLoginLockState();
+  if(state.lockUntil > Date.now()){
+    const secs = Math.ceil((state.lockUntil - Date.now()) / 1000);
+    document.getElementById(errBoxId).textContent = `Bạn đã nhập sai nhiều lần. Vui lòng thử lại sau ${secs} giây.`;
+    document.getElementById(errBoxId).classList.add('show');
+    return true;
+  }
+  return false;
+}
+function registerLoginFail(){
+  const state = getLoginLockState();
+  state.fails = (state.fails || 0) + 1;
+  // Khoá tăng dần: 5 lần sai -> khoá 30s, 6 lần -> 60s, 7 lần -> 120s... tối đa 10 phút
+  if(state.fails >= 5){
+    const lockSeconds = Math.min(30 * Math.pow(2, state.fails - 5), 600);
+    state.lockUntil = Date.now() + lockSeconds * 1000;
+  }
+  setLoginLockState(state);
+}
+function registerLoginSuccess(){
+  setLoginLockState({ fails: 0, lockUntil: 0 });
+}
+
 async function handleLogin(){
   const email  = document.getElementById("login_email").value.trim();
   const pass   = document.getElementById("login_pass").value;
   const errBox = document.getElementById("loginErr");
   errBox.classList.remove("show");
+
+  if(checkLoginLocked("loginErr")) return;
 
   if(!email || !pass){
     errBox.textContent = "Vui lòng nhập email và mật khẩu.";
@@ -924,10 +977,12 @@ async function handleLogin(){
   try{
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     if(error){
+      registerLoginFail();
       errBox.textContent = translateAuthError(error.message);
       errBox.classList.add("show");
       return;
     }
+    registerLoginSuccess();
     await enterDashboard();
   } catch(err){
     errBox.textContent = "Không thể kết nối Supabase. Kiểm tra lại cấu hình.";

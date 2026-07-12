@@ -1155,6 +1155,21 @@ textarea.field{ resize:vertical; min-height:70px; }
         </div>
       </div>
 
+      <!-- QUÉT LỖ HỔNG TOÀN DIỆN -->
+      <div class="cfg-section" style="border-color:var(--coral);">
+        <div class="cfg-section-head">
+          <div>
+            <h3>🔎 Quét lỗ hổng bảo mật</h3>
+            <p>Chạy toàn bộ các kiểm tra bên dưới cùng lúc: RLS, policy "mở toang", secret bị lộ trong code, trạng thái 2FA. Nên chạy lại sau mỗi lần thêm bảng/tính năng mới.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <button class="btn btn-primary btn-sm" id="vulnScanBtn" style="margin-bottom:16px;" onclick="runFullVulnScan()">🔎 Quét toàn diện ngay</button>
+          <div id="vulnScanSummary" style="margin-bottom:14px; font-size:14px; font-weight:600;"></div>
+          <div id="vulnScanBox" style="font-size:13px; color:var(--ink-soft);">Bấm "Quét toàn diện ngay" để bắt đầu — quá trình mất khoảng 5-10 giây.</div>
+        </div>
+      </div>
+
       <!-- Checklist RLS -->
       <div class="cfg-section">
         <div class="cfg-section-head">
@@ -1451,11 +1466,47 @@ function showDashShell(){
   startForceLogoutWatcher();
 }
 
+/* ============================================================
+   CHỐNG DÒ MẬT KHẨU ADMIN — khoá tạm tăng dần, nghiêm ngặt hơn login
+   khách vì đây là tài khoản có toàn quyền quản trị. Lớp bảo vệ bổ sung
+   ở client; Supabase Auth đã tự giới hạn theo IP ở phía server.
+============================================================ */
+const ADMIN_LOGIN_LOCK_KEY = 'pda_admin_login_attempts';
+
+function getAdminLoginLockState(){
+  try{ return JSON.parse(localStorage.getItem(ADMIN_LOGIN_LOCK_KEY)) || { fails: 0, lockUntil: 0 }; }
+  catch(e){ return { fails: 0, lockUntil: 0 }; }
+}
+function setAdminLoginLockState(state){ localStorage.setItem(ADMIN_LOGIN_LOCK_KEY, JSON.stringify(state)); }
+function checkAdminLoginLocked(){
+  const state = getAdminLoginLockState();
+  if(state.lockUntil > Date.now()){
+    const secs = Math.ceil((state.lockUntil - Date.now()) / 1000);
+    document.getElementById('loginError').textContent = `Nhập sai quá nhiều lần. Vui lòng thử lại sau ${secs} giây.`;
+    document.getElementById('loginError').classList.add('show');
+    return true;
+  }
+  return false;
+}
+function registerAdminLoginFail(){
+  const state = getAdminLoginLockState();
+  state.fails = (state.fails || 0) + 1;
+  // Nghiêm ngặt hơn khách: khoá từ lần sai thứ 3 -> 30s, tăng gấp đôi mỗi lần, tối đa 15 phút
+  if(state.fails >= 3){
+    const lockSeconds = Math.min(30 * Math.pow(2, state.fails - 3), 900);
+    state.lockUntil = Date.now() + lockSeconds * 1000;
+  }
+  setAdminLoginLockState(state);
+}
+function registerAdminLoginSuccess(){ setAdminLoginLockState({ fails: 0, lockUntil: 0 }); }
+
 async function handleAdminLogin(){
   const email    = document.getElementById('adminEmail').value.trim();
   const password = document.getElementById('adminPassword').value;
   const errBox   = document.getElementById('loginError');
   const btn      = document.getElementById('loginBtn');
+
+  if(checkAdminLoginLocked()) return;
 
   if(!email || !password){
     errBox.textContent = "Vui lòng nhập email và mật khẩu.";
@@ -1476,6 +1527,7 @@ async function handleAdminLogin(){
   try{
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if(error){
+      registerAdminLoginFail();
       errBox.textContent = "Sai email hoặc mật khẩu.";
       errBox.classList.add('show');
       return;
@@ -1489,11 +1541,13 @@ async function handleAdminLogin(){
       .single();
 
     if(pErr || !profile?.is_admin){
+      registerAdminLoginFail();
       await sb.auth.signOut();
       errBox.textContent = "Tài khoản này không có quyền quản trị.";
       errBox.classList.add('show');
       return;
     }
+    registerAdminLoginSuccess();
 
     // Kiểm tra xem tài khoản đã bật 2FA chưa — nếu có, yêu cầu nhập mã trước khi vào dashboard
     const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -2665,6 +2719,7 @@ async function savePaymentConfig(){
     });
     renderPayHistory();
     showToast('✅ Đã lưu cấu hình thanh toán!');
+    logAdminAction('Lưu cấu hình thanh toán', `Cọc mặc định: ${depositAmount.toLocaleString('vi-VN')}đ`);
 
   } catch(e){
     showToast('Lỗi: ' + e.message);
@@ -2750,6 +2805,7 @@ async function saveContactConfig(){
     );
     if(error) throw error;
     showToast('✅ Đã lưu cấu hình liên hệ!');
+    logAdminAction('Lưu cấu hình liên hệ', `Zalo: ${cfg.zalo || '—'}, Điện thoại: ${cfg.phone || '—'}`);
   } catch(e){
     showToast('Lỗi: ' + e.message);
   } finally {
@@ -3027,6 +3083,7 @@ async function saveMarketingConfig(){
     );
     if(error) throw error;
     showToast('✅ Đã lưu cấu hình Marketing!');
+    logAdminAction('Lưu cấu hình Marketing', `FB Pixel: ${cfg.fbPixelId ? 'có' : 'trống'}, TikTok Pixel: ${cfg.ttPixelId ? 'có' : 'trống'}`);
   } catch(e){
     showToast('Lỗi: ' + e.message);
   }
@@ -3232,6 +3289,117 @@ async function handleLogoutAllDevices(){
 /* =====================================================================
    KIỂM TRA RLS — gọi RPC check_rls_status() (cần tạo trong Supabase)
 ===================================================================== */
+/* =====================================================================
+   QUÉT LỖ HỔNG TOÀN DIỆN — gộp 4 kiểm tra: RLS, policy "mở toang",
+   secret bị lộ trong code (tự tải lại các trang thật để soi), 2FA.
+===================================================================== */
+async function runFullVulnScan(){
+  const btn = document.getElementById('vulnScanBtn');
+  const summaryBox = document.getElementById('vulnScanSummary');
+  const box = document.getElementById('vulnScanBox');
+  btn.disabled = true; btn.textContent = 'Đang quét...';
+  box.innerHTML = 'Đang chạy các kiểm tra...';
+  summaryBox.textContent = '';
+
+  const findings = []; // { level: 'critical'|'warning'|'ok', title, detail }
+
+  // 1) RLS bật/tắt trên từng bảng
+  try{
+    const { data, error } = await sb.rpc('check_rls_status');
+    if(error) throw error;
+    (data||[]).forEach(r => {
+      if(!r.rls_enabled){
+        findings.push({ level:'critical', title:`Bảng "${r.table_name}" CHƯA bật RLS`, detail:'Bất kỳ ai cũng đọc/ghi được trực tiếp qua API. Bật RLS ngay cho bảng này.' });
+      }
+    });
+  } catch(e){
+    findings.push({ level:'warning', title:'Không kiểm tra được RLS', detail:e.message + ' — cần tạo hàm check_rls_status() trong Supabase.' });
+  }
+
+  // 2) Policy RLS "mở toang" (kiểu lỗi y hệt vụ rò rỉ chat trước đây)
+  try{
+    const { data, error } = await sb.rpc('check_policy_risks');
+    if(error) throw error;
+    (data||[]).forEach(r => {
+      if(r.risk_level === 'critical'){
+        findings.push({ level:'critical', title:`Policy "${r.policy_name}" trên bảng "${r.table_name}" (${r.command})`, detail:r.detail });
+      } else if(r.risk_level === 'warning'){
+        findings.push({ level:'warning', title:`Policy "${r.policy_name}" trên bảng "${r.table_name}" (${r.command})`, detail:r.detail });
+      }
+    });
+  } catch(e){
+    findings.push({ level:'warning', title:'Không quét được policy RLS', detail:e.message + ' — cần tạo hàm check_policy_risks() trong Supabase.' });
+  }
+
+  // 3) Tự tải lại các trang thật của web, soi tìm secret bị lộ (service_role key, mật khẩu cứng...)
+  const pagesToScan = ['index.html','account.html','showcase.html','payment-success.html','payment-cancel.html'];
+  for(const page of pagesToScan){
+    try{
+      const res = await fetch(page, { cache:'no-store' });
+      if(!res.ok) continue;
+      const text = await res.text();
+
+      // Giải mã mọi JWT tìm thấy, cảnh báo nếu là service_role (cực kỳ nguy hiểm)
+      const jwts = text.match(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g) || [];
+      const uniqueJwts = [...new Set(jwts)];
+      uniqueJwts.forEach(tok => {
+        try{
+          const payload = JSON.parse(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+          if(payload.role === 'service_role'){
+            findings.push({ level:'critical', title:`Service_role key bị lộ trong "${page}"`, detail:'Key này có TOÀN QUYỀN trên database, phải xoá khỏi code và đổi key ngay lập tức trong Supabase Dashboard.' });
+          }
+        } catch(e){ /* không giải mã được thì bỏ qua */ }
+      });
+
+      // Tìm các pattern secret viết cứng khác
+      const suspiciousPatterns = [
+        { re: /CHECKSUM_KEY['"]?\s*[:=]\s*['"][A-Za-z0-9]{10,}['"]/i, label:'PayOS CHECKSUM_KEY viết cứng trong code' },
+        { re: /CLIENT_ID['"]?\s*[:=]\s*['"][A-Za-z0-9-]{15,}['"]/i, label:'CLIENT_ID viết cứng trong code' },
+        { re: /sk_live_[A-Za-z0-9]{10,}/i, label:'Secret key dạng sk_live_... bị lộ' },
+      ];
+      suspiciousPatterns.forEach(p => {
+        if(p.re.test(text)){
+          findings.push({ level:'critical', title:`${p.label} (trong "${page}")`, detail:'Cần chuyển key này sang Supabase Edge Function Secrets, không để trong code phía client.' });
+        }
+      });
+    } catch(e){ /* trang không tồn tại hoặc lỗi mạng, bỏ qua */ }
+  }
+
+  // 4) Trạng thái 2FA của admin đang đăng nhập
+  try{
+    const { data } = await sb.auth.mfa.listFactors();
+    const verified = data?.totp?.find(f => f.status === 'verified');
+    if(!verified){
+      findings.push({ level:'warning', title:'2FA đang TẮT cho tài khoản admin này', detail:'Nên bật ở mục "Xác thực 2 lớp" phía trên để tăng bảo mật đăng nhập.' });
+    }
+  } catch(e){ /* bỏ qua */ }
+
+  // Tổng hợp kết quả
+  const critical = findings.filter(f => f.level === 'critical');
+  const warning  = findings.filter(f => f.level === 'warning');
+
+  if(!findings.length){
+    summaryBox.innerHTML = `<span style="color:#8FD09E;">✅ Không phát hiện vấn đề nào — mọi kiểm tra đều đạt.</span>`;
+  } else {
+    summaryBox.innerHTML = `<span style="color:${critical.length ? 'var(--danger)' : '#E7C083'};">
+      ${critical.length ? `🔴 ${critical.length} vấn đề NGHIÊM TRỌNG` : ''}
+      ${critical.length && warning.length ? ' · ' : ''}
+      ${warning.length ? `🟡 ${warning.length} cảnh báo` : ''}
+    </span>`;
+  }
+
+  box.innerHTML = findings.length ? findings.map(f => `
+    <div style="padding:12px 0; border-bottom:1px solid var(--line);">
+      <div style="font-weight:600; color:${f.level === 'critical' ? 'var(--danger)' : '#E7C083'};">
+        ${f.level === 'critical' ? '🔴' : '🟡'} ${escapeHtml(f.title)}
+      </div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">${escapeHtml(f.detail)}</div>
+    </div>`).join('') : `<span style="color:#8FD09E;">Tất cả các kiểm tra đều đạt yêu cầu. Nên quét lại định kỳ, đặc biệt sau khi thêm bảng/tính năng mới.</span>`;
+
+  logAdminAction('Quét lỗ hổng bảo mật', `${critical.length} nghiêm trọng, ${warning.length} cảnh báo`);
+  btn.disabled = false; btn.textContent = '🔎 Quét toàn diện ngay';
+}
+
 async function checkRlsStatus(){
   const box = document.getElementById('rlsCheckBox');
   box.textContent = 'Đang kiểm tra...';
