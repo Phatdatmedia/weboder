@@ -1380,7 +1380,7 @@ textarea.field{ resize:vertical; min-height:90px; }
             <input type="text" class="field" id="f_phone" placeholder="09xx xxx xxx">
           </div>
           <div class="form-group">
-            <label>Email <span class="req">*</span></label>
+            <label>Email <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(không bắt buộc)</span></label>
             <input type="email" class="field" id="f_email" placeholder="ban@email.com">
           </div>
           <div class="form-group">
@@ -1772,8 +1772,13 @@ async function handleSubmitOrder(){
   const desc = document.getElementById('f_desc').value.trim();
   const errBox = document.getElementById('formError');
 
-  if(!selectedService || !selectedPayment || !name || !phone || !email || !desc){
+  if(!selectedService || !selectedPayment || !name || !phone || !desc){
     errBox.textContent = "Vui lòng điền đầy đủ các trường bắt buộc (đánh dấu *), bao gồm chọn dịch vụ và phương thức thanh toán.";
+    errBox.classList.add('show');
+    return;
+  }
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errBox.textContent = "Email không đúng định dạng. Vui lòng kiểm tra lại (VD: ban@email.com) hoặc để trống.";
     errBox.classList.add('show');
     return;
   }
@@ -2056,18 +2061,23 @@ async function createOrderSupabase(data){
 async function createPayOSLink(orderCode){
   if(!isBackendConfigured()) throw new Error("Chưa cấu hình Supabase");
 
-  const { data, error } = await sb.functions.invoke('create-payos-link', {
-    body: {
-      orderCode,                                    // mã đơn, VD: DH-250704-1234
-      amount: window._lastAmount || CONFIG.DEPOSIT_AMOUNT, // số tiền thanh toán (VNĐ)
-      description: CONFIG.PAYOS_DESCRIPTION, // tối đa 25 ký tự, không dấu
-      returnUrl: CONFIG.PAYOS_RETURN_URL,
-      cancelUrl: CONFIG.PAYOS_CANCEL_URL,
-      buyerName: window._lastBuyerName || '',
-      buyerEmail: window._lastBuyerEmail || '',
-      buyerPhone: window._lastBuyerPhone || '',
-    }
-  });
+  // PayOS bắt buộc buyerEmail đúng định dạng email NẾU có gửi lên.
+  // Vì đa số khách dùng Zalo/SĐT thay vì email, ta chỉ gửi trường này
+  // khi thực sự hợp lệ — không gửi chuỗi rỗng/sai để tránh bị từ chối.
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(window._lastBuyerEmail || '');
+
+  const payload = {
+    orderCode,                                    // mã đơn, VD: DH-250704-1234
+    amount: window._lastAmount || CONFIG.DEPOSIT_AMOUNT, // số tiền thanh toán (VNĐ)
+    description: CONFIG.PAYOS_DESCRIPTION, // tối đa 25 ký tự, không dấu
+    returnUrl: CONFIG.PAYOS_RETURN_URL,
+    cancelUrl: CONFIG.PAYOS_CANCEL_URL,
+    buyerName: window._lastBuyerName || '',
+    buyerPhone: window._lastBuyerPhone || '',
+  };
+  if(emailValid) payload.buyerEmail = window._lastBuyerEmail;
+
+  const { data, error } = await sb.functions.invoke('create-payos-link', { body: payload });
 
   if(error) return { ok: false, error: error.message };
   return data; // { ok, checkoutUrl, paymentLinkId } hoặc { ok:false, error }
