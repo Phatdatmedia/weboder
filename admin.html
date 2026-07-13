@@ -243,6 +243,13 @@ table.dash-table tr:hover td{ background: var(--surface-2); }
 
 /* ====================== SERVICE TABLE ====================== */
 .svc-toolbar{ display:flex; justify-content:flex-end; margin-bottom:16px; }
+.filter-pill-btn{
+  padding:8px 16px; border-radius:999px; font-size:12.5px; font-weight:500;
+  border:1.5px solid var(--line); background:var(--surface); color:var(--ink-soft);
+  transition:all .15s ease; cursor:pointer;
+}
+.filter-pill-btn:hover{ border-color:var(--coral); color:var(--ink); }
+.filter-pill-btn.active{ background:var(--coral); border-color:var(--coral); color:var(--white); }
 .svc-status-pill{
   font-family: var(--font-mono); font-size:11.5px; padding:5px 12px; border-radius:999px; font-weight:600;
 }
@@ -450,6 +457,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
     <button id="mobileTabPages" onclick="switchTab('pages')">Nội dung trang</button>
     <button id="mobileTabLivechat" onclick="switchTab('livechat')">Live Chat</button>
+    <button id="mobileTabSocial" onclick="switchTab('social')">Chăm sóc MXH</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -507,6 +515,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabLivechat" onclick="switchTab('livechat')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
         Live Chat
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabSocial" onclick="switchTab('social')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg>
+        Chăm sóc MXH
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -826,8 +838,8 @@ textarea.field{ resize:vertical; min-height:70px; }
             </div>
             <div class="cfg-form-group">
               <label>Nội dung chuyển khoản mặc định</label>
-              <input type="text" class="field" id="pay_depositDesc" placeholder="Dat coc don hang" maxlength="25">
-              <small>Tối đa 25 ký tự, không dấu (dùng cho PayOS)</small>
+              <input type="text" class="field" id="pay_depositDesc" placeholder="Dat coc don hang" maxlength="40">
+              <small>Tối đa 25 ký tự, PayOS bắt buộc không dấu — hệ thống sẽ TỰ ĐỘNG bỏ dấu khi lưu (VD: "Đặt cọc" → "Dat coc")</small>
             </div>
           </div>
         </div>
@@ -1267,7 +1279,123 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: CHĂM SÓC DỊCH VỤ MẠNG XÃ HỘI -->
+    <div class="tab-panel" id="tabSocial">
+      <div class="dash-top">
+        <div>
+          <h1>Chăm sóc dịch vụ mạng xã hội</h1>
+          <p>Quản lý đơn Facebook / Instagram / Threads / TikTok — công cụ nội bộ, khách không nhìn thấy mục này.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openSocialCareForm()">+ Thêm mục mới</button>
+      </div>
+
+      <div class="dash-stats" style="grid-template-columns:repeat(4,1fr); margin-bottom:20px;">
+        <div class="dash-stat-card"><div class="ds-label">Đang thực hiện</div><div class="ds-val" id="scStatInProgress">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">Đã hoàn thành</div><div class="ds-val" id="scStatDone">—</div></div>
+        <div class="dash-stat-card"><div class="ds-label">Chưa thanh toán</div><div class="ds-val" id="scStatUnpaid">—</div></div>
+        <div class="dash-stat-card" style="border-color:var(--danger);"><div class="ds-label">🔴 Bùng</div><div class="ds-val" id="scStatScam">—</div></div>
+      </div>
+
+      <div class="svc-toolbar" style="justify-content:flex-start; gap:8px; margin-bottom:16px;">
+        <button type="button" class="filter-pill-btn active" data-platform="all" onclick="filterSocialCare('all', this)">Tất cả</button>
+        <button type="button" class="filter-pill-btn" data-platform="Facebook" onclick="filterSocialCare('Facebook', this)">📘 Facebook</button>
+        <button type="button" class="filter-pill-btn" data-platform="Instagram" onclick="filterSocialCare('Instagram', this)">📷 Instagram</button>
+        <button type="button" class="filter-pill-btn" data-platform="Threads" onclick="filterSocialCare('Threads', this)">🧵 Threads</button>
+        <button type="button" class="filter-pill-btn" data-platform="TikTok" onclick="filterSocialCare('TikTok', this)">🎵 TikTok</button>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div id="socialCareTableBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ======================= SOCIAL CARE MODAL (thêm / sửa) ======================= -->
+<div class="modal-overlay" id="socialCareModalOverlay">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3 id="socialCareModalTitle">Thêm mục chăm sóc</h3>
+      <button class="modal-close" onclick="closeSocialCareForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nền tảng</label>
+          <select class="field" id="sc_platform">
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="Threads">Threads</option>
+            <option value="TikTok">TikTok</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ngày nhận đơn</label>
+          <input type="date" class="field" id="sc_receivedDate">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Link tài khoản</label>
+        <input type="text" class="field" id="sc_link" placeholder="https://facebook.com/...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Chủ tài khoản</label>
+          <input type="text" class="field" id="sc_accountOwner" placeholder="Tên chủ tài khoản">
+        </div>
+        <div class="form-group">
+          <label>Nguồn khách</label>
+          <input type="text" class="field" id="sc_customerSource" placeholder="VD: Zalo: Nguyễn Văn A">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tình trạng tài khoản</label>
+          <select class="field" id="sc_accountStatus">
+            <option value="Live">🟢 Live</option>
+            <option value="Die">🔴 Die</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Trạng thái công việc</label>
+          <select class="field" id="sc_taskStatus">
+            <option value="Đã nhận đơn">Đã nhận đơn</option>
+            <option value="Đang thực hiện">Đang thực hiện</option>
+            <option value="Đã hoàn thành">Đã hoàn thành</option>
+            <option value="Huỷ đơn">Huỷ đơn</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Giá tiền (VNĐ)</label>
+          <input type="number" class="field" id="sc_price" placeholder="500000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Tình trạng thanh toán</label>
+          <select class="field" id="sc_paymentStatus">
+            <option value="Chưa thanh toán">Chưa thanh toán</option>
+            <option value="Đã thanh toán">Đã thanh toán</option>
+            <option value="Bùng">🔴 Bùng</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Ghi chú</label>
+        <textarea class="field" id="sc_notes" rows="2" placeholder="Ghi chú thêm (nếu có)..."></textarea>
+      </div>
+      <div class="modal-error" id="socialCareModalError"></div>
+      <div class="modal-submit-row">
+        <button class="btn btn-ghost btn-sm" onclick="closeSocialCareForm()">Huỷ</button>
+        <button class="btn btn-primary btn-sm" id="socialCareSaveBtn" onclick="handleSaveSocialCare()">Lưu</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ======================= PROJECT MODAL (thêm / sửa) ======================= -->
@@ -1913,7 +2041,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -1935,6 +2063,7 @@ function switchTab(tab){
   if(tab === 'marketing') loadMarketingConfig();
   if(tab === 'security') loadSecurityTab();
   if(tab === 'livechat') loadLiveChatTab();
+  if(tab === 'social')   loadSocialCareTable();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -2689,9 +2818,19 @@ async function savePaymentConfig(){
   const depositAmount = Number(document.getElementById('pay_depositAmount').value) || 0;
   if(depositAmount < 1000){ showToast('Số tiền đặt cọc tối thiểu 1.000đ.'); return; }
 
+  // PayOS BẮT BUỘC description không dấu, tối đa 25 ký tự -> tự động loại bỏ dấu
+  // để tránh lỗi tạo link thanh toán dù admin có gõ dấu hay không.
+  const rawDesc = document.getElementById('pay_depositDesc').value.trim();
+  const cleanDesc = rawDesc
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // bỏ dấu
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9 ]/g, '') // bỏ ký tự đặc biệt còn sót
+    .slice(0, 25);
+  document.getElementById('pay_depositDesc').value = cleanDesc; // cập nhật lại UI cho khớp giá trị thật sẽ lưu
+
   const cfg = {
     depositAmount,
-    depositDesc : document.getElementById('pay_depositDesc').value.trim().slice(0,25),
+    depositDesc : cleanDesc,
     bankName    : document.getElementById('pay_bankName').value.trim(),
     bankId      : document.getElementById('pay_bankId').value.trim(),
     accNum      : document.getElementById('pay_accNum').value.trim(),
@@ -3623,6 +3762,179 @@ async function sendAdminChatReply(){
 document.getElementById('chatModalInput').addEventListener('keydown', (e) => {
   if(e.key === 'Enter') sendAdminChatReply();
 });
+
+/* =====================================================================
+   CHĂM SÓC DỊCH VỤ MẠNG XÃ HỘI (Facebook/Instagram/Threads/TikTok)
+===================================================================== */
+let allSocialCare = [];
+let socialCareFilter = 'all';
+let editingSocialCareId = null;
+
+const PLATFORM_ICON = { Facebook:'📘', Instagram:'📷', Threads:'🧵', TikTok:'🎵' };
+
+async function loadSocialCareTable(){
+  const box = document.getElementById('socialCareTableBody');
+  try{
+    const { data, error } = await sb.from('social_care').select('*').order('created_at', { ascending:false });
+    if(error) throw error;
+    allSocialCare = data || [];
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được (kiểm tra đã tạo bảng social_care chưa): ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  renderSocialCareStats();
+  renderSocialCareTable();
+}
+
+function renderSocialCareStats(){
+  document.getElementById('scStatInProgress').textContent = allSocialCare.filter(s => s.task_status === 'Đang thực hiện').length;
+  document.getElementById('scStatDone').textContent = allSocialCare.filter(s => s.task_status === 'Đã hoàn thành').length;
+  document.getElementById('scStatUnpaid').textContent = allSocialCare.filter(s => s.payment_status === 'Chưa thanh toán').length;
+  document.getElementById('scStatScam').textContent = allSocialCare.filter(s => s.payment_status === 'Bùng').length;
+}
+
+function filterSocialCare(platform, btnEl){
+  socialCareFilter = platform;
+  document.querySelectorAll('.filter-pill-btn').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  renderSocialCareTable();
+}
+
+function renderSocialCareTable(){
+  const box = document.getElementById('socialCareTableBody');
+  const rows = socialCareFilter === 'all' ? allSocialCare : allSocialCare.filter(s => s.platform === socialCareFilter);
+
+  if(!rows.length){
+    box.innerHTML = `<div class="dash-empty">Chưa có mục nào${socialCareFilter !== 'all' ? ' cho ' + socialCareFilter : ''}.</div>`;
+    return;
+  }
+
+  const taskBadge = (status) => {
+    const map = { 'Đã nhận đơn':'svc-status-inactive', 'Đang thực hiện':'svc-status-active', 'Đã hoàn thành':'svc-status-active', 'Huỷ đơn':'svc-status-inactive' };
+    const color = status === 'Đã hoàn thành' ? 'background:rgba(127,192,137,0.15);color:#8FD09E;'
+      : status === 'Đang thực hiện' ? 'background:rgba(127,168,224,0.15);color:#93B8ED;'
+      : status === 'Huỷ đơn' ? 'background:rgba(224,139,122,0.15);color:#F0A290;'
+      : 'background:rgba(156,146,132,0.15);color:var(--ink-soft);';
+    return `<span class="svc-status-pill" style="${color}">${escapeHtml(status)}</span>`;
+  };
+  const payBadge = (status) => {
+    const color = status === 'Đã thanh toán' ? 'background:rgba(127,192,137,0.15);color:#8FD09E;'
+      : status === 'Bùng' ? 'background:rgba(255,90,60,0.18);color:var(--danger);'
+      : 'background:rgba(224,181,104,0.15);color:#E7C083;';
+    return `<span class="svc-status-pill" style="${color}">${escapeHtml(status)}</span>`;
+  };
+
+  box.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Nền tảng</th><th>Chủ TK</th><th>Nguồn khách</th><th>TT tài khoản</th><th>Trạng thái</th><th>Giá</th><th>Thanh toán</th><th>Ngày nhận</th><th>Ghi chú</th><th></th>
+  </tr></thead><tbody>${rows.map(s => `
+    <tr>
+      <td>${PLATFORM_ICON[s.platform]||''} ${escapeHtml(s.platform)}${s.link ? `<br><a href="${escapeHtml(s.link)}" target="_blank" rel="noopener" style="font-size:11px; color:var(--ink-soft); text-decoration:underline;">Xem link ↗</a>` : ''}</td>
+      <td>${escapeHtml(s.account_owner||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(s.customer_source||'—')}</td>
+      <td>${s.account_status === 'Die' ? '🔴 Die' : '🟢 Live'}</td>
+      <td>${taskBadge(s.task_status)}</td>
+      <td style="font-family:var(--font-mono); font-size:12.5px; white-space:nowrap;">${s.price != null ? Number(s.price).toLocaleString('vi-VN')+'đ' : '—'}</td>
+      <td>${payBadge(s.payment_status)}</td>
+      <td style="font-size:12px; color:var(--ink-soft); white-space:nowrap;">${s.received_date ? new Date(s.received_date).toLocaleDateString('vi-VN') : '—'}</td>
+      <td style="font-size:12px; color:var(--ink-soft); max-width:160px;" title="${escapeHtml(s.notes||'')}">${escapeHtml((s.notes||'').slice(0,40))}${(s.notes||'').length > 40 ? '…' : ''}</td>
+      <td class="svc-actions">
+        <button onclick="openSocialCareForm(${s.id})">Sửa</button>
+        <button class="danger" onclick="handleDeleteSocialCare(${s.id})">Xoá</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function openSocialCareForm(id){
+  editingSocialCareId = id || null;
+  const errBox = document.getElementById('socialCareModalError');
+  errBox.classList.remove('show');
+
+  if(id){
+    const s = allSocialCare.find(x => x.id === id);
+    document.getElementById('socialCareModalTitle').textContent = 'Sửa mục chăm sóc';
+    document.getElementById('sc_platform').value = s.platform;
+    document.getElementById('sc_link').value = s.link || '';
+    document.getElementById('sc_accountOwner').value = s.account_owner || '';
+    document.getElementById('sc_customerSource').value = s.customer_source || '';
+    document.getElementById('sc_accountStatus').value = s.account_status || 'Live';
+    document.getElementById('sc_taskStatus').value = s.task_status || 'Đã nhận đơn';
+    document.getElementById('sc_price').value = s.price != null ? s.price : '';
+    document.getElementById('sc_paymentStatus').value = s.payment_status || 'Chưa thanh toán';
+    document.getElementById('sc_receivedDate').value = s.received_date || '';
+    document.getElementById('sc_notes').value = s.notes || '';
+  } else {
+    document.getElementById('socialCareModalTitle').textContent = 'Thêm mục chăm sóc';
+    document.getElementById('sc_platform').value = 'Facebook';
+    document.getElementById('sc_link').value = '';
+    document.getElementById('sc_accountOwner').value = '';
+    document.getElementById('sc_customerSource').value = '';
+    document.getElementById('sc_accountStatus').value = 'Live';
+    document.getElementById('sc_taskStatus').value = 'Đã nhận đơn';
+    document.getElementById('sc_price').value = '';
+    document.getElementById('sc_paymentStatus').value = 'Chưa thanh toán';
+    document.getElementById('sc_receivedDate').value = new Date().toISOString().slice(0,10);
+    document.getElementById('sc_notes').value = '';
+  }
+  document.getElementById('socialCareModalOverlay').classList.add('show');
+}
+
+function closeSocialCareForm(){
+  document.getElementById('socialCareModalOverlay').classList.remove('show');
+  editingSocialCareId = null;
+}
+
+async function handleSaveSocialCare(){
+  const errBox = document.getElementById('socialCareModalError');
+  const row = {
+    platform        : document.getElementById('sc_platform').value,
+    link            : document.getElementById('sc_link').value.trim() || null,
+    account_owner   : document.getElementById('sc_accountOwner').value.trim() || null,
+    customer_source : document.getElementById('sc_customerSource').value.trim() || null,
+    account_status  : document.getElementById('sc_accountStatus').value,
+    task_status     : document.getElementById('sc_taskStatus').value,
+    price           : document.getElementById('sc_price').value === '' ? null : Number(document.getElementById('sc_price').value),
+    payment_status  : document.getElementById('sc_paymentStatus').value,
+    received_date   : document.getElementById('sc_receivedDate').value || null,
+    notes           : document.getElementById('sc_notes').value.trim() || null,
+    updated_at      : new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('socialCareSaveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    let error;
+    if(editingSocialCareId){
+      ({ error } = await sb.from('social_care').update(row).eq('id', editingSocialCareId));
+    } else {
+      ({ error } = await sb.from('social_care').insert(row));
+    }
+    if(error) throw error;
+
+    showToast('✅ Đã lưu!');
+    logAdminAction(editingSocialCareId ? 'Sửa mục chăm sóc MXH' : 'Thêm mục chăm sóc MXH', `${row.platform} — ${row.account_owner||''}`);
+    closeSocialCareForm();
+    await loadSocialCareTable();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function handleDeleteSocialCare(id){
+  const s = allSocialCare.find(x => x.id === id);
+  if(!confirm(`Xoá mục "${s?.account_owner || s?.platform}"? Không thể hoàn tác.`)) return;
+  try{
+    const { error } = await sb.from('social_care').delete().eq('id', id);
+    if(error) throw error;
+    showToast('Đã xoá.');
+    logAdminAction('Xoá mục chăm sóc MXH', `${s?.platform} — ${s?.account_owner||''}`);
+    await loadSocialCareTable();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
 
 /* =====================================================================
    SQL HELPER — hiển thị SQL tạo bảng site_config nếu chưa có
