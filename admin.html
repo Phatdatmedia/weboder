@@ -6,6 +6,9 @@
 <title>Quản trị đơn hàng</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest-admin.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0A0908">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -458,6 +461,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabPages" onclick="switchTab('pages')">Nội dung trang</button>
     <button id="mobileTabLivechat" onclick="switchTab('livechat')">Live Chat</button>
     <button id="mobileTabSocial" onclick="switchTab('social')">Chăm sóc MXH</button>
+    <button id="mobileTabApp" onclick="switchTab('app')">📲 Cài app</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -519,6 +523,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabSocial" onclick="switchTab('social')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg>
         Chăm sóc MXH
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabApp" onclick="switchTab('app')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        Cài app
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1311,6 +1319,43 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: CÀI APP + THÔNG BÁO ĐẨY -->
+    <div class="tab-panel" id="tabApp">
+      <div class="dash-top">
+        <div>
+          <h1>📲 Cài app trên điện thoại</h1>
+          <p>Cài trang quản trị như 1 app riêng trên màn hình chính, nhận thông báo ngay khi có đơn mới hoặc tin nhắn chat mới — không cần mở trình duyệt.</p>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Bước 1 — Cài đặt lên màn hình chính</h3>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.7;">
+            <b style="color:var(--ink);">Trên Android (Chrome):</b> bấm menu ⋮ góc trên phải → chọn "Cài đặt ứng dụng" hoặc "Thêm vào Màn hình chính".<br>
+            <b style="color:var(--ink);">Trên iPhone (Safari):</b> bấm nút Chia sẻ (hình vuông có mũi tên) → chọn "Thêm vào Màn hình chính".
+          </div>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>Bước 2 — Bật thông báo đẩy</h3>
+            <p>Nhận thông báo ngay khi có đơn mới hoặc tin nhắn chat mới, kể cả khi không mở app.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="pushStatusBox" style="margin-bottom:14px; font-size:13.5px;">Đang kiểm tra...</div>
+          <button class="btn btn-primary btn-sm" id="pushActionBtn" onclick="handlePushAction()">Bật thông báo</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -2041,7 +2086,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -2064,6 +2109,7 @@ function switchTab(tab){
   if(tab === 'security') loadSecurityTab();
   if(tab === 'livechat') loadLiveChatTab();
   if(tab === 'social')   loadSocialCareTable();
+  if(tab === 'app')      refreshPushStatus();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -3934,6 +3980,92 @@ async function handleDeleteSocialCare(id){
     logAdminAction('Xoá mục chăm sóc MXH', `${s?.platform} — ${s?.account_owner||''}`);
     await loadSocialCareTable();
   } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+/* =====================================================================
+   PWA + PUSH NOTIFICATIONS (ADMIN)
+===================================================================== */
+const VAPID_PUBLIC_KEY = 'BG-05O8BGI8t3nAP5u4kyGqglq4okyWhzqAFb30zYigLxW8q7MlP13C7ZKN-MpqfnqVFWMTl81WJRWgDp9NPoGs';
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW đăng ký lỗi:', e));
+}
+
+async function refreshPushStatus(){
+  const box = document.getElementById('pushStatusBox');
+  const btn = document.getElementById('pushActionBtn');
+
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    box.innerHTML = '<span style="color:var(--danger);">⚠️ Trình duyệt này không hỗ trợ thông báo đẩy.</span>';
+    btn.style.display = 'none';
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    box.innerHTML = '<span style="color:var(--danger);">⚠️ Bạn đã chặn thông báo trước đó. Vào cài đặt trình duyệt để bật lại quyền thông báo cho trang này.</span>';
+    btn.style.display = 'none';
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription();
+
+  if(sub){
+    box.innerHTML = '<span style="color:#8FD09E;">✅ Thông báo đẩy đang BẬT trên thiết bị này.</span>';
+    btn.textContent = 'Tắt thông báo';
+    btn.dataset.mode = 'disable';
+  } else {
+    box.innerHTML = 'Chưa bật thông báo trên thiết bị này.';
+    btn.textContent = 'Bật thông báo';
+    btn.dataset.mode = 'enable';
+  }
+  btn.style.display = 'inline-flex';
+}
+
+async function handlePushAction(){
+  const btn = document.getElementById('pushActionBtn');
+  const reg = await navigator.serviceWorker.ready;
+
+  if(btn.dataset.mode === 'disable'){
+    const sub = await reg.pushManager.getSubscription();
+    if(sub){
+      await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      await sub.unsubscribe();
+    }
+    showToast('Đã tắt thông báo.');
+    return refreshPushStatus();
+  }
+
+  try{
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      showToast('Bạn cần cho phép thông báo để dùng tính năng này.');
+      return;
+    }
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+    const subJson = sub.toJSON();
+    const { error } = await sb.from('push_subscriptions').upsert({
+      is_admin: true,
+      endpoint: subJson.endpoint,
+      p256dh: subJson.keys.p256dh,
+      auth_key: subJson.keys.auth,
+    }, { onConflict: 'endpoint' });
+    if(error) throw error;
+
+    showToast('✅ Đã bật thông báo!');
+    refreshPushStatus();
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  }
 }
 
 /* =====================================================================
