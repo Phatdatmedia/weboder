@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sóng Sánh Coffee - Từng ngụm đắm say</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-stone-50 text-stone-900 font-sans antialiased">
+
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="coffee" class="w-6 h-6 text-orange-600"></i>
+                <span class="font-bold text-xl tracking-tight text-stone-900">Sóng Sánh <span class="text-orange-600">Coffee</span></span>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
+                <a href="#" class="hover:text-orange-600 transition">Trang chủ</a>
+                <a href="#menu-section" class="hover:text-orange-600 transition">Thực đơn</a>
+                <a href="#" class="hover:text-orange-600 transition">Về chúng tôi</a>
+                <a href="#" class="hover:text-orange-600 transition">Liên hệ</a>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button id="cart-toggle-btn" class="relative p-2 text-stone-600 hover:text-orange-600 transition cursor-pointer">
+                    <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+                    <span id="cart-badge" class="absolute -top-1 -right-1 bg-orange-600 text-white font-mono text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                </button>
+                
+                <div id="auth-zone">
+                    <button id="login-trigger-btn" class="inline-flex items-center gap-2 bg-orange-600 text-white hover:bg-orange-700 font-medium text-sm rounded-xl px-4 py-2 shadow-sm transition active:scale-95 cursor-pointer">
+                        Đăng nhập
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="bg-gradient-to-b from-stone-900 to-stone-950 text-white py-20 px-6 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div class="space-y-6">
+                <span class="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-xs font-semibold">
+                    ✨ Hơn 30 món thức uống & đồ ăn
+                </span>
+                <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+                    Sóng Sánh<br>từng ngụm cà phê
+                </h1>
+                <p class="text-stone-400 text-base md:text-lg max-w-md">
+                    Cà phê nguyên chất, trà trái cây tươi mát và bánh ngọt thủ công — đặt món chỉ trong vài giây.
+                </p>
+                <a href="#menu-section" class="inline-flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-medium px-6 py-3 rounded-xl shadow-lg transition transform active:scale-95">
+                    Xem thực đơn <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+            <div class="flex justify-center relative">
+                <div class="w-72 h-72 bg-orange-600/10 rounded-full absolute blur-3xl"></div>
+                <div class="relative text-center space-y-2">
+                    <span class="block text-4xl animate-bounce duration-1000 opacity-70">💨</span>
+                    <span class="block text-[150px] leading-none select-none">☕</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="management-zone" class="max-w-7xl mx-auto px-6 mt-8 hidden">
+        <div class="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center gap-2 pb-4 border-b border-stone-100 mb-4">
+                <i data-lucide="shield-check" class="text-red-600 w-5 h-5"></i>
+                <h2 class="font-bold text-sm uppercase tracking-wider text-stone-800">Bảng điều khiển hệ thống</h2>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="switchTab('shop')" class="px-4 py-2 rounded-xl text-xs font-bold bg-stone-900 text-white cursor-pointer">🛒 Màn hình gọi món</button>
+                <button id="nav-orders-btn" onclick="switchTab('orders')" class="hidden px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 cursor-pointer">📦 Quản lý đơn hàng</button>
+                <button id="nav-products-btn" onclick="switchTab('products')" class="hidden px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 cursor-pointer">⚙️ Kho hàng (Món mới)</button>
+                <button id="nav-dashboard-btn" onclick="switchTab('dashboard')" class="hidden px-4 py-2 rounded-xl text-xs font-bold bg-stone-100 text-stone-600 hover:bg-stone-200 cursor-pointer">📊 Thống kê doanh thu</button>
+            </div>
+
+            <div id="panel-orders" class="admin-panel hidden overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-stone-200 text-stone-400 font-medium"><th class="pb-3">Mã đơn</th><th class="pb-3">Tài khoản</th><th class="pb-3">Hình thức</th><th class="pb-3">Tổng tiền</th><th class="pb-3">Trạng thái</th><th class="pb-3 text-right">Xử lý</th></tr>
+                    </thead>
+                    <tbody id="order-list-table"></tbody>
+                </table>
+            </div>
+
+            <div id="panel-products" class="admin-panel hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-sm text-stone-700">Danh sách sản phẩm trong kho</h3>
+                    <button onclick="openAddProductModal()" class="bg-stone-900 text-white text-xs px-3 py-1.5 rounded-xl font-bold cursor-pointer">+ Thêm món mới</button>
+                </div>
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-stone-200 text-stone-400 font-medium"><th class="pb-3">Icon</th><th class="pb-3">Tên món</th><th class="pb-3">Danh mục</th><th class="pb-3">Giá tiền</th><th class="pb-3 text-right">Hành động</th></tr>
+                    </thead>
+                    <tbody id="admin-product-table"></tbody>
+                </table>
+            </div>
+
+            <div id="panel-dashboard" class="admin-panel hidden grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-stone-50 border border-stone-200 p-4 rounded-xl">
+                    <p class="text-[10px] text-stone-400 font-bold uppercase">Doanh số</p>
+                    <h4 id="stat-total-revenue" class="text-xl font-mono font-bold text-orange-600 mt-1">0đ</h4>
+                </div>
+                <div class="bg-stone-50 border border-stone-200 p-4 rounded-xl">
+                    <p class="text-[10px] text-stone-400 font-bold uppercase">Đơn thành công</p>
+                    <h4 id="stat-success-orders" class="text-xl font-mono font-bold text-emerald-600 mt-1">0 đơn</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="menu-section" class="max-w-7xl mx-auto px-6 py-16 space-y-8">
+        <div class="text-center md:text-left">
+            <p class="text-xs font-bold text-orange-600 uppercase tracking-widest">Thực đơn</p>
+            <h2 class="text-3xl font-extrabold text-stone-900 mt-1">Đa dạng món, chọn theo sở thích</h2>
+            <p class="text-stone-500 text-sm mt-1">Cà phê nguyên chất rang xay tại chỗ & trà trái cây tươi mát.</p>
+        </div>
+
+        <div id="category-tabs" class="flex flex-wrap gap-2 justify-center md:justify-start">
+            </div>
+
+        <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            </div>
+    </section>
+
+    <div id="auth-modal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs p-4 items-center justify-center flex hidden">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 relative shadow-xl">
+            <button id="auth-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 cursor-pointer">✕</button>
+            <div class="flex border-b border-stone-200 mb-6">
+                <button id="tab-login-btn" class="flex-1 pb-2 font-bold text-sm text-orange-600 border-b-2 border-orange-600 cursor-pointer">Đăng nhập</button>
+                <button id="tab-register-btn" class="flex-1 pb-2 font-medium text-sm text-stone-400 border-b-2 border-transparent cursor-pointer">Tạo tài khoản</button>
+            </div>
+            <h3 id="auth-title" class="text-base font-bold text-stone-900 mb-4">Chào mừng quay trở lại</h3>
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-600 mb-1">Địa chỉ Email</label>
+                    <input type="email" id="auth-email" required class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-600 mb-1">Mật khẩu</label>
+                    <input type="password" id="auth-password" required minlength="6" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-orange-600 text-white font-medium py-2.5 rounded-xl text-sm transition hover:bg-orange-700 cursor-pointer shadow-sm">
+                    Xác nhận Đăng nhập
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="cart-drawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl border-l border-stone-200 transform translate-x-full transition-transform duration-300 flex flex-col hidden">
+        <div class="p-4 border-b border-stone-100 flex items-center justify-between">
+            <h3 class="font-bold text-stone-900 flex items-center gap-2"><i data-lucide="shopping-bag" class="w-5 h-5"></i> Giỏ hàng</h3>
+            <button id="cart-close-btn" class="p-1 hover:bg-stone-100 rounded-lg cursor-pointer">✕</button>
+        </div>
+        <div id="cart-items-container" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+        <div id="cart-footer" class="p-4 border-t border-stone-100 bg-stone-50 hidden">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs text-stone-500 font-bold">Tổng tiền:</span>
+                <span id="cart-total-text" class="font-mono font-bold text-base text-orange-600">0đ</span>
+            </div>
+            <button id="checkout-trigger-btn" class="w-full bg-orange-600 text-white py-2.5 rounded-xl font-bold text-xs hover:bg-orange-700 transition cursor-pointer">Đặt món ngay</button>
+        </div>
+    </div>
+
+    <div id="checkout-modal" class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-xs p-4 items-center justify-center flex hidden">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 relative shadow-xl">
+            <button id="checkout-close-btn" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 cursor-pointer">✕</button>
+            <h3 class="text-base font-bold text-stone-900 mb-4">Thông tin đơn đặt hàng</h3>
+            <form id="checkout-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-600 mb-1">Hình thức nhận hàng</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setOrderType('Tại quán')" id="type-tai-quan" class="py-2 text-xs font-bold rounded-xl border-2 border-orange-600 bg-orange-50 text-orange-700 cursor-pointer">Tại quán</button>
+                        <button type="button" onclick="setOrderType('Mang đi')" id="type-mang-di" class="py-2 text-xs font-bold rounded-xl border border-stone-200 text-stone-600 cursor-pointer">Mang đi</button>
+                    </div>
+                </div>
+                <div class="bg-stone-50 p-4 rounded-xl flex justify-between items-center border border-stone-100">
+                    <span class="text-xs font-bold text-stone-600">Số tiền cần trả:</span>
+                    <span id="checkout-final-total" class="font-mono font-bold text-base text-orange-600">0đ</span>
+                </div>
+                <button type="submit" class="w-full bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-orange-700 transition cursor-pointer">Xác nhận đặt đơn</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

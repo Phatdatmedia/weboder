@@ -1,0 +1,22 @@
+/* Quản lý hiển thị Drawer Giỏ Hàng */
+#cart-drawer.hidden {
+    display: none;
+}
+#cart-drawer:not(.hidden) {
+    display: flex;
+    transform: translateX(0);
+}
+
+/* Các tùy biến thanh cuộn mượt cho danh mục di động */
+#category-tabs::-webkit-scrollbar {
+    display: none;
+}
+#category-tabs {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Chuyển đổi trạng thái tab mượt */
+.tab-content.hidden {
+    display: none !important;
+}

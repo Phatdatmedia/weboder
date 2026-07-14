@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bot Rep Tin Nhắn — Trợ lý tư vấn tự động</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7F6;
+    --surface:#FFFFFF;
+    --ink:#1F2A24;
+    --ink-soft:#5B6B62;
+    --primary:#4E7C6B;
+    --primary-dark:#365448;
+    --rose:#BE5772;
+    --gold:#C89B3C;
+    --line:#DCE3DF;
+    --line-soft:#E9EEEC;
+    --bubble-khach:#EDEFEE;
+    --bubble-tv:#4E7C6B;
+    --shadow: 0 1px 2px rgba(31,42,36,0.04), 0 8px 24px rgba(31,42,36,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  .masthead{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:20px; flex-wrap:wrap;
+    margin-bottom:22px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--primary); font-weight:600; margin-bottom:6px;
+  }
+  h1{
+    font-family:'Fraunces',serif; font-weight:600;
+    font-size:32px; margin:0; letter-spacing:-.01em; color:var(--ink);
+  }
+  .sub{color:var(--ink-soft); font-size:14px; margin-top:6px; max-width:520px; line-height:1.5;}
+  .cfg-toggle{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--line);
+    padding:10px 16px; border-radius:999px; cursor:pointer;
+    font-size:13px; font-weight:600; color:var(--ink);
+    box-shadow:var(--shadow); transition:border-color .15s;
+  }
+  .cfg-toggle:hover{border-color:var(--primary);}
+  .cfg-toggle svg{width:15px;height:15px;stroke:var(--primary);}
+
+  /* ---------- config panel ---------- */
+  .panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:20px 22px; margin-bottom:22px; box-shadow:var(--shadow);
+    display:none;
+  }
+  .panel.open{display:block;}
+  .panel h3{font-family:'Fraunces',serif; font-size:16px; margin:0 0 14px; font-weight:600;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; letter-spacing:.02em;}
+  .field input, .field textarea{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+    font-family:'Inter',sans-serif; font-size:13.5px; color:var(--ink); background:#FCFDFC;
+  }
+  .field input:focus, .field textarea:focus{outline:none; border-color:var(--primary);}
+  .field textarea{resize:vertical; min-height:78px; line-height:1.5;}
+  .field small{display:block; margin-top:5px; color:#8B978F; font-size:11.5px;}
+  .tele-note{
+    font-size:12px; color:var(--ink-soft); background:var(--line-soft); border-radius:8px;
+    padding:10px 12px; line-height:1.55; margin-top:4px;
+  }
+  .tele-note a{color:var(--primary); font-weight:600;}
+
+  /* ---------- main layout ---------- */
+  .main{display:grid; grid-template-columns:1.15fr 0.85fr; gap:24px;}
+  @media(max-width:880px){ .main{grid-template-columns:1fr;} .grid2{grid-template-columns:1fr;} }
+
+  /* phone / chat frame */
+  .phone{
+    background:var(--surface); border-radius:20px; border:1px solid var(--line);
+    box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+    height:640px;
+  }
+  .phone-head{
+    background:var(--primary); color:#fff; padding:14px 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .avatar{
+    width:34px;height:34px;border-radius:50%; background:rgba(255,255,255,.22);
+    display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:600;
+  }
+  .phone-head .name{font-weight:600; font-size:14px;}
+  .phone-head .status{font-size:11px; opacity:.8; display:flex; align-items:center; gap:5px;}
+  .dot{width:6px;height:6px;border-radius:50%; background:#8CE0B8; display:inline-block;}
+
+  .chat-area{
+    flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:10px;
+    background:
+      radial-gradient(circle at 1px 1px, #E4E9E7 1px, transparent 1.4px) 0 0/16px 16px,
+      var(--bg);
+  }
+  .bubble-row{display:flex;}
+  .bubble-row.khach{justify-content:flex-start;}
+  .bubble-row.tv{justify-content:flex-end;}
+  .bubble{
+    max-width:74%; padding:10px 14px; border-radius:16px; font-size:13.8px; line-height:1.5;
+    animation:pop .18s ease;
+  }
+  @keyframes pop{from{opacity:0; transform:translateY(4px) scale(.98);} to{opacity:1; transform:none;}}
+  .bubble.khach{background:var(--bubble-khach); color:var(--ink); border-bottom-left-radius:4px;}
+  .bubble.tv{background:var(--bubble-tv); color:#fff; border-bottom-right-radius:4px;}
+  .typing{
+    display:inline-flex; gap:4px; padding:12px 14px; background:var(--bubble-tv);
+    border-radius:16px; border-bottom-right-radius:4px;
+  }
+  .typing span{width:6px;height:6px;border-radius:50%; background:#fff; opacity:.6; animation:blink 1.1s infinite;}
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes blink{0%,80%,100%{opacity:.3;}40%{opacity:.9;}}
+
+  .composer{
+    border-top:1px solid var(--line); padding:12px 14px; display:flex; gap:8px; background:var(--surface);
+  }
+  .composer input{
+    flex:1; border:1px solid var(--line); border-radius:999px; padding:10px 16px;
+    font-family:'Inter',sans-serif; font-size:13.5px;
+  }
+  .composer input:focus{outline:none; border-color:var(--primary);}
+  .composer button{
+    background:var(--primary); border:none; color:#fff; width:40px; height:40px; border-radius:50%;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    transition:background .15s;
+  }
+  .composer button:hover{background:var(--primary-dark);}
+  .composer button:disabled{opacity:.5; cursor:default;}
+  .hint-row{padding:0 14px 12px; display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{
+    font-size:11.5px; background:var(--line-soft); border:1px solid var(--line); color:var(--ink-soft);
+    padding:6px 10px; border-radius:999px; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .chip:hover{border-color:var(--primary); color:var(--primary);}
+
+  /* ---------- lead intake card ---------- */
+  .card-col{display:flex; flex-direction:column; gap:16px;}
+  .index-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .index-card::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:34px;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 10px, var(--line-soft) 10px 11px);
+    border-right:1px dashed var(--line);
+  }
+  .index-card-inner{padding:20px 22px 22px 52px; position:relative;}
+  .card-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--rose); font-weight:600; margin-bottom:4px;
+  }
+  .card-title{font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin:0 0 14px;}
+  .lead-row{display:flex; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line-soft);}
+  .lead-row:last-of-type{border-bottom:none;}
+  .lead-label{
+    width:96px; flex-shrink:0; font-size:11px; font-weight:700; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:.05em; padding-top:2px;
+  }
+  .lead-value{font-size:14px; color:var(--ink); line-height:1.5; font-weight:500; min-height:20px;}
+  .lead-value.empty{color:#B7C0BB; font-weight:400; font-style:italic;}
+  .lead-value.mono{font-family:'IBM Plex Mono',monospace; font-size:13.5px;}
+  .stamp{
+    position:absolute; top:16px; right:18px;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.06em;
+    color:var(--rose); border:2px solid var(--rose); border-radius:8px; padding:5px 10px;
+    transform:rotate(6deg) scale(0); transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+    opacity:.9;
+  }
+  .stamp.show{transform:rotate(6deg) scale(1);}
+  .meta-line{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#9BA69F;
+    margin-top:14px; padding-top:12px; border-top:1px solid var(--line-soft);
+    display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;
+  }
+
+  .send-panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px;
+    box-shadow:var(--shadow);
+  }
+  .send-panel h4{font-family:'Fraunces',serif; font-size:15px; margin:0 0 4px; font-weight:600;}
+  .send-panel p{font-size:12.5px; color:var(--ink-soft); margin:0 0 12px; line-height:1.5;}
+  .send-btn{
+    width:100%; background:var(--rose); color:#fff; border:none; border-radius:10px;
+    padding:11px 14px; font-weight:600; font-size:13.5px; cursor:pointer; font-family:'Inter',sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity .15s;
+  }
+  .send-btn:disabled{opacity:.45; cursor:not-allowed;}
+  .send-btn:hover:not(:disabled){opacity:.9;}
+  .send-status{font-size:12px; margin-top:10px; padding:8px 10px; border-radius:8px; display:none;}
+  .send-status.ok{display:block; background:#EAF3EC; color:var(--primary-dark);}
+  .send-status.err{display:block; background:#FBEAEA; color:#A13636;}
+
+  .empty-state{font-size:12.5px; color:var(--ink-soft); text-align:center; padding:14px 4px 0; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Demo · Facebook Messenger</div>
+      <h1>Bot Rep Tin Nhắn Tư Vấn</h1>
+      <div class="sub">Trợ lý tự động trả lời khách nhắn tin, khai thác nhu cầu và tự điền thẻ thông tin khách hàng — sẵn sàng gửi về Telegram cho đội sale chốt đơn.</div>
+    </div>
+    <div class="cfg-toggle" id="cfgToggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Cấu hình
+    </div>
+  </div>
+
+  <div class="panel" id="cfgPanel">
+    <h3>Thông tin doanh nghiệp &amp; kịch bản tư vấn</h3>
+    <div class="field">
+      <label>Chọn ngành có sẵn (tự động điền kịch bản mẫu — có thể sửa lại sau)</label>
+      <select id="industryPreset">
+        <option value="tham_my">💆 Thẩm mỹ viện / Spa</option>
+        <option value="nha_khoa">🦷 Nha khoa</option>
+        <option value="gym">🏋️ Gym / Trung tâm fitness</option>
+        <option value="yoga">🧘 Yoga / Pilates studio</option>
+        <option value="tocnail">💇 Salon tóc / Nail</option>
+        <option value="petspa">🐾 Spa &amp; grooming thú cưng</option>
+        <option value="giaoduc">📚 Trung tâm Anh ngữ / Gia sư</option>
+        <option value="luyenthi">✏️ Trung tâm luyện thi</option>
+        <option value="bds">🏠 Bất động sản</option>
+        <option value="noithat">🛋️ Nội thất / Thiết kế nhà</option>
+        <option value="thoitrang">👗 Shop thời trang</option>
+        <option value="mypham">💄 Mỹ phẩm / Bán lẻ online</option>
+        <option value="nhahang">🍜 Nhà hàng / Quán ăn</option>
+        <option value="cafe">☕ Quán cà phê / Trà sữa</option>
+        <option value="khachsan">🏨 Khách sạn / Homestay</option>
+        <option value="dulich">✈️ Du lịch / Tour</option>
+        <option value="oto">🚗 Showroom ô tô / Xe máy</option>
+        <option value="baohiem">🛡️ Bảo hiểm</option>
+        <option value="phongkham">🩺 Phòng khám đa khoa</option>
+        <option value="studio">📸 Studio chụp ảnh / Cưới</option>
+        <option value="custom">⚙️ Khác (tự nhập)</option>
+      </select>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>Tên trang / thương hiệu</label>
+        <input id="bizName" value="One Optimize Clinic">
+      </div>
+      <div class="field">
+        <label>Lĩnh vực</label>
+        <input id="bizField" value="Thẩm mỹ viện">
+      </div>
+    </div>
+    <div class="field">
+      <label>Kịch bản / thông tin dịch vụ (bot sẽ dựa vào đây để tư vấn)</label>
+      <textarea id="bizScript">Dịch vụ chính: xóa mụn thịt bằng công nghệ sóng CO2 (không để sẹo), trị mụn nam giới, nâng cơ mặt, xóa nhăn, nâng ngực nội soi.
+Phong cách tư vấn: thân thiện, xưng "em" gọi khách là "chị/anh", hỏi kỹ vùng khách quan tâm trước khi báo giá, không chốt giá cụ thể qua tin nhắn mà xin số điện thoại để chuyên viên gọi tư vấn kỹ và đặt lịch.
+Khung giờ tư vấn: khách hay nhắn tin ngoài giờ hành chính (buổi tối/đêm) — bot luôn trực 24/7 để trả lời ngay.</textarea>
+      <small>Bot sẽ trả lời khách dựa theo kịch bản này, giống cách nhân viên tư vấn thật.</small>
+    </div>
+    <div class="field">
+      <label>Anthropic model</label>
+      <input value="claude-sonnet-4-6" disabled style="color:#9BA69F;">
+    </div>
+    <h3 style="margin-top:18px;">Kết nối Telegram (tùy chọn — để gửi thẻ khách hàng)</h3>
+    <div class="grid2">
+      <div class="field">
+        <label>Bot Token</label>
+        <input id="tgToken" placeholder="123456789:AAExampleTokenHere">
+      </div>
+      <div class="field">
+        <label>Chat ID</label>
+        <input id="tgChat" placeholder="-1001234567890">
+      </div>
+    </div>
+    <div class="tele-note">
+      Tạo bot qua <strong>@BotFather</strong> trên Telegram để lấy Bot Token, sau đó thêm bot vào nhóm/kênh của bạn và lấy Chat ID (có thể dùng <strong>@userinfobot</strong> hoặc @getidsbot). Token chỉ được dùng trong trình duyệt của bạn để gọi thẳng tới Telegram — không được lưu trữ hay gửi đi đâu khác.
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- CHAT -->
+    <div class="phone">
+      <div class="phone-head">
+        <div class="avatar" id="hAvatar">O</div>
+        <div>
+          <div class="name" id="hName">One Optimize Clinic</div>
+          <div class="status"><span class="dot"></span>Bot đang trực · trả lời ngay</div>
+        </div>
+      </div>
+      <div class="chat-area" id="chatArea">
+        <div class="empty-state">Nhắn thử một câu hỏi như khách hàng thật — ví dụ "chị bị mụn thịt ở cổ, giá bao nhiêu vậy em" — để xem bot tự trả lời.</div>
+      </div>
+      <div class="hint-row" id="hintRow">
+        <div class="chip" data-msg="Mụn thịt">Mụn thịt</div>
+        <div class="chip" data-msg="Giá nâng ngực bao nhiêu vậy em">Giá nâng ngực bao nhiêu vậy em</div>
+        <div class="chip" data-msg="Chị ở TPHCM, quan tâm xóa nhăn">Chị ở TPHCM, quan tâm xóa nhăn</div>
+      </div>
+      <div class="composer">
+        <input id="msgInput" placeholder="Nhắn tin như khách hàng..." autocomplete="off">
+        <button id="sendBtn" title="Gửi">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- LEAD CARD -->
+    <div class="card-col">
+      <div class="index-card">
+        <div class="index-card-inner">
+          <div class="stamp" id="stamp">ĐÃ CHỐT ✓</div>
+          <div class="card-eyebrow">Thẻ khách hàng · tự động trích xuất</div>
+          <div class="card-title">Thông tin trao đổi</div>
+
+          <div class="lead-row">
+            <div class="lead-label">Khách</div>
+            <div class="lead-value empty" id="fName">chưa xác định</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-label">Lĩnh vực</div>
+            <div class="lead-value" id="fField">—</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-label">Quan tâm</div>
+            <div class="lead-value empty" id="fInterest">chưa xác định</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-label">SĐT</div>
+            <div class="lead-value empty mono" id="fPhone">chưa để lại</div>
+          </div>
+          <div class="lead-row">
+            <div class="lead-label">Tóm tắt</div>
+            <div class="lead-value empty" id="fSummary">chưa có trao đổi</div>
+          </div>
+
+          <div class="meta-line">
+            <span id="convId">ID: —</span>
+            <span id="convTime">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="send-panel">
+        <h4>Gửi về Telegram</h4>
+        <p>Chuyển thẻ khách hàng này cho đội sale trong nhóm Telegram để chốt lịch hẹn.</p>
+        <button class="send-btn" id="sendTgBtn" disabled>Gửi thẻ khách hàng</button>
+        <div class="send-status" id="tgStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const chatArea = document.getElementById('chatArea');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const cfgToggle = document.getElementById('cfgToggle');
+const cfgPanel = document.getElementById('cfgPanel');
+const hintRow = document.getElementById('hintRow');
+
+cfgToggle.addEventListener('click', () => cfgPanel.classList.toggle('open'));
+
+const INDUSTRY_PRESETS = {
+  tham_my: {
+    field:"Thẩm mỹ viện", name:"One Optimize Clinic",
+    script:`Dịch vụ chính: xóa mụn thịt bằng công nghệ sóng CO2 (không để sẹo), trị mụn nam giới, nâng cơ mặt, xóa nhăn, nâng ngực nội soi.
+Phong cách tư vấn: thân thiện, xưng "em" gọi khách là "chị/anh", hỏi kỹ vùng khách quan tâm trước khi báo giá, không chốt giá cụ thể qua tin nhắn mà xin số điện thoại để chuyên viên gọi tư vấn kỹ và đặt lịch.
+Khung giờ tư vấn: khách hay nhắn tin ngoài giờ hành chính (buổi tối/đêm) — bot luôn trực 24/7 để trả lời ngay.`,
+    hints:["Mụn thịt","Giá nâng ngực bao nhiêu vậy em","Chị ở TPHCM, quan tâm xóa nhăn"]
+  },
+  nha_khoa: {
+    field:"Nha khoa", name:"Nha Khoa Sài Gòn Smile",
+    script:`Dịch vụ chính: niềng răng invisalign, bọc răng sứ, tẩy trắng răng, trồng răng implant, khám tổng quát miễn phí lần đầu.
+Phong cách tư vấn: chuyên nghiệp, trấn an khách sợ đau/sợ nha sĩ, hỏi tình trạng răng và mong muốn thẩm mỹ trước khi tư vấn phác đồ, xin số điện thoại để đặt lịch khám tổng quát miễn phí.
+Lưu ý: không chẩn đoán bệnh lý cụ thể qua tin nhắn, luôn khuyên đến khám trực tiếp để bác sĩ kiểm tra.`,
+    hints:["Niềng răng giá bao nhiêu ạ","Em bị hô nhẹ có niềng được không","Cho chị đặt lịch khám thử"]
+  },
+  gym: {
+    field:"Gym / Fitness", name:"IronCore Fitness",
+    script:`Dịch vụ chính: gói tập gym, PT 1-kèm-1, lớp nhóm (cardio, boxing), tư vấn dinh dưỡng.
+Phong cách tư vấn: năng lượng, thúc đẩy khách hành động, hỏi mục tiêu tập (giảm cân/tăng cơ/sức khỏe) và lịch trống trong tuần, mời khách để lại số điện thoại để đặt lịch tập thử miễn phí.
+Ưu đãi: tập thử miễn phí buổi đầu, giảm giá khi đăng ký gói 6-12 tháng.`,
+    hints:["Gói tập 1 tháng bao nhiêu vậy shop","Em muốn giảm cân, có PT không","Cho anh tập thử 1 buổi"]
+  },
+  yoga: {
+    field:"Yoga / Pilates", name:"Lotus Yoga Studio",
+    script:`Dịch vụ chính: lớp yoga cho người mới, yoga trị liệu, pilates reformer, lớp riêng theo yêu cầu.
+Phong cách tư vấn: nhẹ nhàng, ấm áp, hỏi khách đã tập yoga bao giờ chưa và mục tiêu (giảm căng thẳng/dẻo dai/giảm đau lưng...), mời để lại số điện thoại để tư vấn lớp phù hợp và đặt buổi học thử.
+Lưu ý: không tư vấn y khoa, nếu khách có chấn thương thì khuyên trao đổi trực tiếp với huấn luyện viên.`,
+    hints:["Em chưa tập yoga bao giờ, học được không","Lớp pilates học phí sao ạ","Chị bị đau lưng, có lớp phù hợp không"]
+  },
+  tocnail: {
+    field:"Salon tóc / Nail", name:"Bella Hair & Nail",
+    script:`Dịch vụ chính: cắt/uốn/nhuộm tóc, làm nail, chăm sóc da đầu, trang điểm.
+Phong cách tư vấn: vui vẻ, gần gũi, hỏi khách muốn làm dịch vụ gì và có ảnh mẫu tham khảo không, mời để lại số điện thoại để đặt lịch với stylist phù hợp.
+Lưu ý: giá có thể thay đổi theo độ dài tóc/mẫu nail, hẹn tư vấn kỹ hơn qua điện thoại hoặc tại salon.`,
+    hints:["Nhuộm tóc màu nâu giá nhiêu ạ","Làm nail gel bao lâu xong","Chị muốn đặt lịch làm tóc cuối tuần"]
+  },
+  petspa: {
+    field:"Spa thú cưng", name:"Happy Paws Pet Spa",
+    script:`Dịch vụ chính: tắm/cắt tỉa lông, spa thư giãn cho thú cưng, khám sức khỏe định kỳ, trông giữ thú cưng theo ngày.
+Phong cách tư vấn: dễ thương, thân thiện, hỏi loại thú cưng (chó/mèo), giống, cân nặng để báo dịch vụ phù hợp, mời để lại số điện thoại để đặt lịch.
+Lưu ý: nếu thú cưng có vấn đề sức khỏe thì khuyên đưa đến khám trực tiếp.`,
+    hints:["Tắm cho poodle giá bao nhiêu","Bé mèo nhà em hay rụng lông, có spa trị không","Cho chị đặt lịch tắm cún thứ 7"]
+  },
+  giaoduc: {
+    field:"Trung tâm Anh ngữ", name:"BrightPath English",
+    script:`Dịch vụ chính: lớp tiếng Anh giao tiếp, luyện thi IELTS/TOEIC, lớp trẻ em, gia sư 1-kèm-1.
+Phong cách tư vấn: nhiệt tình, hỏi trình độ hiện tại và mục tiêu học (giao tiếp/thi chứng chỉ/đi làm), mời để lại số điện thoại để làm bài test đầu vào miễn phí và tư vấn lộ trình.
+Ưu đãi: test trình độ miễn phí, học thử 1 buổi.`,
+    hints:["Học phí lớp giao tiếp bao nhiêu ạ","Em mất gốc tiếng Anh, học được không","Cho con em test đầu vào lớp thiếu nhi"]
+  },
+  luyenthi: {
+    field:"Trung tâm luyện thi", name:"Ánh Sáng Education",
+    script:`Dịch vụ chính: luyện thi lớp 10, luyện thi THPT Quốc gia, ôn tập theo lộ trình cá nhân hóa, lớp nhỏ 8-10 học sinh.
+Phong cách tư vấn: chỉn chu, hỏi con đang học lớp mấy, môn cần cải thiện, mời phụ huynh để lại số điện thoại để tư vấn lộ trình và làm bài kiểm tra năng lực miễn phí.
+Ưu đãi: kiểm tra năng lực miễn phí, học thử 1 buổi trước khi đăng ký.`,
+    hints:["Con em lớp 9, học phí ôn thi lớp 10 sao ạ","Có lớp luyện thi Toán riêng không","Cho chị đăng ký kiểm tra năng lực"]
+  },
+  bds: {
+    field:"Bất động sản", name:"Gold Land Realty",
+    script:`Dịch vụ chính: mua bán/cho thuê căn hộ, nhà phố, đất nền; tư vấn pháp lý, hỗ trợ vay ngân hàng.
+Phong cách tư vấn: chuyên nghiệp, hỏi khu vực quan tâm, tầm giá và mục đích (ở/đầu tư), mời để lại số điện thoại để gửi bảng giá chi tiết và sắp lịch xem nhà thực tế.
+Lưu ý: không cam kết giá/pháp lý cụ thể qua tin nhắn, hẹn tư vấn kỹ với chuyên viên.`,
+    hints:["Căn 2 phòng ngủ quận 7 giá nhiêu ạ","Em muốn thuê nhà nguyên căn tầm 10 triệu","Cho anh xem nhà cuối tuần này"]
+  },
+  noithat: {
+    field:"Nội thất / Thiết kế", name:"Modern Home Design",
+    script:`Dịch vụ chính: thiết kế nội thất trọn gói, thi công căn hộ/nhà phố, tư vấn phong cách (hiện đại, tối giản, indochine).
+Phong cách tư vấn: tinh tế, hỏi diện tích, phong cách yêu thích và ngân sách dự kiến, mời để lại số điện thoại để kiến trúc sư tư vấn và khảo sát miễn phí.
+Ưu đãi: khảo sát và lên concept sơ bộ miễn phí.`,
+    hints:["Thiết kế căn hộ 70m2 giá bao nhiêu","Em thích phong cách tối giản, tư vấn giúp em","Cho anh đặt lịch khảo sát nhà"]
+  },
+  thoitrang: {
+    field:"Thời trang", name:"Luna Boutique",
+    script:`Dịch vụ chính: bán quần áo nữ thiết kế, phụ kiện, giao hàng toàn quốc.
+Phong cách tư vấn: trẻ trung, gần gũi, hỏi size/dáng người và phong cách yêu thích, gợi ý sản phẩm phù hợp, mời để lại số điện thoại/địa chỉ để chốt đơn và giao hàng.
+Lưu ý: luôn xác nhận size và màu trước khi chốt đơn.`,
+    hints:["Váy này còn size M không shop","Cho em xem thêm mẫu áo sơ mi trắng","Chị chốt đơn cái váy đỏ, ib số đặt hàng"]
+  },
+  mypham: {
+    field:"Mỹ phẩm", name:"Glow Beauty Store",
+    script:`Dịch vụ chính: bán mỹ phẩm chính hãng (skincare, makeup), tư vấn theo loại da, freeship đơn từ 500k.
+Phong cách tư vấn: am hiểu sản phẩm, hỏi loại da và vấn đề da đang gặp (mụn/khô/lão hóa), gợi ý sản phẩm phù hợp, mời để lại số điện thoại/địa chỉ để lên đơn.
+Lưu ý: không cam kết trị dứt điểm bệnh da liễu, khuyên khám da liễu nếu tình trạng nặng.`,
+    hints:["Da em dầu mụn, dùng kem gì phù hợp","Serum này giá bao nhiêu shop","Chị đặt 1 bộ skincare, ib địa chỉ giao"]
+  },
+  nhahang: {
+    field:"Nhà hàng / Quán ăn", name:"Quán Ngon Sài Gòn",
+    script:`Dịch vụ chính: đặt bàn ăn uống, đặt tiệc nhóm/công ty, giao hàng qua app.
+Phong cách tư vấn: hiếu khách, hỏi số lượng khách, thời gian muốn đặt bàn, mời để lại số điện thoại để giữ bàn.
+Lưu ý: xác nhận lại giờ cao điểm có thể phải chờ, gợi ý đặt trước.`,
+    hints:["Cho anh đặt bàn 6 người tối nay","Quán có phòng riêng cho tiệc công ty không","Đặt bàn 7h tối được không em"]
+  },
+  cafe: {
+    field:"Cà phê / Trà sữa", name:"Mộc Coffee",
+    script:`Dịch vụ chính: cà phê, trà sữa, bánh ngọt, không gian làm việc/học nhóm, giao hàng.
+Phong cách tư vấn: thân thiện, trẻ trung, hỏi khách muốn đặt món gì hoặc cần đặt chỗ nhóm, mời để lại số điện thoại nếu cần giao hàng hoặc giữ chỗ.
+Lưu ý: xác nhận địa chỉ giao hàng rõ ràng.`,
+    hints:["Quán có wifi mạnh không, học nhóm được không","Order 1 ly trà sữa trân châu ship về","Đặt chỗ cho 5 người chiều nay"]
+  },
+  khachsan: {
+    field:"Khách sạn / Homestay", name:"Blue Sky Homestay",
+    script:`Dịch vụ chính: cho thuê phòng theo ngày/đêm, homestay view đẹp, hỗ trợ đưa đón.
+Phong cách tư vấn: nhiệt tình, hỏi ngày nhận/trả phòng, số lượng khách, mời để lại số điện thoại để giữ phòng và gửi thông tin thanh toán.
+Lưu ý: xác nhận tình trạng phòng trống trước khi chốt.`,
+    hints:["Còn phòng cuối tuần này không em","Giá phòng 2 người 1 đêm bao nhiêu","Cho chị đặt phòng homestay view biển"]
+  },
+  dulich: {
+    field:"Du lịch / Tour", name:"Việt Travel Go",
+    script:`Dịch vụ chính: tour trong nước/nước ngoài, combo vé máy bay + khách sạn, tour theo yêu cầu.
+Phong cách tư vấn: am hiểu điểm đến, hỏi điểm đến mong muốn, số người và thời gian đi, mời để lại số điện thoại để tư vấn lịch trình và báo giá chi tiết.
+Lưu ý: giá tour thay đổi theo mùa, hẹn tư vấn kỹ qua điện thoại.`,
+    hints:["Tour Đà Lạt 3 ngày 2 đêm giá nhiêu","Đi Phú Quốc 4 người tháng sau, tư vấn giúp em","Có combo vé máy bay + khách sạn không"]
+  },
+  oto: {
+    field:"Showroom ô tô", name:"Auto Prime Showroom",
+    script:`Dịch vụ chính: bán xe mới/cũ, hỗ trợ trả góp, thu cũ đổi mới, bảo dưỡng.
+Phong cách tư vấn: chuyên nghiệp, hỏi dòng xe quan tâm và nhu cầu (mua trả thẳng/trả góp), mời để lại số điện thoại để tư vấn viên gọi báo giá chi tiết và mời lái thử.
+Lưu ý: không chốt giá cụ thể qua tin nhắn, giá tùy phiên bản và khuyến mãi hiện hành.`,
+    hints:["Xe này giá lăn bánh bao nhiêu ạ","Em muốn mua trả góp, hỗ trợ được không","Cho anh đặt lịch lái thử"]
+  },
+  baohiem: {
+    field:"Bảo hiểm", name:"An Tâm Insurance",
+    script:`Dịch vụ chính: bảo hiểm nhân thọ, bảo hiểm sức khỏe, bảo hiểm xe, tư vấn gói phù hợp theo nhu cầu.
+Phong cách tư vấn: đáng tin cậy, hỏi độ tuổi, nhu cầu bảo vệ (sức khỏe/tài chính gia đình), mời để lại số điện thoại để chuyên viên tư vấn miễn phí và so sánh các gói.
+Lưu ý: không tư vấn điều khoản pháp lý chi tiết qua tin nhắn, hẹn tư vấn kỹ qua điện thoại.`,
+    hints:["Gói bảo hiểm sức khỏe cho gia đình giá sao ạ","Em 30 tuổi, nên mua gói nào","Cho anh tư vấn bảo hiểm xe ô tô"]
+  },
+  phongkham: {
+    field:"Phòng khám đa khoa", name:"Phòng Khám Đa Khoa An Khang",
+    script:`Dịch vụ chính: khám tổng quát, xét nghiệm, khám chuyên khoa (tim mạch, tiêu hóa, da liễu...).
+Phong cách tư vấn: chuyên nghiệp, ân cần, hỏi triệu chứng/nhu cầu khám tổng quát, mời để lại số điện thoại để đặt lịch khám với bác sĩ phù hợp.
+Lưu ý quan trọng: KHÔNG chẩn đoán bệnh hay kê đơn qua tin nhắn, luôn khuyên đến khám trực tiếp hoặc gặp bác sĩ.`,
+    hints:["Em muốn khám tổng quát, chi phí bao nhiêu","Đặt lịch khám tim mạch cho ba em","Phòng khám có làm việc chủ nhật không"]
+  },
+  studio: {
+    field:"Studio chụp ảnh", name:"Sunlight Studio",
+    script:`Dịch vụ chính: chụp ảnh cưới, ảnh gia đình, ảnh sản phẩm, quay phim sự kiện.
+Phong cách tư vấn: sáng tạo, thân thiện, hỏi loại hình chụp cần và ngày dự kiến, mời để lại số điện thoại để tư vấn gói chụp và giữ lịch.
+Lưu ý: giá tùy gói và địa điểm chụp, hẹn tư vấn chi tiết qua điện thoại.`,
+    hints:["Gói chụp ảnh cưới trọn gói giá nhiêu","Em cần chụp ảnh sản phẩm cho shop","Cho anh đặt lịch chụp ảnh gia đình"]
+  },
+  custom: {
+    field:"", name:"",
+    script:`Dịch vụ chính: (mô tả sản phẩm/dịch vụ của bạn)
+Phong cách tư vấn: (giọng điệu, cách xưng hô, quy trình chốt thông tin khách)
+Lưu ý: (những điều bot không nên tự ý cam kết)`,
+    hints:["Cho em hỏi thông tin dịch vụ","Giá bên mình như thế nào ạ","Em muốn đặt lịch tư vấn"]
+  }
+};
+
+function applyPreset(key){
+  const p = INDUSTRY_PRESETS[key];
+  if(!p) return;
+  if(p.field) document.getElementById('bizField').value = p.field;
+  if(p.name) document.getElementById('bizName').value = p.name;
+  document.getElementById('bizScript').value = p.script;
+  document.getElementById('bizName').dispatchEvent(new Event('input'));
+  document.getElementById('bizField').dispatchEvent(new Event('input'));
+  hintRow.innerHTML = p.hints.map(h=>`<div class="chip" data-msg="${h.replace(/"/g,'&quot;')}">${h}</div>`).join('');
+  hintRow.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      msgInput.value = chip.dataset.msg;
+      handleSend();
+    });
+  });
+}
+document.getElementById('industryPreset').addEventListener('change', e=> applyPreset(e.target.value));
+
+document.getElementById('bizName').addEventListener('input', e=>{
+  document.getElementById('hName').textContent = e.target.value || 'Trang của bạn';
+  document.getElementById('hAvatar').textContent = (e.target.value||'?').trim().charAt(0).toUpperCase();
+  document.getElementById('fField').textContent = document.getElementById('bizField').value || '—';
+});
+document.getElementById('bizField').addEventListener('input', e=>{
+  document.getElementById('fField').textContent = e.target.value || '—';
+});
+document.getElementById('fField').textContent = document.getElementById('bizField').value;
+
+const convId = 'conv_' + Math.random().toString(36).slice(2,10) + '_' + Date.now().toString().slice(-10);
+document.getElementById('convId').textContent = 'ID: ' + convId;
+document.getElementById('convTime').textContent = new Date().toLocaleString('vi-VN');
+
+let history = []; // {role:'user'|'assistant', content:string}  role user = khách, assistant = TV (page)
+let busy = false;
+
+hintRow.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    msgInput.value = chip.dataset.msg;
+    handleSend();
+  });
+});
+
+sendBtn.addEventListener('click', handleSend);
+msgInput.addEventListener('keydown', e=>{ if(e.key==='Enter') handleSend(); });
+
+function addBubble(role, text){
+  const empty = chatArea.querySelector('.empty-state');
+  if(empty) empty.remove();
+  const row = document.createElement('div');
+  row.className = 'bubble-row ' + (role==='user' ? 'khach' : 'tv');
+  const b = document.createElement('div');
+  b.className = 'bubble ' + (role==='user' ? 'khach' : 'tv');
+  b.textContent = text;
+  row.appendChild(b);
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return row;
+}
+
+function addTyping(){
+  const row = document.createElement('div');
+  row.className = 'bubble-row tv';
+  row.id = 'typingRow';
+  row.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function removeTyping(){
+  const t = document.getElementById('typingRow');
+  if(t) t.remove();
+}
+
+async function callClaude(messages, system, maxTokens){
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens: maxTokens || 1000,
+      system: system,
+      messages: messages
+    })
+  });
+  const data = await res.json();
+  const text = (data.content||[]).map(b=>b.text||'').join('\n');
+  return text;
+}
+
+async function handleSend(){
+  const text = msgInput.value.trim();
+  if(!text || busy) return;
+  busy = true;
+  msgInput.value='';
+  sendBtn.disabled = true;
+
+  addBubble('user', text);
+  history.push({role:'user', content:text});
+
+  addTyping();
+
+  const bizName = document.getElementById('bizName').value || 'phòng khám';
+  const bizField = document.getElementById('bizField').value || 'thẩm mỹ viện';
+  const bizScript = document.getElementById('bizScript').value;
+
+  const systemPrompt = `Bạn là nhân viên tư vấn nhắn tin (chăm sóc khách hàng qua Messenger) cho "${bizName}", lĩnh vực ${bizField}.
+Thông tin/kịch bản tư vấn nội bộ:
+${bizScript}
+
+Quy tắc trả lời:
+- Trả lời ngắn gọn (1-3 câu), tự nhiên như người thật đang nhắn tin, xưng "em" gọi khách "chị/anh" trừ khi khách xưng hô khác.
+- Luôn hỏi thêm thông tin cần thiết (vùng quan tâm, tình trạng) trước khi tư vấn sâu.
+- Không báo giá cụ thể qua tin nhắn; hướng khách để lại số điện thoại để chuyên viên gọi tư vấn kỹ và đặt lịch.
+- Nếu khách đã hỏi 2-3 lượt mà chưa để số điện thoại, hãy khéo léo xin số.
+- Không bịa thông tin y khoa ngoài kịch bản trên.
+Chỉ trả lời bằng tin nhắn của nhân viên, không thêm giải thích hay nhãn vai trò.`;
+
+  try{
+    const reply = await callClaude(history, systemPrompt, 300);
+    removeTyping();
+    const cleanReply = reply.trim() || 'Dạ em cảm ơn thông tin của mình ạ, để em kiểm tra và phản hồi ngay nhé!';
+    addBubble('assistant', cleanReply);
+    history.push({role:'assistant', content:cleanReply});
+    extractLead(bizField);
+  }catch(err){
+    removeTyping();
+    addBubble('assistant', '[Lỗi kết nối — vui lòng thử lại]');
+    console.error(err);
+  }finally{
+    busy = false;
+    sendBtn.disabled = false;
+    msgInput.focus();
+  }
+}
+
+let lastPhone = '';
+
+async function extractLead(bizField){
+  const transcript = history.map(h => (h.role==='user' ? 'Khách: ' : 'TV: ') + h.content).join('\n');
+  const sys = `Bạn là công cụ trích xuất dữ liệu. Đọc đoạn hội thoại Messenger giữa "Khách" và "TV" (nhân viên tư vấn) rồi CHỈ trả về một object JSON thuần (không markdown, không giải thích, không dấu backtick) với các khóa:
+{"ten": string hoặc null (tên khách nếu có nhắc tới), "quan_tam": string ngắn mô tả dịch vụ/vùng khách quan tâm hoặc null, "sdt": string số điện thoại Việt Nam nếu khách có để lại trong hội thoại hoặc null, "tom_tat": chuỗi tóm tắt 1 câu về nhu cầu khách}
+Nếu không có thông tin, dùng null. Chỉ trả JSON.`;
+
+  try{
+    const raw = await callClaude([{role:'user', content:transcript}], sys, 300);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const data = JSON.parse(clean);
+    updateCard(data, bizField);
+  }catch(err){
+    console.error('extract error', err);
+  }
+}
+
+function setField(id, value, mono){
+  const el = document.getElementById(id);
+  if(value){
+    el.textContent = value;
+    el.classList.remove('empty');
+  } else {
+    el.textContent = id==='fPhone' ? 'chưa để lại' : 'chưa xác định';
+    el.classList.add('empty');
+  }
+}
+
+function updateCard(data, bizField){
+  setField('fName', data.ten);
+  document.getElementById('fField').textContent = bizField;
+  setField('fInterest', data.quan_tam);
+  setField('fPhone', data.sdt);
+  setField('fSummary', data.tom_tat);
+  document.getElementById('convTime').textContent = new Date().toLocaleString('vi-VN');
+
+  const stamp = document.getElementById('stamp');
+  const sendBtnTg = document.getElementById('sendTgBtn');
+  if(data.sdt && data.sdt !== lastPhone){
+    lastPhone = data.sdt;
+    stamp.classList.add('show');
+    sendBtnTg.disabled = false;
+  } else if(data.sdt){
+    sendBtnTg.disabled = false;
+  }
+}
+
+// ---------- Telegram send ----------
+document.getElementById('sendTgBtn').addEventListener('click', async ()=>{
+  const token = document.getElementById('tgToken').value.trim();
+  const chat = document.getElementById('tgChat').value.trim();
+  const statusEl = document.getElementById('tgStatus');
+  statusEl.className = 'send-status';
+
+  const name = document.getElementById('fName').textContent;
+  const field = document.getElementById('fField').textContent;
+  const interest = document.getElementById('fInterest').textContent;
+  const phone = document.getElementById('fPhone').textContent;
+  const summary = document.getElementById('fSummary').textContent;
+
+  const msg =
+`🔔 <b>Khách mới từ Messenger</b>
+👤 Khách: ${name}
+🏷 Lĩnh vực: ${field}
+📌 Quan tâm: ${interest}
+📞 SĐT: <code>${phone}</code>
+📝 Tóm tắt: ${summary}
+🆔 ${convId}`;
+
+  if(!token || !chat){
+    statusEl.textContent = 'Chưa nhập Bot Token / Chat ID trong mục Cấu hình.';
+    statusEl.classList.add('err');
+    return;
+  }
+
+  const btn = document.getElementById('sendTgBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Đang gửi...';
+
+  try{
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: chat, text: msg, parse_mode:'HTML'})
+    });
+    const json = await res.json();
+    if(json.ok){
+      statusEl.textContent = '✓ Đã gửi thẻ khách hàng về Telegram.';
+      statusEl.classList.add('ok');
+    } else {
+      statusEl.textContent = 'Telegram báo lỗi: ' + (json.description || 'không rõ nguyên nhân');
+      statusEl.classList.add('err');
+    }
+  }catch(err){
+    statusEl.textContent = 'Không gửi được — kiểm tra Token/Chat ID hoặc kết nối mạng.';
+    statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+</script>
+</body>
+</html>

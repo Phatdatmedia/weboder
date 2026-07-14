@@ -1294,7 +1294,10 @@ textarea.field{ resize:vertical; min-height:70px; }
           <h1>Chăm sóc dịch vụ mạng xã hội</h1>
           <p>Quản lý đơn Facebook / Instagram / Threads / TikTok — công cụ nội bộ, khách không nhìn thấy mục này.</p>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openSocialCareForm()">+ Thêm mục mới</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-ghost btn-sm" id="checkLiveBtn" onclick="handleCheckSocialLive()">🔄 Kiểm tra Live/Die</button>
+          <button class="btn btn-primary btn-sm" onclick="openSocialCareForm()">+ Thêm mục mới</button>
+        </div>
       </div>
 
       <div class="dash-stats" style="grid-template-columns:repeat(4,1fr); margin-bottom:20px;">
@@ -3817,6 +3820,27 @@ let socialCareFilter = 'all';
 let editingSocialCareId = null;
 
 const PLATFORM_ICON = { Facebook:'📘', Instagram:'📷', Threads:'🧵', TikTok:'🎵' };
+
+async function handleCheckSocialLive(){
+  const btn = document.getElementById('checkLiveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
+
+  try{
+    const { data, error } = await sb.functions.invoke('check-social-live', { body: {} });
+    if(error) throw error;
+    if(data?.ok){
+      showToast(`✅ Đã kiểm tra ${data.checked} tài khoản, ${data.changed} thay đổi trạng thái.`);
+      await loadSocialCareTable();
+    } else {
+      showToast('Lỗi: ' + (data?.error || 'Không xác định'));
+    }
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
 
 async function loadSocialCareTable(){
   const box = document.getElementById('socialCareTableBody');
