@@ -580,7 +580,7 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
 
       <!-- SỐ LIỆU NHANH: doanh thu + lượt truy cập -->
-      <div class="dash-stats" style="margin-top:14px;">
+      <div class="dash-stats" style="margin-top:14px; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));">
         <div class="dash-stat-card">
           <div class="ds-label">💰 Doanh thu hôm nay</div>
           <div class="ds-val" id="statRevenueToday" style="font-size:22px;">—</div>
@@ -590,12 +590,20 @@ textarea.field{ resize:vertical; min-height:70px; }
           <div class="ds-val" id="statRevenueWeek" style="font-size:22px;">—</div>
         </div>
         <div class="dash-stat-card">
+          <div class="ds-label">💰 Doanh thu tháng này</div>
+          <div class="ds-val" id="statRevenueMonth" style="font-size:22px;">—</div>
+        </div>
+        <div class="dash-stat-card">
           <div class="ds-label">👀 Truy cập hôm nay</div>
           <div class="ds-val" id="statViewsToday" style="font-size:22px;">—</div>
         </div>
         <div class="dash-stat-card">
-          <div class="ds-label">💰 Tổng doanh thu</div>
+          <div class="ds-label">💰 Tổng doanh thu (cọc)</div>
           <div class="ds-val" id="statRevenueTotal" style="font-size:22px;">—</div>
+        </div>
+        <div class="dash-stat-card" style="border-color:var(--sage);">
+          <div class="ds-label">✅ Tổng doanh thu thực</div>
+          <div class="ds-val" id="statRevenueActualTotal" style="font-size:22px;">—</div>
         </div>
       </div>
 
@@ -1881,6 +1889,7 @@ async function loadDashboard(){
       "Ngân sách": o.budget,
       "Mô tả yêu cầu": o.description,
       "Số tiền": o.amount,
+      "Doanh thu thực": o.actual_revenue,
       "Loại TT": o.payment_type,
       "Giá trị đơn": o.total_price,
       "Phương thức TT": o.payment_method,
@@ -1911,18 +1920,27 @@ function renderDashboard(orders){
     banner.style.display = 'none';
   }
 
-  // Doanh thu (dựa trên "Số tiền" thực nhận, không tính "Giá trị đơn" chưa thu)
-  const todayStr = new Date().toLocaleDateString('vi-VN');
+  // Doanh thu (dựa trên "Số tiền" thực nhận/cọc, không tính "Giá trị đơn" chưa thu — giữ nguyên logic cũ)
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('vi-VN');
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
   const sum = (list) => list.reduce((s,o)=> s + (Number(o["Số tiền"]) || 0), 0);
 
   const revToday = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
   const revWeek  = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
+  const revMonth = sum(orders.filter(o => {
+    if(!o["_createdAtRaw"]) return false;
+    const d = new Date(o["_createdAtRaw"]);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }));
   const revTotal = sum(orders);
+  const revActualTotal = orders.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
 
   document.getElementById('statRevenueToday').textContent = revToday.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueMonth').textContent = revMonth.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueActualTotal').textContent = revActualTotal.toLocaleString('vi-VN') + 'đ';
 
   loadTodayViewsQuickStat();
 
@@ -1933,7 +1951,7 @@ function renderDashboard(orders){
   }
 
   let html = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Doanh thu thực</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
 
   orders.forEach(o=>{
@@ -1943,6 +1961,7 @@ function renderDashboard(orders){
     const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
     const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
     const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
+    const actualRevenueVal = o["Doanh thu thực"] != null ? o["Doanh thu thực"] : '';
     html += `<tr>
       <td class="dt-code">${code}</td>
       <td>${escapeHtml(o["Họ tên"])}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o["SĐT"]||'')}</span></td>
@@ -1950,6 +1969,10 @@ function renderDashboard(orders){
       <td style="font-size:12px; font-family:var(--font-mono); color:var(--ink-soft); white-space:nowrap;">${escapeHtml(o["Ngân sách"]||'—')}</td>
       <td style="font-size:12px; color:var(--ink-soft); max-width:220px;" title="${escapeHtml(descFull)}">${escapeHtml(descShort||'—')}</td>
       <td style="font-size:12px; font-family:var(--font-mono); white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft); font-size:10.5px;">${escapeHtml(o["Loại TT"]||'')}</span></td>
+      <td>
+        <input type="number" class="actual-revenue-input" data-code="${code}" value="${actualRevenueVal}" placeholder="Nhập số tiền"
+          style="width:110px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:var(--font-mono); font-size:12px;">
+      </td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Phương thức TT"]||'—')}</td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Thời gian đặt"]||'')}</td>
       <td>${renderStatusSelect(code, status)}</td>
@@ -1961,6 +1984,9 @@ function renderDashboard(orders){
   tableBody.querySelectorAll('.status-select').forEach(sel=>{
     sel.addEventListener('change', (e)=> handleStatusChange(e.target.dataset.code, e.target.value, e.target));
   });
+  tableBody.querySelectorAll('.actual-revenue-input').forEach(inp=>{
+    inp.addEventListener('change', (e)=> handleActualRevenueChange(e.target.dataset.code, e.target.value, e.target));
+  });
 }
 
 function renderStatusSelect(code, currentStatus){
@@ -1969,6 +1995,61 @@ function renderStatusSelect(code, currentStatus){
     `<option value="${escapeHtml(s)}" ${s === currentStatus ? 'selected' : ''}>${escapeHtml(s)}</option>`
   ).join('');
   return `<select class="status-select ${meta.cls}" data-code="${code}">${options}</select>`;
+}
+
+/* Cập nhật lại các thẻ tổng doanh thu (gọi sau khi sửa Doanh thu thực để không cần tải lại toàn trang) */
+function refreshRevenueStats(){
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('vi-VN');
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
+  const sum = (list) => list.reduce((s,o)=> s + (Number(o["Số tiền"]) || 0), 0);
+
+  const revToday = sum(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
+  const revWeek  = sum(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
+  const revMonth = sum(allOrders.filter(o => {
+    if(!o["_createdAtRaw"]) return false;
+    const d = new Date(o["_createdAtRaw"]);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }));
+  const revTotal = sum(allOrders);
+  const revActualTotal = allOrders.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
+
+  document.getElementById('statRevenueToday').textContent = revToday.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueMonth').textContent = revMonth.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('statRevenueActualTotal').textContent = revActualTotal.toLocaleString('vi-VN') + 'đ';
+}
+
+async function handleActualRevenueChange(code, rawValue, inputEl){
+  const value = rawValue === '' ? null : Number(rawValue);
+  if(value != null && (isNaN(value) || value < 0)){
+    showToast('Doanh thu thực phải là số hợp lệ, không âm.');
+    inputEl.value = allOrders.find(o => o["Mã đơn"] === code)?.["Doanh thu thực"] ?? '';
+    return;
+  }
+
+  inputEl.disabled = true;
+  try{
+    const { error } = await sb
+      .from('orders')
+      .update({ actual_revenue: value })
+      .eq('order_code', code);
+
+    if(!error){
+      const order = allOrders.find(o => o["Mã đơn"] === code);
+      if(order) order["Doanh thu thực"] = value;
+      showToast(`Đã lưu doanh thu thực cho đơn ${code}.`);
+      logAdminAction('Cập nhật doanh thu thực', `${code} → ${value != null ? value.toLocaleString('vi-VN') + 'đ' : 'trống'}`);
+      refreshRevenueStats();
+    } else {
+      showToast('Lỗi: ' + error.message);
+    }
+  } catch(err){
+    showToast('Không thể kết nối Supabase.');
+  } finally {
+    inputEl.disabled = false;
+  }
 }
 
 async function handleStatusChange(code, newStatus, selectEl){
@@ -2042,7 +2123,7 @@ function renderOrdersOnly(orders){
     return;
   }
   let html = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Doanh thu thực</th><th>Thanh toán</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
   orders.forEach(o=>{
     const status = o["Trạng thái"] || "Chờ xác nhận";
@@ -2051,6 +2132,7 @@ function renderOrdersOnly(orders){
     const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
     const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
     const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
+    const actualRevenueVal = o["Doanh thu thực"] != null ? o["Doanh thu thực"] : '';
     html += `<tr>
       <td class="dt-code">${code}</td>
       <td>${escapeHtml(o["Họ tên"])}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o["SĐT"]||'')}</span></td>
@@ -2058,6 +2140,10 @@ function renderOrdersOnly(orders){
       <td style="font-size:12px; font-family:var(--font-mono); color:var(--ink-soft); white-space:nowrap;">${escapeHtml(o["Ngân sách"]||'—')}</td>
       <td style="font-size:12px; color:var(--ink-soft); max-width:220px;" title="${escapeHtml(descFull)}">${escapeHtml(descShort||'—')}</td>
       <td style="font-size:12px; font-family:var(--font-mono); white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft); font-size:10.5px;">${escapeHtml(o["Loại TT"]||'')}</span></td>
+      <td>
+        <input type="number" class="actual-revenue-input" data-code="${code}" value="${actualRevenueVal}" placeholder="Nhập số tiền"
+          style="width:110px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:var(--font-mono); font-size:12px;">
+      </td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Phương thức TT"]||'—')}</td>
       <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(o["Thời gian đặt"]||'')}</td>
       <td>${renderStatusSelect(code, status)}</td>
@@ -2067,6 +2153,9 @@ function renderOrdersOnly(orders){
   tableBody.innerHTML = html;
   tableBody.querySelectorAll('.status-select').forEach(sel=>{
     sel.addEventListener('change', (e)=> handleStatusChange(e.target.dataset.code, e.target.value, e.target));
+  });
+  tableBody.querySelectorAll('.actual-revenue-input').forEach(inp=>{
+    inp.addEventListener('change', (e)=> handleActualRevenueChange(e.target.dataset.code, e.target.value, e.target));
   });
 }
 

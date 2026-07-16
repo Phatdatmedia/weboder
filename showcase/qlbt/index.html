@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đăng nhập — Hệ thống Bài tập</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <span class="eyebrow">Hệ thống giao bài tập</span>
+    <h1>Đăng nhập</h1>
+    <p>Dùng email và mật khẩu đã đăng ký để tiếp tục.</p>
+
+    <form id="loginForm" autocomplete="off">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="username" />
+
+      <label for="password">Mật khẩu</label>
+      <input type="password" id="password" name="password" required autocomplete="current-password" />
+
+      <button type="submit" class="btn btn-primary" id="loginBtn">Đăng nhập</button>
+    </form>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="success-box" id="successBox"></div>
+
+    <p style="margin-top:20px; font-size:.85rem; text-align:center;">
+      Chưa có tài khoản? <a href="/register.html">Đăng ký</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabaseClient.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+const form = document.getElementById("loginForm");
+const errorBox = document.getElementById("errorBox");
+const successBox = document.getElementById("successBox");
+const loginBtn = document.getElementById("loginBtn");
+
+// Thông báo nếu bị đăng xuất do rảnh quá lâu
+const params = new URLSearchParams(location.search);
+if (params.get("reason") === "idle") {
+  showSuccess(successBox, "Bạn đã được đăng xuất tự động do không hoạt động. Vui lòng đăng nhập lại.");
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideError(errorBox);
+  setButtonLoading(loginBtn, true, "Đang đăng nhập...");
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  setButtonLoading(loginBtn, false);
+
+  if (error) {
+    // Thông báo lỗi chung chung, không tiết lộ email có tồn tại hay không
+    showError(errorBox, "Email hoặc mật khẩu không đúng.");
+    return;
+  }
+
+  // Xác định vai trò rồi điều hướng đúng khu vực
+  const { data: roleRow } = await supabaseClient
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", data.user.id)
+    .single();
+
+  if (!roleRow) {
+    window.location.href = "/register.html";
+  } else if (roleRow.role === "teacher") {
+    window.location.href = "/teacher/dashboard.html";
+  } else {
+    window.location.href = "/student/dashboard.html";
+  }
+});
+
+// Nếu đã đăng nhập sẵn, chuyển hướng luôn
+(async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: roleRow } = await supabaseClient
+      .from("user_roles").select("role").eq("user_id", session.user.id).single();
+    if (roleRow) {
+      window.location.href = roleRow.role === "teacher" ? "teacher/dashboard.html" : "student/dashboard.html";
+    }
+  }
+})();
+</script>
+</body>
+</html>

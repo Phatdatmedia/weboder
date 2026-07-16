@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đăng ký — Hệ thống Bài tập</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <span class="eyebrow">Hệ thống giao bài tập</span>
+    <h1>Tạo tài khoản</h1>
+
+    <div class="auth-tabs">
+      <button type="button" id="tabStudent" class="active">Học sinh</button>
+      <button type="button" id="tabTeacher">Giáo viên</button>
+    </div>
+
+    <form id="registerForm" autocomplete="off">
+      <label for="fullName">Họ và tên</label>
+      <input type="text" id="fullName" required maxlength="100" />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" required autocomplete="username" />
+
+      <label for="password">Mật khẩu</label>
+      <input type="password" id="password" required autocomplete="new-password" minlength="12" />
+      <div class="hint">Tối thiểu 12 ký tự, gồm chữ hoa, chữ thường và số.</div>
+
+      <div id="inviteField" style="display:none;">
+        <label for="inviteCode">Mã mời giáo viên</label>
+        <input type="text" id="inviteCode" autocomplete="off" />
+        <div class="hint">Mã mời do quản trị hệ thống cấp riêng, dùng 1 lần. Liên hệ ban quản trị nếu chưa có.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="registerBtn">Đăng ký</button>
+    </form>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="success-box" id="successBox"></div>
+
+    <p style="margin-top:20px; font-size:.85rem; text-align:center;">
+      Đã có tài khoản? <a href="/index.html">Đăng nhập</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabaseClient.js"></script>
+<script src="/js/utils.js"></script>
+<script>
+let selectedRole = "student";
+const tabStudent = document.getElementById("tabStudent");
+const tabTeacher = document.getElementById("tabTeacher");
+const inviteField = document.getElementById("inviteField");
+const inviteCode = document.getElementById("inviteCode");
+
+tabStudent.addEventListener("click", () => {
+  selectedRole = "student";
+  tabStudent.classList.add("active");
+  tabTeacher.classList.remove("active");
+  inviteField.style.display = "none";
+  inviteCode.required = false;
+});
+tabTeacher.addEventListener("click", () => {
+  selectedRole = "teacher";
+  tabTeacher.classList.add("active");
+  tabStudent.classList.remove("active");
+  inviteField.style.display = "block";
+  inviteCode.required = true;
+});
+
+const form = document.getElementById("registerForm");
+const errorBox = document.getElementById("errorBox");
+const successBox = document.getElementById("successBox");
+const registerBtn = document.getElementById("registerBtn");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  hideError(errorBox);
+
+  const fullName = document.getElementById("fullName").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!passwordStrengthOk(password)) {
+    showError(errorBox, "Mật khẩu cần tối thiểu 12 ký tự, có chữ hoa, chữ thường và số.");
+    return;
+  }
+  if (selectedRole === "teacher" && !inviteCode.value.trim()) {
+    showError(errorBox, "Vui lòng nhập mã mời giáo viên.");
+    return;
+  }
+
+  setButtonLoading(registerBtn, true, "Đang tạo tài khoản...");
+
+  // Bước 1: tạo tài khoản Auth (KHÔNG gửi role ở bước này)
+  const { data: signUpData, error: signUpErr } = await supabaseClient.auth.signUp({
+    email,
+    password,
+  });
+
+  if (signUpErr) {
+    setButtonLoading(registerBtn, false);
+    showError(errorBox, "Không thể đăng ký: " + signUpErr.message);
+    return;
+  }
+
+  // Nếu dự án bật "Confirm email", session sẽ null cho tới khi người dùng xác nhận
+  if (!signUpData.session) {
+    setButtonLoading(registerBtn, false);
+    showSuccess(
+      successBox,
+      "Đã gửi email xác nhận. Vui lòng kiểm tra hộp thư, xác nhận rồi quay lại đăng nhập."
+    );
+    form.reset();
+    return;
+  }
+
+  // Bước 2: hoàn tất đăng ký qua function bảo mật (server kiểm tra mã mời nếu là giáo viên)
+  const { error: regErr } = await supabaseClient.rpc("complete_registration", {
+    p_full_name: fullName,
+    p_role: selectedRole,
+    p_invite_code: selectedRole === "teacher" ? inviteCode.value.trim() : null,
+  });
+
+  setButtonLoading(registerBtn, false);
+
+  if (regErr) {
+    showError(errorBox, regErr.message.includes("Mã mời")
+      ? regErr.message
+      : "Không thể hoàn tất đăng ký: " + regErr.message);
+    return;
+  }
+
+  window.location.href =
+    selectedRole === "teacher" ? "/teacher/dashboard.html" : "/student/dashboard.html";
+});
+</script>
+</body>
+</html>

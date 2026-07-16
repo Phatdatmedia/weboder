@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Khu vực học sinh — Hệ thống Bài tập</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> Hệ thống Bài tập</div>
+  <div class="user">
+    <span id="userName">...</span>
+    <span class="role-badge">Học sinh</span>
+    <button class="link" id="logoutBtn">Đăng xuất</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="wrap">
+
+    <div class="page-head">
+      <div>
+        <div class="section-title">Không gian học tập</div>
+        <h1 style="margin:0;">Bài tập của tôi</h1>
+      </div>
+      <button class="btn btn-primary" style="margin:0; width:auto;" id="openJoinClass">+ Tham gia lớp</button>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:32px;">
+      <div class="card">
+        <h3>Lớp học đã tham gia</h3>
+        <div class="card-list" id="classList"></div>
+      </div>
+      <div class="card">
+        <h3>Sắp đến hạn</h3>
+        <div class="card-list" id="upcomingList"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Tất cả bài tập</h3>
+      <div class="card-list" id="assignmentList"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal: tham gia lớp -->
+<div class="modal-backdrop" id="modalJoinClass">
+  <div class="modal">
+    <button class="modal-close" data-close="modalJoinClass">&times;</button>
+    <h3>Tham gia lớp học</h3>
+    <form id="joinClassForm">
+      <label for="joinCode">Mã lớp giáo viên cung cấp</label>
+      <input type="text" id="joinCode" required maxlength="10" style="text-transform:uppercase;" />
+      <button type="submit" class="btn btn-primary" id="joinClassBtn">Tham gia</button>
+    </form>
+    <div class="error-box" id="joinClassError"></div>
+  </div>
+</div>
+
+<!-- Modal: nộp bài -->
+<div class="modal-backdrop" id="modalSubmit">
+  <div class="modal">
+    <button class="modal-close" data-close="modalSubmit">&times;</button>
+    <h3 id="submitAssignTitle">Nộp bài</h3>
+    <p id="submitAssignDesc" style="white-space:pre-wrap;"></p>
+    <form id="submitForm">
+      <label for="submitContent">Bài làm của bạn</label>
+      <textarea id="submitContent" maxlength="10000" placeholder="Nhập câu trả lời..."></textarea>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Nộp bài</button>
+    </form>
+    <div class="error-box" id="submitError"></div>
+    <div class="success-box" id="submitSuccess"></div>
+  </div>
+</div>
+
+<footer class="security-note">🔒 Mọi dữ liệu được bảo vệ bằng Row Level Security phía máy chủ</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabaseClient.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

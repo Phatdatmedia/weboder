@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Khu vực giáo viên — Hệ thống Bài tập</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span> Hệ thống Bài tập</div>
+  <div class="user">
+    <span id="userName">...</span>
+    <span class="role-badge">Giáo viên</span>
+    <button class="link" id="logoutBtn">Đăng xuất</button>
+  </div>
+</div>
+
+<main class="page">
+  <div class="wrap">
+
+    <div class="page-head">
+      <div>
+        <div class="section-title">Lớp học của tôi</div>
+        <h1 style="margin:0;">Bảng điều khiển</h1>
+      </div>
+      <button class="btn btn-primary" style="margin:0; width:auto;" id="openCreateClass">+ Tạo lớp mới</button>
+    </div>
+
+    <div class="grid grid-3" id="classGrid"></div>
+
+    <div id="classDetail" style="margin-top:40px; display:none;">
+      <div class="page-head">
+        <div>
+          <div class="section-title" id="detailClassCode"></div>
+          <h1 style="margin:0;" id="detailClassName"></h1>
+        </div>
+        <button class="btn btn-primary" style="margin:0; width:auto;" id="openCreateAssignment">+ Giao bài mới</button>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Bài tập / Bài kiểm tra</h3>
+          <div class="card-list" id="assignmentList"></div>
+        </div>
+        <div class="card">
+          <h3>Học sinh trong lớp</h3>
+          <div class="card-list" id="memberList"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal: tạo lớp -->
+<div class="modal-backdrop" id="modalCreateClass">
+  <div class="modal">
+    <button class="modal-close" data-close="modalCreateClass">&times;</button>
+    <h3>Tạo lớp mới</h3>
+    <form id="createClassForm">
+      <label for="className">Tên lớp</label>
+      <input type="text" id="className" required maxlength="80" />
+      <button type="submit" class="btn btn-primary" id="createClassBtn">Tạo lớp</button>
+    </form>
+    <div class="error-box" id="createClassError"></div>
+  </div>
+</div>
+
+<!-- Modal: tạo bài tập -->
+<div class="modal-backdrop" id="modalCreateAssignment">
+  <div class="modal">
+    <button class="modal-close" data-close="modalCreateAssignment">&times;</button>
+    <h3>Giao bài mới</h3>
+    <form id="createAssignmentForm">
+      <label for="assignTitle">Tiêu đề</label>
+      <input type="text" id="assignTitle" required maxlength="150" />
+
+      <label for="assignType">Loại</label>
+      <select id="assignType">
+        <option value="homework">Bài tập</option>
+        <option value="exam">Bài kiểm tra</option>
+      </select>
+
+      <label for="assignDesc">Mô tả / Đề bài</label>
+      <textarea id="assignDesc" maxlength="5000"></textarea>
+
+      <label for="assignDue">Hạn nộp</label>
+      <input type="datetime-local" id="assignDue" />
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:16px;">
+        <input type="checkbox" id="assignPublish" style="width:auto;" checked />
+        Xuất bản ngay cho học sinh xem
+      </label>
+
+      <button type="submit" class="btn btn-primary" id="createAssignmentBtn">Giao bài</button>
+    </form>
+    <div class="error-box" id="createAssignmentError"></div>
+  </div>
+</div>
+
+<!-- Modal: chấm bài -->
+<div class="modal-backdrop" id="modalGrade">
+  <div class="modal">
+    <button class="modal-close" data-close="modalGrade">&times;</button>
+    <h3>Chấm bài</h3>
+    <div id="gradeSubmissionsList"></div>
+  </div>
+</div>
+
+<footer class="security-note">🔒 Mọi dữ liệu được bảo vệ bằng Row Level Security phía máy chủ</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/config.js"></script>
+<script src="/js/supabaseClient.js"></script>
+<script src="/js/utils.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
