@@ -582,28 +582,24 @@ textarea.field{ resize:vertical; min-height:70px; }
       <!-- SỐ LIỆU NHANH: doanh thu + lượt truy cập -->
       <div class="dash-stats" style="margin-top:14px; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));">
         <div class="dash-stat-card">
-          <div class="ds-label">💰 Doanh thu hôm nay</div>
+          <div class="ds-label">✅ Doanh thu hôm nay</div>
           <div class="ds-val" id="statRevenueToday" style="font-size:22px;">—</div>
         </div>
         <div class="dash-stat-card">
-          <div class="ds-label">💰 Doanh thu 7 ngày</div>
+          <div class="ds-label">✅ Doanh thu 7 ngày</div>
           <div class="ds-val" id="statRevenueWeek" style="font-size:22px;">—</div>
         </div>
         <div class="dash-stat-card">
-          <div class="ds-label">💰 Doanh thu tháng này</div>
+          <div class="ds-label">✅ Doanh thu tháng này</div>
           <div class="ds-val" id="statRevenueMonth" style="font-size:22px;">—</div>
         </div>
         <div class="dash-stat-card">
           <div class="ds-label">👀 Truy cập hôm nay</div>
           <div class="ds-val" id="statViewsToday" style="font-size:22px;">—</div>
         </div>
-        <div class="dash-stat-card">
-          <div class="ds-label">💰 Tổng doanh thu (cọc)</div>
-          <div class="ds-val" id="statRevenueTotal" style="font-size:22px;">—</div>
-        </div>
         <div class="dash-stat-card" style="border-color:var(--sage);">
-          <div class="ds-label">✅ Tổng doanh thu thực</div>
-          <div class="ds-val" id="statRevenueActualTotal" style="font-size:22px;">—</div>
+          <div class="ds-label">✅ Tổng doanh thu</div>
+          <div class="ds-val" id="statRevenueTotal" style="font-size:22px;">—</div>
         </div>
       </div>
 
@@ -1920,27 +1916,25 @@ function renderDashboard(orders){
     banner.style.display = 'none';
   }
 
-  // Doanh thu (dựa trên "Số tiền" thực nhận/cọc, không tính "Giá trị đơn" chưa thu — giữ nguyên logic cũ)
+  // Tất cả các mốc doanh thu đều tính theo "Doanh thu thực" (nhập tay) để đồng bộ
   const now = new Date();
   const todayStr = now.toLocaleDateString('vi-VN');
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
-  const sum = (list) => list.reduce((s,o)=> s + (Number(o["Số tiền"]) || 0), 0);
+  const sumActual = (list) => list.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
 
-  const revToday = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
-  const revWeek  = sum(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
-  const revMonth = sum(orders.filter(o => {
+  const revToday = sumActual(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
+  const revWeek  = sumActual(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
+  const revMonth = sumActual(orders.filter(o => {
     if(!o["_createdAtRaw"]) return false;
     const d = new Date(o["_createdAtRaw"]);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }));
-  const revTotal = sum(orders);
-  const revActualTotal = orders.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
+  const revTotal = sumActual(orders);
 
   document.getElementById('statRevenueToday').textContent = revToday.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueMonth').textContent = revMonth.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
-  document.getElementById('statRevenueActualTotal').textContent = revActualTotal.toLocaleString('vi-VN') + 'đ';
 
   loadTodayViewsQuickStat();
 
@@ -2002,23 +1996,21 @@ function refreshRevenueStats(){
   const now = new Date();
   const todayStr = now.toLocaleDateString('vi-VN');
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
-  const sum = (list) => list.reduce((s,o)=> s + (Number(o["Số tiền"]) || 0), 0);
+  const sumActual = (list) => list.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
 
-  const revToday = sum(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
-  const revWeek  = sum(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
-  const revMonth = sum(allOrders.filter(o => {
+  const revToday = sumActual(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
+  const revWeek  = sumActual(allOrders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
+  const revMonth = sumActual(allOrders.filter(o => {
     if(!o["_createdAtRaw"]) return false;
     const d = new Date(o["_createdAtRaw"]);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }));
-  const revTotal = sum(allOrders);
-  const revActualTotal = allOrders.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
+  const revTotal = sumActual(allOrders);
 
   document.getElementById('statRevenueToday').textContent = revToday.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueMonth').textContent = revMonth.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
-  document.getElementById('statRevenueActualTotal').textContent = revActualTotal.toLocaleString('vi-VN') + 'đ';
 }
 
 async function handleActualRevenueChange(code, rawValue, inputEl){
