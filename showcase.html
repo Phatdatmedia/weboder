@@ -450,12 +450,57 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+<!-- ===================== MAINTENANCE MODE OVERLAY ===================== -->
+<div id="maintenanceOverlay" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:#121110; color:#F4EFE6;
+  font-family:'Inter',sans-serif;
+  display:none; align-items:center; justify-content:center; text-align:center; padding:24px;
+">
+  <div style="max-width:440px;">
+    <div style="font-size:52px; margin-bottom:16px;">🚧</div>
+    <h1 id="maintenanceOverlayTitle" style="font-family:'Fraunces',serif; font-size:26px; margin-bottom:12px;">Website đang bảo trì</h1>
+    <p id="maintenanceOverlayMsg" style="font-size:14.5px; color:#9C9284; line-height:1.7;">Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   KIỂM TRA CHẾ ĐỘ BẢO TRÌ — chạy NGAY LẬP TỨC, TRƯỚC mọi lệnh gọi
+   dữ liệu khác trên trang. Nếu đang bảo trì: hiện màn hình bảo trì,
+   ẩn toàn bộ nội dung trang, và CHẶN các hàm tải dữ liệu khác chạy tiếp.
+============================================================ */
+window._maintenanceActive = false;
+
+async function checkMaintenanceMode(){
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', 'maintenance_mode').single();
+    const cfg = data?.value;
+    if(cfg?.enabled){
+      window._maintenanceActive = true;
+      document.getElementById('maintenanceOverlayTitle').textContent = cfg.title || 'Website đang bảo trì';
+      document.getElementById('maintenanceOverlayMsg').textContent = cfg.message || 'Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau.';
+      document.getElementById('maintenanceOverlay').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      // Ẩn toàn bộ nội dung trang gốc (nhưng vẫn giữ trong DOM, không xoá)
+      Array.from(document.body.children).forEach(el => {
+        if(el.id !== 'maintenanceOverlay') el.style.display = 'none';
+      });
+    }
+  } catch(e){
+    // Không đọc được cấu hình -> coi như không bảo trì, cho web chạy bình thường
+  }
+  return window._maintenanceActive;
+}
+</script>
+<!-- ===================== END MAINTENANCE MODE OVERLAY ===================== -->
+
 
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-inner">
     <div class="nav-brand">
-      <div class="brand-logo"><a href="index.html">Phatdatagency</a><span class="dot">.</span></div>
+      <div class="brand-logo">Phatdatagency<span class="dot">.</span></div>
       <div class="brand-sep"></div>
       <div class="brand-page">Showcase</div>
     </div>
@@ -816,7 +861,11 @@ function esc(str){
 /* ============================================================
    INIT
 ============================================================ */
-loadProjects();
+(async function bootApp(){
+  const inMaintenance = await checkMaintenanceMode();
+  if(inMaintenance) return; // Dừng hẳn — không tải/gửi thêm bất kỳ dữ liệu nào khác
+  loadProjects();
+})();
 </script>
 </body>
 </html>

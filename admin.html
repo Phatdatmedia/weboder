@@ -462,6 +462,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabLivechat" onclick="switchTab('livechat')">Live Chat</button>
     <button id="mobileTabSocial" onclick="switchTab('social')">Chăm sóc MXH</button>
     <button id="mobileTabApp" onclick="switchTab('app')">📲 Cài app</button>
+    <button id="mobileTabMaintenance" onclick="switchTab('maintenance')" style="border-color:var(--danger);">🚧 Bảo trì</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -527,6 +528,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabApp" onclick="switchTab('app')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
         Cài app
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabMaintenance" onclick="switchTab('maintenance')" style="color:#F0A290;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Bảo trì
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1363,6 +1368,43 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: CHẾ ĐỘ BẢO TRÌ -->
+    <div class="tab-panel" id="tabMaintenance">
+      <div class="dash-top">
+        <div>
+          <h1>🚧 Chế độ bảo trì</h1>
+          <p>Khi bật, toàn bộ trang khách (trang chủ, showcase, tài khoản, thanh toán) sẽ chỉ hiện màn hình bảo trì — dừng toàn bộ tải/gửi dữ liệu. Trang admin này KHÔNG bị ảnh hưởng, bạn vẫn vào được để tắt bảo trì.</p>
+        </div>
+      </div>
+
+      <div class="cfg-section" id="maintenanceStatusCard" style="border-color:var(--line);">
+        <div class="cfg-section-head">
+          <div>
+            <h3 id="maintenanceStatusTitle">Đang kiểm tra trạng thái...</h3>
+            <p id="maintenanceStatusSub"></p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <label style="display:flex; align-items:center; gap:12px; cursor:pointer; margin-bottom:20px;">
+            <input type="checkbox" id="mt_enabled" style="width:20px; height:20px;">
+            <span style="font-size:14px; font-weight:600;">Bật chế độ bảo trì (đóng toàn bộ web khách)</span>
+          </label>
+
+          <div class="form-group">
+            <label>Tiêu đề hiển thị cho khách</label>
+            <input type="text" class="field" id="mt_title" placeholder="Website đang bảo trì">
+          </div>
+          <div class="form-group">
+            <label>Nội dung chi tiết</label>
+            <textarea class="field" id="mt_message" rows="3" placeholder="Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này."></textarea>
+          </div>
+
+          <div class="modal-error" id="mt_error"></div>
+          <button class="btn btn-primary" id="mt_saveBtn" onclick="saveMaintenanceConfig()">💾 Lưu thay đổi</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -2170,7 +2212,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -2194,6 +2236,7 @@ function switchTab(tab){
   if(tab === 'livechat') loadLiveChatTab();
   if(tab === 'social')   loadSocialCareTable();
   if(tab === 'app')      refreshPushStatus();
+  if(tab === 'maintenance') loadMaintenanceConfig();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -4170,6 +4213,83 @@ async function handlePushAction(){
     refreshPushStatus();
   } catch(e){
     showToast('Lỗi: ' + e.message);
+  }
+}
+
+/* =====================================================================
+   CHẾ ĐỘ BẢO TRÌ — lưu vào `site_config`, key 'maintenance_mode'
+===================================================================== */
+const MAINTENANCE_KEY = 'maintenance_mode';
+
+async function loadMaintenanceConfig(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  const titleEl = document.getElementById('maintenanceStatusTitle');
+  const subEl = document.getElementById('maintenanceStatusSub');
+  const cardEl = document.getElementById('maintenanceStatusCard');
+
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', MAINTENANCE_KEY).single();
+    const cfg = data?.value || {};
+    document.getElementById('mt_enabled').checked = !!cfg.enabled;
+    document.getElementById('mt_title').value = cfg.title || 'Website đang bảo trì';
+    document.getElementById('mt_message').value = cfg.message || 'Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.';
+
+    updateMaintenanceStatusCard(!!cfg.enabled);
+  } catch(e){
+    document.getElementById('mt_enabled').checked = false;
+    document.getElementById('mt_title').value = 'Website đang bảo trì';
+    document.getElementById('mt_message').value = 'Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.';
+    updateMaintenanceStatusCard(false);
+  }
+}
+
+function updateMaintenanceStatusCard(enabled){
+  const titleEl = document.getElementById('maintenanceStatusTitle');
+  const subEl = document.getElementById('maintenanceStatusSub');
+  const cardEl = document.getElementById('maintenanceStatusCard');
+  if(enabled){
+    titleEl.innerHTML = '🔴 ĐANG BẢO TRÌ — web khách hiện KHÔNG truy cập được';
+    subEl.textContent = 'Nhớ tắt lại khi bảo trì xong, kẻo khách không đặt được đơn.';
+    cardEl.style.borderColor = 'var(--danger)';
+  } else {
+    titleEl.innerHTML = '🟢 Bình thường — web khách đang hoạt động';
+    subEl.textContent = '';
+    cardEl.style.borderColor = 'var(--line)';
+  }
+}
+
+async function saveMaintenanceConfig(){
+  if(!isBackendConfigured() || !currentAdmin){ showToast('Chưa đăng nhập.'); return; }
+  const errBox = document.getElementById('mt_error');
+  errBox.classList.remove('show');
+
+  const enabled = document.getElementById('mt_enabled').checked;
+  const title = document.getElementById('mt_title').value.trim() || 'Website đang bảo trì';
+  const message = document.getElementById('mt_message').value.trim();
+
+  if(enabled && !confirm('Bạn chắc chắn muốn BẬT bảo trì? Toàn bộ khách sẽ không dùng được web cho tới khi bạn tắt lại.')){
+    return;
+  }
+
+  const btn = document.getElementById('mt_saveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { error } = await sb.from('site_config').upsert(
+      { key: MAINTENANCE_KEY, value: { enabled, title, message }, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if(error) throw error;
+
+    showToast(enabled ? '🚧 Đã BẬT chế độ bảo trì!' : '✅ Đã tắt bảo trì, web hoạt động bình thường.');
+    logAdminAction(enabled ? 'BẬT chế độ bảo trì' : 'TẮT chế độ bảo trì', title);
+    updateMaintenanceStatusCard(enabled);
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
   }
 }
 

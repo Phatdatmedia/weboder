@@ -934,6 +934,51 @@ textarea.field{ resize:vertical; min-height:90px; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
+<!-- ===================== MAINTENANCE MODE OVERLAY ===================== -->
+<div id="maintenanceOverlay" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:#121110; color:#F4EFE6;
+  font-family:'Inter',sans-serif;
+  display:none; align-items:center; justify-content:center; text-align:center; padding:24px;
+">
+  <div style="max-width:440px;">
+    <div style="font-size:52px; margin-bottom:16px;">🚧</div>
+    <h1 id="maintenanceOverlayTitle" style="font-family:'Fraunces',serif; font-size:26px; margin-bottom:12px;">Website đang bảo trì</h1>
+    <p id="maintenanceOverlayMsg" style="font-size:14.5px; color:#9C9284; line-height:1.7;">Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   KIỂM TRA CHẾ ĐỘ BẢO TRÌ — chạy NGAY LẬP TỨC, TRƯỚC mọi lệnh gọi
+   dữ liệu khác trên trang. Nếu đang bảo trì: hiện màn hình bảo trì,
+   ẩn toàn bộ nội dung trang, và CHẶN các hàm tải dữ liệu khác chạy tiếp.
+============================================================ */
+window._maintenanceActive = false;
+
+async function checkMaintenanceMode(){
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', 'maintenance_mode').single();
+    const cfg = data?.value;
+    if(cfg?.enabled){
+      window._maintenanceActive = true;
+      document.getElementById('maintenanceOverlayTitle').textContent = cfg.title || 'Website đang bảo trì';
+      document.getElementById('maintenanceOverlayMsg').textContent = cfg.message || 'Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau.';
+      document.getElementById('maintenanceOverlay').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      // Ẩn toàn bộ nội dung trang gốc (nhưng vẫn giữ trong DOM, không xoá)
+      Array.from(document.body.children).forEach(el => {
+        if(el.id !== 'maintenanceOverlay') el.style.display = 'none';
+      });
+    }
+  } catch(e){
+    // Không đọc được cấu hình -> coi như không bảo trì, cho web chạy bình thường
+  }
+  return window._maintenanceActive;
+}
+</script>
+<!-- ===================== END MAINTENANCE MODE OVERLAY ===================== -->
+
 
 <!-- OVERLAY CHÀO MỪNG KHÁCH HÀNG ƯU TIÊN -->
 <div class="vip-welcome-overlay" id="vipWelcomeOverlay">
@@ -1530,7 +1575,7 @@ function loadPaymentConfigFromSupabase(){
   })();
   return paymentConfigReady;
 }
-loadPaymentConfigFromSupabase();
+// (Được gọi tập trung ở cuối file, sau khi kiểm tra chế độ bảo trì)
 
 /* =====================================================================
    MARKETING PIXEL — nạp Facebook Pixel / TikTok Pixel từ Supabase
@@ -1571,7 +1616,7 @@ async function initMarketingPixels(){
     console.warn('Không tải được marketing_config:', e.message);
   }
 }
-initMarketingPixels();
+// (Được gọi tập trung ở cuối file, sau khi kiểm tra chế độ bảo trì)
 
 /* Bắn sự kiện "gửi đơn hàng" cho cả 2 pixel (gọi ngay sau khi tạo đơn thành công) */
 function trackOrderLeadEvent(){
@@ -2678,7 +2723,7 @@ async function initContactInfo(){
   document.getElementById('contactCardBody').innerHTML = channelsHtml + chatRowHtml;
 }
 
-initContactInfo();
+// (Được gọi tập trung ở cuối file, sau khi kiểm tra chế độ bảo trì)
 
 /* =====================================================================
    LIVE CHAT — khách mở "case" hỗ trợ, KHÔNG cần tự tạo tài khoản.
@@ -2865,7 +2910,7 @@ document.getElementById('chatInputMsg').addEventListener('keydown', (e) => {
    TRACKING LƯỢT TRUY CẬP — ghi 1 dòng vào bảng `page_views` mỗi lần
    trang chủ được tải. Chạy ngầm, không chặn hiển thị trang, lỗi thì bỏ qua.
 ===================================================================== */
-(function trackPageView(){
+function trackPageView(){
   if(!isBackendConfigured()) return;
 
   function detectDevice(){
@@ -2902,8 +2947,22 @@ document.getElementById('chatInputMsg').addEventListener('keydown', (e) => {
     browser: detectBrowser(),
     referrer: detectReferrer()
   }).then(({error}) => { if(error) console.warn('page_views log lỗi:', error.message); });
+}
+
+/* =====================================================================
+   BOOTSTRAP TRUNG TÂM — kiểm tra chế độ bảo trì TRƯỚC TIÊN, chỉ khi
+   web đang hoạt động bình thường mới chạy các tác vụ tải dữ liệu khác.
+===================================================================== */
+(async function bootApp(){
+  const inMaintenance = await checkMaintenanceMode();
+  if(inMaintenance) return; // Dừng hẳn — không tải/gửi thêm bất kỳ dữ liệu nào khác
+
+  loadPaymentConfigFromSupabase();
+  initMarketingPixels();
+  initContactInfo();
+  trackPageView();
 })();
 </script>
 
 </body>
-  </html>
+</html>

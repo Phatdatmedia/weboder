@@ -50,6 +50,12 @@ const sb = supabase.createClient(
 
 (async function trackPurchase(){
   try{
+    // Nếu web đang bảo trì -> bỏ qua theo dõi pixel (không gọi thêm dữ liệu),
+    // nhưng vẫn giữ nguyên màn hình xác nhận thanh toán cho khách (vì khách
+    // vừa trả tiền thật, không nên chặn xác nhận này).
+    const { data: mtData } = await sb.from('site_config').select('value').eq('key', 'maintenance_mode').single().catch(() => ({ data: null }));
+    if(mtData?.value?.enabled) return;
+
     const { data, error } = await sb.from('site_config').select('value').eq('key', 'marketing_config').single();
     if(error || !data?.value) return;
     const cfg = data.value;
