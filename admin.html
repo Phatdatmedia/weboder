@@ -463,6 +463,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabSocial" onclick="switchTab('social')">Chăm sóc MXH</button>
     <button id="mobileTabApp" onclick="switchTab('app')">📲 Cài app</button>
     <button id="mobileTabMaintenance" onclick="switchTab('maintenance')" style="border-color:var(--danger);">🚧 Bảo trì</button>
+    <button id="mobileTabBoost" onclick="switchTab('boost')">Follow & Tương tác</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -532,6 +533,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabMaintenance" onclick="switchTab('maintenance')" style="color:#F0A290;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
         Bảo trì
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabBoost" onclick="switchTab('boost')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Follow & Tương tác
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1405,7 +1410,92 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <!-- TAB: FOLLOW & TƯƠNG TÁC (đồng bộ 2 chiều với Google Sheet) -->
+    <div class="tab-panel" id="tabBoost">
+      <div class="dash-top">
+        <div>
+          <h1>Follow & Tương tác</h1>
+          <p>Đồng bộ 2 chiều với Google Sheet — sửa ở đây tự cập nhật sang Sheet, sửa trên Sheet cũng tự về đây.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openBoostForm()">+ Thêm dòng mới</button>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div id="boostTableBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ======================= BOOST MODAL (thêm / sửa) ======================= -->
+<div class="modal-overlay" id="boostModalOverlay">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3 id="boostModalTitle">Thêm dòng mới</h3>
+      <button class="modal-close" onclick="closeBoostForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px;">
+      <div class="form-group">
+        <label>Link</label>
+        <input type="text" class="field" id="bs_link" placeholder="fb.com/... hoặc https://...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Trạng thái</label>
+          <select class="field" id="bs_status">
+            <option value="Chưa bắt đầu">Chưa bắt đầu</option>
+            <option value="Đang thực hiện">Đang thực hiện</option>
+            <option value="Đã hoàn thành">Đã hoàn thành</option>
+            <option value="Đã Bảo Hành">Đã Bảo Hành</option>
+            <option value="Đã hủy">Đã hủy</option>
+            <option value="Nổi đơn">Nổi đơn</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Chủ sở hữu</label>
+          <input type="text" class="field" id="bs_owner" placeholder="Tên khách">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cần Lên</label>
+          <input type="text" class="field" id="bs_target" placeholder="VD: 5000">
+        </div>
+        <div class="form-group">
+          <label>Đã lên</label>
+          <input type="text" class="field" id="bs_current" placeholder="VD: 5000">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Còn lại</label>
+          <input type="text" class="field" id="bs_remaining" placeholder="VD: 0">
+        </div>
+        <div class="form-group">
+          <label>Ngày</label>
+          <input type="date" class="field" id="bs_date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Note</label>
+        <input type="text" class="field" id="bs_note" placeholder="Ghi chú">
+      </div>
+      <div class="form-group">
+        <label>Note 2</label>
+        <input type="text" class="field" id="bs_note2" placeholder="Ghi chú phụ (nếu có)">
+      </div>
+      <div class="modal-error" id="boostModalError"></div>
+      <div class="modal-submit-row">
+        <button class="btn btn-ghost btn-sm" onclick="closeBoostForm()">Huỷ</button>
+        <button class="btn btn-primary btn-sm" id="boostSaveBtn" onclick="handleSaveBoost()">Lưu</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ======================= SOCIAL CARE MODAL (thêm / sửa) ======================= -->
@@ -2212,7 +2302,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -2237,6 +2327,7 @@ function switchTab(tab){
   if(tab === 'social')   loadSocialCareTable();
   if(tab === 'app')      refreshPushStatus();
   if(tab === 'maintenance') loadMaintenanceConfig();
+  if(tab === 'boost') loadBoostTable();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -4291,6 +4382,172 @@ async function saveMaintenanceConfig(){
   } finally {
     btn.disabled = false; btn.textContent = orig;
   }
+}
+
+/* =====================================================================
+   FOLLOW & TƯƠNG TÁC — đồng bộ 2 chiều với Google Sheet qua Apps Script
+===================================================================== */
+let allBoost = [];
+let editingBoostId = null;
+let boostRealtimeChannel = null;
+
+async function loadBoostTable(){
+  const box = document.getElementById('boostTableBody');
+  try{
+    const { data, error } = await sb.from('social_boost').select('*').order('sheet_row', { ascending: true, nullsFirst: false });
+    if(error) throw error;
+    allBoost = data || [];
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được (kiểm tra đã tạo bảng social_boost chưa): ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  renderBoostTable();
+  subscribeBoostRealtime();
+}
+
+function subscribeBoostRealtime(){
+  if(boostRealtimeChannel) sb.removeChannel(boostRealtimeChannel);
+  boostRealtimeChannel = sb.channel('social-boost-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'social_boost' }, () => {
+      loadBoostTable(); // Có ai (kể cả từ Sheet) vừa sửa -> tự tải lại danh sách mới nhất
+    })
+    .subscribe();
+}
+
+function renderBoostTable(){
+  const box = document.getElementById('boostTableBody');
+  if(!allBoost.length){
+    box.innerHTML = `<div class="dash-empty">Chưa có dòng nào. Bấm "+ Thêm dòng mới" hoặc thêm trực tiếp trên Google Sheet.</div>`;
+    return;
+  }
+
+  const STATUS_COLORS = {
+    'Đã hoàn thành': { bg:'rgba(127,192,137,0.15)', fg:'#8FD09E' },  // xanh lá
+    'Đang thực hiện': { bg:'rgba(224,181,104,0.15)', fg:'#E7C083' }, // vàng
+    'Chưa bắt đầu':   { bg:'rgba(127,168,224,0.15)', fg:'#93B8ED' }, // xanh dương
+    'Đã hủy':         { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ
+    'Nổi đơn':        { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ (coi như sự cố)
+    'Đã Bảo Hành':    { bg:'rgba(122,122,255,0.15)', fg:'#A0A0FF' },
+  };
+  const getStatusColor = (status) => STATUS_COLORS[(status||'').trim()] || { bg:'rgba(156,146,132,0.15)', fg:'var(--ink-soft)' };
+
+  const statusBadge = (status) => {
+    const c = getStatusColor(status);
+    return `<span class="svc-status-pill" style="background:${c.bg};color:${c.fg};">${escapeHtml(status||'—')}</span>`;
+  };
+
+  // Số "Còn lại" chỉ tô màu khi Đã hoàn thành (xanh lá) hoặc Đã hủy/Nổi đơn (đỏ);
+  // các trạng thái khác giữ màu trung tính, không gây rối mắt.
+  const remainingColor = (status) => {
+    const s = (status||'').trim();
+    if(s === 'Đã hoàn thành') return STATUS_COLORS['Đã hoàn thành'].fg;
+    if(s === 'Đã hủy' || s === 'Nổi đơn') return STATUS_COLORS['Đã hủy'].fg;
+    return 'var(--ink)';
+  };
+
+  box.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Link</th><th>Trạng thái</th><th>Chủ sở hữu</th><th>Cần Lên</th><th>Đã lên</th><th>Còn lại</th><th>Note</th><th>Ngày</th><th></th>
+  </tr></thead><tbody>${allBoost.map(b => `
+    <tr>
+      <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        ${b.link ? `<a href="${escapeHtml(b.link.startsWith('http') ? b.link : 'https://'+b.link)}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:underline;">${escapeHtml(b.link)}</a>` : '—'}
+      </td>
+      <td>${statusBadge(b.status)}</td>
+      <td>${escapeHtml(b.owner||'—')}</td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(b.target_amount||'—')}</td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(b.current_amount||'—')}</td>
+      <td style="font-family:var(--font-mono); font-size:12px; font-weight:600; color:${remainingColor(b.status)};">${escapeHtml(b.remaining||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft); max-width:140px;" title="${escapeHtml(b.note||'')}">${escapeHtml((b.note||'').slice(0,30))}${(b.note||'').length>30?'…':''}</td>
+      <td style="font-size:12px; color:var(--ink-soft); white-space:nowrap;">${b.order_date ? new Date(b.order_date).toLocaleDateString('vi-VN') : '—'}</td>
+      <td class="svc-actions">
+        <button onclick="openBoostForm(${b.id})">Sửa</button>
+        <button class="danger" onclick="handleDeleteBoost(${b.id})">Xoá</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function openBoostForm(id){
+  editingBoostId = id || null;
+  document.getElementById('boostModalError').classList.remove('show');
+
+  if(id){
+    const b = allBoost.find(x => x.id === id);
+    document.getElementById('boostModalTitle').textContent = 'Sửa dòng';
+    document.getElementById('bs_link').value = b.link || '';
+    document.getElementById('bs_status').value = b.status || 'Đang thực hiện';
+    document.getElementById('bs_owner').value = b.owner || '';
+    document.getElementById('bs_target').value = b.target_amount || '';
+    document.getElementById('bs_current').value = b.current_amount || '';
+    document.getElementById('bs_remaining').value = b.remaining || '';
+    document.getElementById('bs_date').value = b.order_date || '';
+    document.getElementById('bs_note').value = b.note || '';
+    document.getElementById('bs_note2').value = b.note2 || '';
+  } else {
+    document.getElementById('boostModalTitle').textContent = 'Thêm dòng mới';
+    ['bs_link','bs_owner','bs_target','bs_current','bs_remaining','bs_note','bs_note2'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bs_status').value = 'Đang thực hiện';
+    document.getElementById('bs_date').value = new Date().toISOString().slice(0,10);
+  }
+  document.getElementById('boostModalOverlay').classList.add('show');
+}
+
+function closeBoostForm(){
+  document.getElementById('boostModalOverlay').classList.remove('show');
+  editingBoostId = null;
+}
+
+async function handleSaveBoost(){
+  const errBox = document.getElementById('boostModalError');
+  const row = {
+    link: document.getElementById('bs_link').value.trim() || null,
+    status: document.getElementById('bs_status').value,
+    owner: document.getElementById('bs_owner').value.trim() || null,
+    target_amount: document.getElementById('bs_target').value.trim() || null,
+    current_amount: document.getElementById('bs_current').value.trim() || null,
+    remaining: document.getElementById('bs_remaining').value.trim() || null,
+    order_date: document.getElementById('bs_date').value || null,
+    note: document.getElementById('bs_note').value.trim() || null,
+    note2: document.getElementById('bs_note2').value.trim() || null,
+    source: 'admin',
+    updated_at: new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('boostSaveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    let error;
+    if(editingBoostId){
+      ({ error } = await sb.from('social_boost').update(row).eq('id', editingBoostId));
+    } else {
+      ({ error } = await sb.from('social_boost').insert(row));
+    }
+    if(error) throw error;
+
+    showToast('✅ Đã lưu! (đang đồng bộ sang Sheet...)');
+    logAdminAction(editingBoostId ? 'Sửa dòng Follow & Tương tác' : 'Thêm dòng Follow & Tương tác', row.link || row.owner || '');
+    closeBoostForm();
+    await loadBoostTable();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function handleDeleteBoost(id){
+  const b = allBoost.find(x => x.id === id);
+  if(!confirm(`Xoá dòng "${b?.link || b?.owner}"? Dòng tương ứng trên Sheet cũng sẽ bị xoá nội dung.`)) return;
+  try{
+    const { error } = await sb.from('social_boost').update({ source: 'admin' }).eq('id', id);
+    const { error: delError } = await sb.from('social_boost').delete().eq('id', id);
+    if(delError) throw delError;
+    showToast('Đã xoá.');
+    logAdminAction('Xoá dòng Follow & Tương tác', b?.link || b?.owner || '');
+    await loadBoostTable();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
 }
 
 /* =====================================================================
