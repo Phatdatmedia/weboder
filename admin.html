@@ -4422,14 +4422,24 @@ function renderBoostTable(){
   }
 
   const STATUS_COLORS = {
-    'Đã hoàn thành': { bg:'rgba(127,192,137,0.15)', fg:'#8FD09E' },  // xanh lá
-    'Đang thực hiện': { bg:'rgba(224,181,104,0.15)', fg:'#E7C083' }, // vàng
-    'Chưa bắt đầu':   { bg:'rgba(127,168,224,0.15)', fg:'#93B8ED' }, // xanh dương
-    'Đã hủy':         { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ
-    'Nổi đơn':        { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ (coi như sự cố)
-    'Đã Bảo Hành':    { bg:'rgba(122,122,255,0.15)', fg:'#A0A0FF' },
+    ['Đã hoàn thành'.normalize('NFC')]: { bg:'rgba(127,192,137,0.15)', fg:'#8FD09E' },  // xanh lá
+    ['Đang thực hiện'.normalize('NFC')]: { bg:'rgba(224,181,104,0.15)', fg:'#E7C083' }, // vàng
+    ['Chưa bắt đầu'.normalize('NFC')]:   { bg:'rgba(127,168,224,0.15)', fg:'#93B8ED' }, // xanh dương
+    ['Đã hủy'.normalize('NFC')]:         { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ
+    ['Nổi đơn'.normalize('NFC')]:        { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }, // đỏ (coi như sự cố)
+    ['Đã Bảo Hành'.normalize('NFC')]:    { bg:'rgba(122,122,255,0.15)', fg:'#A0A0FF' },
   };
-  const getStatusColor = (status) => STATUS_COLORS[(status||'').trim()] || { bg:'rgba(156,146,132,0.15)', fg:'var(--ink-soft)' };
+  const normStatus = (s) => (s||'').trim().normalize('NFC');
+  const getStatusColor = (status) => {
+    const s = normStatus(status);
+    if(s.includes('hoàn thành')) return { bg:'rgba(127,192,137,0.15)', fg:'#8FD09E' };   // xanh lá
+    if(s.includes('hủy'))        return { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }; // đỏ
+    if(s.includes('nổi đơn'))    return { bg:'rgba(255,90,60,0.18)',   fg:'var(--danger)' }; // đỏ
+    if(s.includes('bảo hành'))   return { bg:'rgba(122,122,255,0.15)', fg:'#A0A0FF' };    // tím
+    if(s.includes('chưa bắt đầu')) return { bg:'rgba(127,168,224,0.15)', fg:'#93B8ED' };  // xanh dương
+    if(s.includes('đang thực hiện')) return { bg:'rgba(224,181,104,0.15)', fg:'#E7C083' }; // vàng
+    return { bg:'rgba(156,146,132,0.15)', fg:'var(--ink-soft)' }; // không nhận diện được -> trung tính
+  };
 
   const statusBadge = (status) => {
     const c = getStatusColor(status);
@@ -4439,9 +4449,9 @@ function renderBoostTable(){
   // Số "Còn lại" chỉ tô màu khi Đã hoàn thành (xanh lá) hoặc Đã hủy/Nổi đơn (đỏ);
   // các trạng thái khác giữ màu trung tính, không gây rối mắt.
   const remainingColor = (status) => {
-    const s = (status||'').trim();
-    if(s === 'Đã hoàn thành') return STATUS_COLORS['Đã hoàn thành'].fg;
-    if(s === 'Đã hủy' || s === 'Nổi đơn') return STATUS_COLORS['Đã hủy'].fg;
+    const s = normStatus(status);
+    if(s.includes('hoàn thành')) return '#8FD09E';
+    if(s.includes('hủy') || s.includes('nổi đơn')) return 'var(--danger)';
     return 'var(--ink)';
   };
 
