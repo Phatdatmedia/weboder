@@ -134,7 +134,13 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
   position:sticky;
   top:0;
   height:100vh;
+  overflow-y:auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.18) transparent;
 }
+.dash-sidebar::-webkit-scrollbar{ width:6px; }
+.dash-sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.18); border-radius:6px; }
+.dash-sidebar::-webkit-scrollbar-track{ background:transparent; }
 .dash-logo{ font-family: var(--font-display); font-size:20px; font-weight:700; color:var(--white); margin-bottom:40px; }
 .dash-logo .dot{ color: var(--coral); }
 .dash-nav{ display:flex; flex-direction:column; gap:4px; }
@@ -464,6 +470,7 @@ textarea.field{ resize:vertical; min-height:70px; }
     <button id="mobileTabApp" onclick="switchTab('app')">📲 Cài app</button>
     <button id="mobileTabMaintenance" onclick="switchTab('maintenance')" style="border-color:var(--danger);">🚧 Bảo trì</button>
     <button id="mobileTabBoost" onclick="switchTab('boost')">Follow & Tương tác</button>
+    <button id="mobileTabAdsorders" onclick="switchTab('adsorders')">Đơn tương tác</button>
     <button class="logout-btn" onclick="handleAdminLogout()">Đăng xuất</button>
   </nav>
 
@@ -537,6 +544,10 @@ textarea.field{ resize:vertical; min-height:70px; }
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabBoost" onclick="switchTab('boost')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         Follow & Tương tác
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabAdsorders" onclick="switchTab('adsorders')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a2 2 0 0 1-3.2 2.4L3 14"/></svg>
+        Đơn tương tác
       </a>
     </nav>
     <a href="javascript:void(0)" class="dash-back" onclick="handleAdminLogout()">
@@ -1427,7 +1438,82 @@ textarea.field{ resize:vertical; min-height:70px; }
       </div>
     </div>
 
+    <div class="tab-panel" id="tabAdsorders">
+      <div class="dash-top">
+        <div>
+          <h1>Đơn tương tác</h1>
+          <p>Đơn khách đặt từ trang "Chạy quảng cáo tăng tương tác MXH" (dat-don-quang-cao.html) — vẫn nằm trong bảng orders chung, chỉ lọc riêng ra đây cho dễ theo dõi.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadAdsOrders()">↻ Tải lại</button>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div id="adsOrdersTableBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+
+      <div class="dash-top" style="margin-top:36px;">
+        <div>
+          <h2 style="font-size:18px;">Bảng giá tương tác</h2>
+          <p>Đơn giá theo từng lượt (đ), dùng để trang đặt đơn tự tính báo giá tạm tính cho khách.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openPriceForm()">+ Thêm dòng giá</button>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div id="adsPricingTableBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
+</div>
+
+<!-- ======================= ADS PRICING MODAL (thêm / sửa) ======================= -->
+<div class="modal-overlay" id="priceModalOverlay">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head">
+      <h3 id="priceModalTitle">Thêm dòng giá</h3>
+      <button class="modal-close" onclick="closePriceForm()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px;">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nền tảng</label>
+          <select class="field" id="pr_platform">
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="TikTok">TikTok</option>
+            <option value="YouTube">YouTube</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Loại tương tác (mã)</label>
+          <select class="field" id="pr_type">
+            <option value="Like">Like</option>
+            <option value="Follow">Follow</option>
+            <option value="Comment">Comment</option>
+            <option value="Share">Share</option>
+            <option value="View">View</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tên hiển thị</label>
+        <input type="text" class="field" id="pr_label" placeholder="Tăng like">
+      </div>
+      <div class="form-group">
+        <label>Đơn giá / 1 lượt (đ)</label>
+        <input type="number" class="field" id="pr_price" min="0" step="1" placeholder="15">
+      </div>
+      <div class="modal-error" id="priceModalError"></div>
+      <button class="btn btn-primary" style="width:100%; margin-top:6px;" id="priceSaveBtn" onclick="handleSavePrice()">Lưu</button>
+    </div>
+  </div>
 </div>
 
 <!-- ======================= BOOST MODAL (thêm / sửa) ======================= -->
@@ -2302,7 +2388,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -2328,6 +2414,7 @@ function switchTab(tab){
   if(tab === 'app')      refreshPushStatus();
   if(tab === 'maintenance') loadMaintenanceConfig();
   if(tab === 'boost') loadBoostTable();
+  if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
   if(tab === 'pages') initPagesTab();
 }
 
@@ -4558,6 +4645,197 @@ async function handleDeleteBoost(id){
     logAdminAction('Xoá dòng Follow & Tương tác', b?.link || b?.owner || '');
     await loadBoostTable();
   } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+/* =====================================================================
+   ĐƠN TƯƠNG TÁC — lọc riêng từ bảng "orders" (order_group = 'social_ads')
+   Dùng lại renderStatusSelect() / handleStatusChange() đã có sẵn vì cùng
+   thao tác trên bảng orders theo order_code.
+===================================================================== */
+let allAdsOrders = [];
+
+async function loadAdsOrders(){
+  const box = document.getElementById('adsOrdersTableBody');
+  if(!isBackendConfigured() || !currentAdmin) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+
+  try{
+    const { data, error } = await sb
+      .from('orders')
+      .select('*')
+      .eq('order_group', 'social_ads')
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    allAdsOrders = data || [];
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được (kiểm tra đã thêm cột order_group/platform/... vào bảng orders chưa): ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  renderAdsOrdersTable();
+}
+
+function renderAdsOrdersTable(){
+  const box = document.getElementById('adsOrdersTableBody');
+  if(!allAdsOrders.length){
+    box.innerHTML = `<div class="dash-empty">Chưa có đơn tương tác nào.</div>`;
+    return;
+  }
+
+  box.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th>
+  </tr></thead><tbody>${allAdsOrders.map(o => `
+    <tr>
+      <td class="dt-code">${escapeHtml(o.order_code)}</td>
+      <td>${escapeHtml(o.customer_name||'')}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o.phone||o.email||'')}</span></td>
+      <td>${escapeHtml(o.platform||'—')}</td>
+      <td>${escapeHtml(o.interaction_type||'—')}</td>
+      <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        ${o.post_link ? `<a href="${escapeHtml(o.post_link)}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:underline;">${escapeHtml(o.post_link)}</a>` : '—'}
+      </td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${o.quantity != null ? Number(o.quantity).toLocaleString('vi-VN') : '—'}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${o.start_date ? new Date(o.start_date).toLocaleDateString('vi-VN') : '—'}</td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${o.amount != null ? Number(o.amount).toLocaleString('vi-VN') + 'đ' : '—'}</td>
+      <td>${renderStatusSelect(o.order_code, o.status || 'Chờ xác nhận')}</td>
+    </tr>`).join('')}</tbody></table>`;
+
+  box.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', (e)=> handleStatusChange(e.target.dataset.code, e.target.value, e.target).then(()=>{
+      const o = allAdsOrders.find(x => x.order_code === e.target.dataset.code);
+      if(o) o.status = e.target.value;
+    }));
+  });
+}
+
+/* =====================================================================
+   BẢNG GIÁ TƯƠNG TÁC — CRUD bảng social_ads_pricing
+===================================================================== */
+let allAdsPricing = [];
+let editingPriceId = null;
+
+async function loadAdsPricing(){
+  const box = document.getElementById('adsPricingTableBody');
+  if(!isBackendConfigured() || !currentAdmin) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+
+  try{
+    const { data, error } = await sb
+      .from('social_ads_pricing')
+      .select('*')
+      .order('platform', { ascending: true })
+      .order('sort_order', { ascending: true });
+    if(error) throw error;
+    allAdsPricing = data || [];
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được (kiểm tra đã tạo bảng social_ads_pricing chưa): ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  renderAdsPricingTable();
+}
+
+function renderAdsPricingTable(){
+  const box = document.getElementById('adsPricingTableBody');
+  if(!allAdsPricing.length){
+    box.innerHTML = `<div class="dash-empty">Chưa có dòng giá nào. Bấm "+ Thêm dòng giá".</div>`;
+    return;
+  }
+
+  box.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Nền tảng</th><th>Loại</th><th>Tên hiển thị</th><th>Đơn giá / lượt</th><th></th>
+  </tr></thead><tbody>${allAdsPricing.map(p => `
+    <tr>
+      <td>${escapeHtml(p.platform)}</td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(p.interaction_type)}</td>
+      <td>${escapeHtml(p.interaction_label||'')}</td>
+      <td>
+        <input type="number" class="price-inline-input" data-id="${p.id}" value="${p.unit_price}" min="0" step="1"
+          style="width:100px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:var(--font-mono); font-size:12px;">
+      </td>
+      <td class="svc-actions">
+        <button onclick="handleDeletePrice(${p.id})" class="danger">Xoá</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+
+  box.querySelectorAll('.price-inline-input').forEach(inp=>{
+    inp.addEventListener('change', (e)=> handlePriceInlineChange(Number(e.target.dataset.id), e.target.value, e.target));
+  });
+}
+
+async function handlePriceInlineChange(id, rawValue, inputEl){
+  const value = Number(rawValue);
+  if(isNaN(value) || value < 0){
+    showToast('Đơn giá phải là số hợp lệ, không âm.');
+    return;
+  }
+  inputEl.disabled = true;
+  try{
+    const { error } = await sb.from('social_ads_pricing').update({ unit_price: value, updated_at: new Date().toISOString() }).eq('id', id);
+    if(error) throw error;
+    const row = allAdsPricing.find(p => p.id === id);
+    if(row) row.unit_price = value;
+    showToast('Đã lưu đơn giá.');
+    logAdminAction('Cập nhật giá tương tác', `#${id} → ${value.toLocaleString('vi-VN')}đ`);
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  } finally {
+    inputEl.disabled = false;
+  }
+}
+
+function openPriceForm(){
+  editingPriceId = null;
+  document.getElementById('priceModalTitle').textContent = 'Thêm dòng giá';
+  document.getElementById('priceModalError').classList.remove('show');
+  document.getElementById('pr_platform').value = 'Facebook';
+  document.getElementById('pr_type').value = 'Like';
+  document.getElementById('pr_label').value = 'Tăng like';
+  document.getElementById('pr_price').value = '';
+  document.getElementById('priceModalOverlay').classList.add('show');
+}
+
+function closePriceForm(){
+  document.getElementById('priceModalOverlay').classList.remove('show');
+}
+
+async function handleSavePrice(){
+  const errBox = document.getElementById('priceModalError');
+  const row = {
+    platform: document.getElementById('pr_platform').value,
+    interaction_type: document.getElementById('pr_type').value,
+    interaction_label: document.getElementById('pr_label').value.trim() || document.getElementById('pr_type').value,
+    unit_price: Number(document.getElementById('pr_price').value) || 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  const btn = document.getElementById('priceSaveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { error } = await sb.from('social_ads_pricing').upsert(row, { onConflict: 'platform,interaction_type' });
+    if(error) throw error;
+    showToast('✅ Đã lưu dòng giá.');
+    logAdminAction('Thêm/sửa giá tương tác', `${row.platform} - ${row.interaction_type} → ${row.unit_price}đ`);
+    closePriceForm();
+    await loadAdsPricing();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function handleDeletePrice(id){
+  if(!confirm('Xoá dòng giá này?')) return;
+  try{
+    const { error } = await sb.from('social_ads_pricing').delete().eq('id', id);
+    if(error) throw error;
+    showToast('Đã xoá.');
+    logAdminAction('Xoá giá tương tác', `#${id}`);
+    await loadAdsPricing();
+  } catch(e){
+    showToast('Lỗi: ' + e.message);
+  }
 }
 
 /* =====================================================================
