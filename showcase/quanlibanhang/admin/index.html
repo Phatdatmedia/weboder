@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ninres POS · Quản trị</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="mark">🛡️</div>
+      <h2>Ninres POS · Quản trị</h2>
+      <p>Chỉ dành cho tài khoản quản trị viên</p>
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <div class="field"><label>Tên đăng nhập</label><input type="text" id="loginUsername" autocomplete="username" placeholder="VD: admin"></div>
+    <div class="field"><label>Mật khẩu</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="••••••••" onkeypress="if(event.key==='Enter')document.getElementById('loginBtn').click()"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px;" id="loginBtn">Đăng nhập</button>
+    <div class="login-hint">Bản demo: admin / admin123<br><a href="/showcase/quanlibanhang/pos/" style="color:var(--accent-deep);">← Quay lại màn hình bán hàng</a></div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🛡️</div>
+      <div><div class="brand-name">Ninres Admin</div><div class="brand-sub">Trang quản trị</div></div>
+    </div>
+
+    <nav class="nav" id="navMenu">
+      <a class="nav-item active" data-tab="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Tổng quan</a>
+      <a class="nav-item" data-tab="employees"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 014-4h6a4 4 0 014 4v2"/><path d="M17 8a3 3 0 010 6"/><path d="M23 21v-2a3 3 0 00-2.2-2.9"/></svg>Nhân viên</a>
+      <a class="nav-item" data-tab="products"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>Sản phẩm</a>
+      <a class="nav-item" data-tab="orders"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l3 3v17H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Đơn hàng</a>
+      <a class="nav-item" data-tab="stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/></svg>Kho hàng</a>
+      <a class="nav-item" data-tab="stocktake"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Kiểm kê</a>
+      <a class="nav-item" data-tab="shifts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Ca làm việc</a>
+      <a class="nav-item" data-tab="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-6 3 4 5-8"/></svg>Thống kê</a>
+    </nav>
+
+    <a class="nav-item back-link" href="/showcase/quanlibanhang/pos/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Màn hình bán hàng</a>
+    <div class="logout" id="logoutBtn">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Đăng xuất
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h1 id="pageTitle">Tổng quan</h1>
+      <div class="top-right">
+        <div class="conn-note"><span class="status-dot" id="connDot"></span><span id="connText">Đang kết nối…</span></div>
+        <div class="who"><img id="whoAvatar" src="https://api.dicebear.com/7.x/notionists/svg?seed=admin" alt=""><span id="whoName">–</span></div>
+      </div>
+    </div>
+
+    <div class="content" id="contentArea">
+
+      <!-- ============ TỔNG QUAN ============ -->
+      <section class="page active" id="page-dashboard">
+        <div class="grid-cards">
+          <div class="stat-card c-thu"><div><div class="label">Doanh thu hôm nay</div><div class="value num" id="dashRevenue">0 ₫</div></div>
+            <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></div></div>
+          <div class="stat-card c-neu"><div><div class="label">Số hoá đơn hôm nay</div><div class="value num" id="dashOrders">0</div></div>
+            <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l3 3v17H6z"/></svg></div></div>
+          <div class="stat-card c-acc"><div><div class="label">Ca đang mở</div><div class="value num" id="dashOpenShifts">0</div></div>
+            <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div></div>
+          <div class="stat-card c-warn"><div><div class="label">Sắp hết hàng</div><div class="value num" id="dashLowStock">0</div></div>
+            <div class="stat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><h2>Ca làm việc đang mở</h2><div class="sub">Theo dõi thời gian thực các thu ngân đang hoạt động</div></div></div>
+          <table><thead><tr><th>Thu ngân</th><th>Giờ mở ca</th><th>Doanh thu tạm tính</th><th>Số hoá đơn</th></tr></thead>
+            <tbody id="dashOpenShiftsTable"></tbody></table>
+          <div class="empty-hint" id="dashOpenShiftsEmpty" style="display:none;">Không có ca nào đang mở</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><h2>Sản phẩm sắp hết hàng</h2></div></div>
+          <table><thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Mức tối thiểu</th><th>Trạng thái</th></tr></thead>
+            <tbody id="dashLowStockTable"></tbody></table>
+          <div class="empty-hint" id="dashLowStockEmpty" style="display:none;">Không có sản phẩm nào sắp hết hàng 🎉</div>
+        </div>
+      </section>
+
+      <!-- ============ NHÂN VIÊN ============ -->
+      <section class="page" id="page-employees">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Tài khoản nhân viên</h2><div class="sub">Cấp và quản lý tài khoản đăng nhập cho nhân viên</div></div>
+            <button class="btn btn-primary btn-sm" id="empAddBtn">+ Thêm nhân viên</button>
+          </div>
+          <table><thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th></th></tr></thead>
+            <tbody id="empTable"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ============ SẢN PHẨM ============ -->
+      <section class="page" id="page-products">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Danh mục sản phẩm</h2><div class="sub">Quản lý giá bán, giá vốn và tồn kho</div></div>
+            <div style="display:flex;gap:10px;">
+              <input type="search" id="prodSearch" placeholder="Tìm sản phẩm…" style="width:200px;">
+              <button class="btn btn-primary btn-sm" id="prodAddBtn">+ Thêm sản phẩm</button>
+            </div>
+          </div>
+          <table><thead><tr><th>SKU</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Giá vốn</th><th>Giá bán</th><th>Tồn kho</th><th></th></tr></thead>
+            <tbody id="prodTable"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ============ ĐƠN HÀNG ============ -->
+      <section class="page" id="page-orders">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Hoá đơn bán hàng</h2><div class="sub">Bấm vào một dòng để xem chi tiết</div></div>
+            <div class="form-row" style="gap:8px;">
+              <input type="date" id="ordFrom">
+              <input type="date" id="ordTo">
+              <button class="btn btn-primary btn-sm" id="ordFilterBtn">Lọc</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Mã HĐ</th><th>Thời gian</th><th>Số món</th><th>Thanh toán</th><th>Giảm giá</th><th>Tổng tiền</th></tr></thead>
+            <tbody id="ordTable"></tbody></table>
+          <div class="empty-hint" id="ordEmpty" style="display:none;">Không có hoá đơn trong khoảng thời gian này</div>
+        </div>
+      </section>
+
+      <!-- ============ KHO HÀNG (Nhập / Xuất) ============ -->
+      <section class="page" id="page-stock">
+        <div class="subtabs">
+          <div class="subtab active" data-sub="in">Nhập hàng</div>
+          <div class="subtab" data-sub="out">Xuất hàng</div>
+        </div>
+
+        <div id="stockIn">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Nhập hàng</h2><div class="sub">Ghi nhận hàng nhập từ nhà cung cấp</div></div></div>
+            <div class="form-row">
+              <div class="field" style="flex:2;"><label>Sản phẩm</label><select id="siProduct"></select></div>
+              <div class="field"><label>Số lượng</label><input type="number" id="siQty" min="0.01" step="1"></div>
+              <div class="field"><label>Đơn giá nhập (₫)</label><input type="number" id="siCost" min="0" step="1000"></div>
+              <div class="field"><label>Nhà cung cấp</label><input type="text" id="siSupplier"></div>
+              <div class="field" style="justify-content:flex-end;"><button class="btn btn-teal" id="siSubmit">+ Ghi nhận</button></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Lịch sử nhập hàng</h2></div></div>
+            <table><thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th>NCC</th></tr></thead>
+              <tbody id="siHistory"></tbody></table>
+          </div>
+        </div>
+
+        <div id="stockOut" style="display:none;">
+          <div class="panel">
+            <div class="panel-head"><div><h2>Xuất hàng</h2><div class="sub">Hàng hỏng, hết hạn, trả nhà cung cấp…</div></div></div>
+            <div class="form-row">
+              <div class="field" style="flex:2;"><label>Sản phẩm</label><select id="soProduct"></select></div>
+              <div class="field"><label>Số lượng</label><input type="number" id="soQty" min="0.01" step="1"></div>
+              <div class="field"><label>Lý do</label>
+                <select id="soReason"><option>Hàng hỏng</option><option>Hết hạn</option><option>Trả nhà cung cấp</option><option>Điều chỉnh</option></select>
+              </div>
+              <div class="field" style="justify-content:flex-end;"><button class="btn btn-primary" id="soSubmit">+ Ghi nhận</button></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Lịch sử xuất hàng</h2></div></div>
+            <table><thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Số lượng</th><th>Lý do</th></tr></thead>
+              <tbody id="soHistory"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ KIỂM KÊ ============ -->
+      <section class="page" id="page-stocktake">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Kiểm kê tồn kho</h2><div class="sub">Đếm thực tế và so sánh với hệ thống</div></div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" id="stFillBtn">Điền = tồn hệ thống</button>
+              <button class="btn btn-teal btn-sm" id="stSaveBtn">Lưu phiếu</button>
+              <button class="btn btn-primary btn-sm" id="stApplyBtn">Áp dụng điều chỉnh</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Sản phẩm</th><th>Tồn hệ thống</th><th>Thực tế đếm</th><th>Chênh lệch</th></tr></thead>
+            <tbody id="stTable"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Lịch sử kiểm kê</h2></div></div>
+          <table><thead><tr><th>Thời gian</th><th>Số SP kiểm</th><th>Số SP lệch</th><th>Ghi chú</th></tr></thead>
+            <tbody id="stHistory"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ============ CA LÀM VIỆC ============ -->
+      <section class="page" id="page-shifts">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Lịch sử ca làm việc</h2><div class="sub">Toàn bộ ca của tất cả nhân viên</div></div></div>
+          <table><thead><tr><th>Thu ngân</th><th>Mở ca</th><th>Đóng ca</th><th>Quỹ đầu ca</th><th>Doanh thu</th><th>Chênh lệch quỹ</th><th>Trạng thái</th></tr></thead>
+            <tbody id="shiftTable"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ============ THỐNG KÊ ============ -->
+      <section class="page" id="page-reports">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Doanh thu theo tháng</h2><div class="sub">Tổng hợp từ hoá đơn bán hàng</div></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <select id="reportYear"></select>
+              <button class="btn btn-primary btn-sm" id="reportFilterBtn">LỌC</button>
+            </div>
+          </div>
+          <div style="position:relative;height:320px;"><canvas id="reportChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Sản phẩm bán chạy</h2><div class="sub">Top 10 theo doanh thu trong năm được chọn</div></div></div>
+          <table><thead><tr><th>#</th><th>Sản phẩm</th><th>Số lượng bán</th><th>Doanh thu</th></tr></thead>
+            <tbody id="topProductsTable"></tbody></table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBox"></div></div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

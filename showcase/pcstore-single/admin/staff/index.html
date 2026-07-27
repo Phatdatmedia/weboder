@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nhân viên — PC.STORE Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
+    <nav class="admin-nav">
+      <a href="/showcase/pcstore-single/admin/">Tổng quan</a>
+      <a href="/showcase/pcstore-single/admin/products/">Sản phẩm</a>
+      <a href="/showcase/pcstore-single/admin/orders/">Đơn hàng</a>
+      <a href="/showcase/pcstore-single/admin/staff/" class="active">Nhân viên</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar"><h1>Người dùng & phân quyền</h1></div>
+    <p style="color:var(--muted); max-width:640px; margin-bottom:20px;">
+      Chỉ tài khoản <b style="color:var(--amber);">admin</b> mới có thể đổi vai trò người dùng.
+      Vai trò <b>staff</b> có thể quản lý sản phẩm và đơn hàng; <b>customer</b> là khách hàng thông thường.
+    </p>
+    <table class="data-table">
+      <thead><tr><th>Họ tên</th><th>Điện thoại</th><th>Ngày tham gia</th><th>Vai trò</th></tr></thead>
+      <tbody id="staff-tbody"></tbody>
+    </table>
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

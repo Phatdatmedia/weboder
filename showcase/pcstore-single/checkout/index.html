@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thanh toán — PC.STORE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/showcase/pcstore-single/" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <nav class="nav-links" id="user-slot" style="margin-left:auto;"></nav>
+  </div>
+</header>
+
+<section class="section container">
+  <h1>Thanh toán</h1>
+  <div style="display:grid; grid-template-columns: 1fr 340px; gap: 30px; align-items:start;">
+    <div>
+      <div class="form-card" style="max-width:none; margin:0 0 20px;">
+        <h3>Thông tin giao hàng</h3>
+        <div class="field"><label>Họ và tên người nhận</label><input id="f-name" required></div>
+        <div class="field"><label>Số điện thoại</label><input id="f-phone" required></div>
+        <div class="field"><label>Địa chỉ giao hàng</label><textarea id="f-address" required></textarea></div>
+        <div class="field"><label>Ghi chú (tuỳ chọn)</label><textarea id="f-note"></textarea></div>
+      </div>
+      <div class="form-card" style="max-width:none; margin:0;">
+        <h3>Phương thức thanh toán</h3>
+        <div class="pay-options">
+          <label class="pay-option"><input type="radio" name="pm" value="cod" checked> Thanh toán khi nhận hàng (COD)</label>
+          <label class="pay-option"><input type="radio" name="pm" value="bank_transfer"> Chuyển khoản ngân hàng</label>
+          <label class="pay-option"><input type="radio" name="pm" value="card"> Thẻ tín dụng / ghi nợ</label>
+        </div>
+      </div>
+    </div>
+    <div class="summary-box">
+      <h3>Đơn hàng</h3>
+      <div id="mini-cart" style="max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+      <div class="summary-row"><span>Tạm tính</span><span class="mono" id="sum-subtotal">0₫</span></div>
+      <div class="summary-row"><span>Phí vận chuyển</span><span class="mono" id="sum-ship">0₫</span></div>
+      <div class="summary-row summary-row--total"><span>Tổng cộng</span><span class="mono" id="sum-total">0₫</span></div>
+      <button class="btn btn--primary btn--full" id="place-order-btn">Đặt hàng</button>
+    </div>
+  </div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>

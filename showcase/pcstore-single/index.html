@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC.STORE — Linh kiện & PC gaming chính hãng</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/showcase/pcstore-single/" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <div class="nav-search">
+      <input type="search" id="search-input" placeholder="Tìm CPU, VGA, RAM...">
+    </div>
+    <nav class="nav-links" id="user-slot"></nav>
+    <a href="/showcase/pcstore-single/cart/" class="nav-link cart-badge">🛒 Giỏ hàng <span class="cart-count" id="cart-count">0</span></a>
+  </div>
+  <div class="container category-bar" id="category-bar"></div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">// BUILD_STATION v1.0</div>
+    <h1>Ráp cấu hình theo thông số, không theo lời đồn.</h1>
+    <p>Linh kiện chính hãng, giá niêm yết minh bạch, bảo hành tận nơi. Chọn từng thành phần như đọc một bảng datasheet.</p>
+    <a href="#catalog" class="btn btn--primary">Xem sản phẩm</a>
+    <div class="hero-specs">
+      <div><div class="hero-spec-label">Sản phẩm</div><div class="hero-spec-value" id="stat-products">—</div></div>
+      <div><div class="hero-spec-label">Bảo hành</div><div class="hero-spec-value">12–36 th</div></div>
+      <div><div class="hero-spec-label">Giao hàng</div><div class="hero-spec-value">2–4h nội thành</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section container" id="catalog">
+  <div class="section-head">
+    <h2 id="catalog-title">Tất cả sản phẩm</h2>
+    <select class="sort-select" id="sort-select">
+      <option value="newest">Mới nhất</option>
+      <option value="price_asc">Giá tăng dần</option>
+      <option value="price_desc">Giá giảm dần</option>
+    </select>
+  </div>
+  <div class="product-grid" id="product-grid"></div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    PC.STORE — Demo website bán PC xây dựng bằng HTML/CSS/JS + Supabase. © 2026.
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

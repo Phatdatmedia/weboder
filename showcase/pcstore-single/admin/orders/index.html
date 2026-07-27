@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đơn hàng — PC.STORE Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
+    <nav class="admin-nav">
+      <a href="/showcase/pcstore-single/admin/">Tổng quan</a>
+      <a href="/showcase/pcstore-single/admin/products/">Sản phẩm</a>
+      <a href="/showcase/pcstore-single/admin/orders/" class="active">Đơn hàng</a>
+      <a href="/showcase/pcstore-single/admin/staff/">Nhân viên</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Đơn hàng</h1>
+      <select class="sort-select" id="filter-status">
+        <option value="">Tất cả trạng thái</option>
+        <option value="pending">Chờ xác nhận</option>
+        <option value="confirmed">Đã xác nhận</option>
+        <option value="packing">Đang đóng gói</option>
+        <option value="shipping">Đang giao</option>
+        <option value="delivered">Đã giao</option>
+        <option value="cancelled">Đã huỷ</option>
+      </select>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>SĐT</th><th>Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th><th>Ngày đặt</th><th></th></tr></thead>
+      <tbody id="order-tbody"></tbody>
+    </table>
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

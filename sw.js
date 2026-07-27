@@ -21,8 +21,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'Phatdatagency';
   const options = {
     body: payload.body || '',
-    icon: 'icon-192.png',
-    badge: 'icon-192.png',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
     data: { url: payload.url || '/' },
     tag: payload.tag || undefined,
     renotify: !!payload.tag,

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sản phẩm — PC.STORE Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
+    <nav class="admin-nav">
+      <a href="/showcase/pcstore-single/admin/">Tổng quan</a>
+      <a href="/showcase/pcstore-single/admin/products/" class="active">Sản phẩm</a>
+      <a href="/showcase/pcstore-single/admin/orders/">Đơn hàng</a>
+      <a href="/showcase/pcstore-single/admin/staff/">Nhân viên</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Sản phẩm</h1>
+      <button class="btn btn--primary" id="new-product-btn">+ Thêm sản phẩm</button>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>Ảnh</th><th>Tên</th><th>Danh mục</th><th>Giá</th><th>Kho</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody id="product-tbody"></tbody>
+    </table>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-title">Thêm sản phẩm</h3><button class="modal-close" id="modal-close">×</button></div>
+    <form id="product-form">
+      <input type="hidden" id="f-id">
+      <div class="field"><label>Tên sản phẩm</label><input id="f-name" required></div>
+      <div class="field"><label>Slug (URL, không dấu, cách nhau bằng -)</label><input id="f-slug" required></div>
+      <div class="field"><label>Danh mục</label><select id="f-category"></select></div>
+      <div class="field"><label>Thương hiệu</label><input id="f-brand"></div>
+      <div class="field"><label>Giá (VND)</label><input type="number" id="f-price" required></div>
+      <div class="field"><label>Giá khuyến mãi (để trống nếu không có)</label><input type="number" id="f-sale-price"></div>
+      <div class="field"><label>Tồn kho</label><input type="number" id="f-stock" required></div>
+      <div class="field"><label>Link ảnh</label><input id="f-image"></div>
+      <div class="field"><label>Thông số kỹ thuật (JSON, VD: {"CPU":"i7-14700K"})</label><textarea id="f-specs">{}</textarea></div>
+      <div class="field"><label>Mô tả</label><textarea id="f-description"></textarea></div>
+      <div class="field"><label><input type="checkbox" id="f-active" checked style="width:auto;"> Đang bán</label></div>
+      <button class="btn btn--primary btn--full" type="submit">Lưu sản phẩm</button>
+    </form>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

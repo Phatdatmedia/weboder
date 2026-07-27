@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Showcase — Dự án đã thực hiện | Phatdatagency</title>
+<meta name="description" content="Showcase các dự án Website, Tool, Slide, Profile mà Phatdatagency đã thực hiện cho khách hàng.">
+<link rel="canonical" href="https://phatdatagency.id.vn/showcase/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Showcase — Dự án đã thực hiện | Phatdatagency">
+<meta property="og:description" content="Xem các dự án Website, Tool, Slide, Profile mà Phatdatagency đã thực hiện cho khách hàng.">
+<meta property="og:image" content="https://phatdatagency.id.vn/og-image.png">
+<meta property="og:url" content="https://phatdatagency.id.vn/showcase/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<!-- ===================== MAINTENANCE MODE OVERLAY ===================== -->
+<div id="maintenanceOverlay" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:#121110; color:#F4EFE6;
+  font-family:'Inter',sans-serif;
+  display:none; align-items:center; justify-content:center; text-align:center; padding:24px;
+">
+  <div style="max-width:440px;">
+    <div style="font-size:52px; margin-bottom:16px;">🚧</div>
+    <h1 id="maintenanceOverlayTitle" style="font-family:'Fraunces',serif; font-size:26px; margin-bottom:12px;">Website đang bảo trì</h1>
+    <p id="maintenanceOverlayMsg" style="font-size:14.5px; color:#9C9284; line-height:1.7;">Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.</p>
+  </div>
+</div>
+
+
+<!-- ===================== END MAINTENANCE MODE OVERLAY ===================== -->
+
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="brand-logo">Phatdatagency<span class="dot">.</span></div>
+      <div class="brand-sep"></div>
+      <div class="brand-page">Showcase</div>
+    </div>
+    <div class="nav-actions">
+      <a href="/" class="nav-link-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Trang chủ
+      </a>
+      <a href="/#services" class="btn btn-primary btn-sm">Đặt đơn →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-eyebrow">Portfolio</div>
+  <h1>Những gì chúng tôi<br>đã <em>tạo ra</em>.</h1>
+  <p class="hero-sub">Bộ sưu tập các dự án website, công cụ, slide và hồ sơ năng lực — được thiết kế riêng cho từng khách hàng.</p>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="n"><span class="count-up" data-target="0" id="countProjects">0</span></div>
+      <div class="l">Dự án</div>
+    </div>
+    <div class="hero-stat">
+      <div class="n"><span class="count-up" data-target="0" id="countTypes">0</span></div>
+      <div class="l">Loại hình</div>
+    </div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar" id="filterBar">
+  <button class="filter-pill active" data-filter="all">Tất cả</button>
+  <button class="filter-pill" data-filter="Website">Website</button>
+  <button class="filter-pill" data-filter="Tool">Tool</button>
+  <button class="filter-pill" data-filter="Slide">Slide</button>
+  <button class="filter-pill" data-filter="Profile">Profile</button>
+  <button class="filter-pill" data-filter="Facebook">Facebook</button>
+  <button class="filter-pill" data-filter="TikTok">TikTok</button>
+  <button class="filter-pill" data-filter="Instagram">Instagram</button>
+  <button class="filter-pill" data-filter="Khác">Khác</button>
+  <div class="filter-sep"></div>
+  <div class="search-wrap">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input class="search-input" id="searchInput" type="text" placeholder="Tìm dự án...">
+  </div>
+</div>
+
+<!-- GRID -->
+<main class="showcase-grid" id="showcaseGrid">
+  <div class="card-skeleton"></div>
+  <div class="card-skeleton"></div>
+  <div class="card-skeleton"></div>
+  <div class="card-skeleton"></div>
+  <div class="card-skeleton"></div>
+  <div class="card-skeleton"></div>
+</main>
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-modal">
+    <div class="detail-img-wrap" id="detailImgWrap">
+      <div class="detail-img-placeholder">Chưa có ảnh / preview</div>
+      <button class="detail-close" onclick="closeDetail()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-meta">
+        <span class="detail-type" id="detailType">Website</span>
+        <div class="detail-tags" id="detailTags"></div>
+      </div>
+      <h2 class="detail-title" id="detailTitle">Tên dự án</h2>
+      <p class="detail-desc" id="detailDesc">Mô tả chi tiết dự án.</p>
+      <div class="detail-actions" id="detailActions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="t-dot"></span><span id="toastMsg"></span></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer">
+    <p>© 2026 PHATDATAGENCY.</p>
+    <div class="footer-links">
+      <a href="/">Trang chủ</a>
+      <a href="/#lookup">Tra cứu đơn</a>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

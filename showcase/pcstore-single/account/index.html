@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tài khoản — PC.STORE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/showcase/pcstore-single/" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <nav class="nav-links" id="user-slot" style="margin-left:auto;"></nav>
+  </div>
+</header>
+
+<section class="section container">
+  <h1>Tài khoản của tôi</h1>
+  <div class="category-bar" style="border:none; padding-top:0;">
+    <button class="chip active" data-tab="profile">Thông tin</button>
+    <button class="chip" data-tab="orders">Đơn hàng của tôi</button>
+  </div>
+
+  <div id="tab-profile" class="form-card" style="max-width:480px; margin:20px 0;">
+    <div class="field"><label>Họ và tên</label><input id="p-name"></div>
+    <div class="field"><label>Số điện thoại</label><input id="p-phone"></div>
+    <div class="field"><label>Địa chỉ</label><textarea id="p-address"></textarea></div>
+    <button class="btn btn--primary btn--full" id="save-profile-btn">Lưu thay đổi</button>
+  </div>
+
+  <div id="tab-orders" style="display:none; margin-top:20px;">
+    <div id="orders-list"></div>
+  </div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>

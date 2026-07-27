@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bảng điều khiển — PC.STORE Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-shell">
+  <aside class="admin-side">
+    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
+    <nav class="admin-nav">
+      <a href="/showcase/pcstore-single/admin/" class="active">Tổng quan</a>
+      <a href="/showcase/pcstore-single/admin/products/">Sản phẩm</a>
+      <a href="/showcase/pcstore-single/admin/orders/">Đơn hàng</a>
+      <a href="/showcase/pcstore-single/admin/staff/">Nhân viên</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>Tổng quan</h1>
+      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
+    </div>
+    <div class="stat-cards" id="stat-cards"></div>
+    <h3>Đơn hàng gần đây</h3>
+    <table class="data-table">
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
+      <tbody id="recent-orders"></tbody>
+    </table>
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
