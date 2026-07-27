@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Giỏ hàng — PC.STORE</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -274,29 +274,30 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
 </style>
 </head>
 <body>
-<div class="admin-shell">
-  <aside class="admin-side">
-    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
-    <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
-      <a href="staff.html">Nhân viên</a>
-    </nav>
-  </aside>
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <div class="nav-search"><input type="search" id="search-input" placeholder="Tìm CPU, VGA, RAM..."></div>
+    <nav class="nav-links" id="user-slot"></nav>
+    <a href="cart.html" class="nav-link cart-badge">🛒 Giỏ hàng <span class="cart-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="section container">
+  <h1>Giỏ hàng của bạn</h1>
+  <div style="display:grid; grid-template-columns: 1fr 320px; gap: 30px; align-items:start;" id="cart-layout">
+    <div id="cart-list"></div>
+    <div class="summary-box">
+      <div class="summary-row"><span>Tạm tính</span><span class="mono" id="sum-subtotal">0₫</span></div>
+      <div class="summary-row"><span>Phí vận chuyển</span><span class="mono" id="sum-ship">0₫</span></div>
+      <div class="summary-row summary-row--total"><span>Tổng cộng</span><span class="mono" id="sum-total">0₫</span></div>
+      <a href="checkout.html" class="btn btn--primary btn--full" id="checkout-btn">Tiến hành thanh toán</a>
     </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
-    <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
-    </table>
-  </main>
-</div>
+  </div>
+</section>
+
+<footer class="site-footer"><div class="container">PC.STORE — Demo website bán PC. © 2026.</div></footer>
 
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -682,46 +683,63 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
-    const ctx = await requireStaff();
-    if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") window.location.href = `index.html?q=${encodeURIComponent(e.target.value)}`;
+  });
 
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
+  const list = document.getElementById("cart-list");
+  let user;
 
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
+  async function refreshCartCount() {
+    document.getElementById("cart-count").textContent = await getCartCount(user?.id);
   }
-  init();
+
+  function cartRow(item) {
+    const p = item.products;
+    const row = el("div", { class: "cart-row" }, [
+      el("img", { src: p.image_url || "https://placehold.co/100x100/191C26/57E8CB?text=PC", alt: p.name }),
+      el("div", {}, [
+        el("div", { class: "cart-thumb-name" }, p.name),
+        el("div", { class: "mono", style: "color:var(--muted); font-size:.8rem;" }, formatVND(p.sale_price ?? p.price)),
+      ]),
+      (function () {
+        const stepper = el("div", { class: "qty-stepper" });
+        const minus = el("button", {}, "−");
+        const input = document.createElement("input"); input.value = item.quantity;
+        const plus = el("button", {}, "+");
+        minus.onclick = async () => { await updateCartQuantity(item.id, +input.value - 1); render(); };
+        plus.onclick = async () => { await updateCartQuantity(item.id, +input.value + 1); render(); };
+        stepper.append(minus, input, plus);
+        return stepper;
+      })(),
+      el("div", { class: "cart-line-price mono" }, formatVND(cartLineTotal(item))),
+      el("button", { class: "btn btn--danger btn--sm", onclick: async () => { await removeCartItem(item.id); render(); refreshCartCount(); } }, "Xoá"),
+    ]);
+    return row;
+  }
+
+  async function render() {
+    user = await requireAuth();
+    if (!user) return;
+    const items = await getCartItems(user.id);
+    list.innerHTML = "";
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state"><h3>Giỏ hàng trống</h3><p>Hãy khám phá sản phẩm và thêm vào giỏ.</p><a href="index.html" class="btn btn--primary" style="margin-top:14px;">Tiếp tục mua sắm</a></div>`;
+      document.getElementById("checkout-btn").setAttribute("style", "pointer-events:none; opacity:.4;");
+    } else {
+      for (const it of items) list.appendChild(cartRow(it));
+      document.getElementById("checkout-btn").removeAttribute("style");
+    }
+    const subtotal = items.reduce((s, it) => s + cartLineTotal(it), 0);
+    const ship = items.length === 0 ? 0 : (subtotal >= FREE_SHIP_THRESHOLD ? 0 : SHIPPING_FEE);
+    document.getElementById("sum-subtotal").textContent = formatVND(subtotal);
+    document.getElementById("sum-ship").textContent = ship === 0 ? "Miễn phí" : formatVND(ship);
+    document.getElementById("sum-total").textContent = formatVND(subtotal + ship);
+    refreshCartCount();
+  }
+
+  mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+  render();
 </script>
 </body>
 </html>

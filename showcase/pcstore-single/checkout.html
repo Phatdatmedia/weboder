@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Thanh toán — PC.STORE</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -274,29 +274,44 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
 </style>
 </head>
 <body>
-<div class="admin-shell">
-  <aside class="admin-side">
-    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
-    <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
-      <a href="staff.html">Nhân viên</a>
-    </nav>
-  </aside>
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <nav class="nav-links" id="user-slot" style="margin-left:auto;"></nav>
+  </div>
+</header>
+
+<section class="section container">
+  <h1>Thanh toán</h1>
+  <div style="display:grid; grid-template-columns: 1fr 340px; gap: 30px; align-items:start;">
+    <div>
+      <div class="form-card" style="max-width:none; margin:0 0 20px;">
+        <h3>Thông tin giao hàng</h3>
+        <div class="field"><label>Họ và tên người nhận</label><input id="f-name" required></div>
+        <div class="field"><label>Số điện thoại</label><input id="f-phone" required></div>
+        <div class="field"><label>Địa chỉ giao hàng</label><textarea id="f-address" required></textarea></div>
+        <div class="field"><label>Ghi chú (tuỳ chọn)</label><textarea id="f-note"></textarea></div>
+      </div>
+      <div class="form-card" style="max-width:none; margin:0;">
+        <h3>Phương thức thanh toán</h3>
+        <div class="pay-options">
+          <label class="pay-option"><input type="radio" name="pm" value="cod" checked> Thanh toán khi nhận hàng (COD)</label>
+          <label class="pay-option"><input type="radio" name="pm" value="bank_transfer"> Chuyển khoản ngân hàng</label>
+          <label class="pay-option"><input type="radio" name="pm" value="card"> Thẻ tín dụng / ghi nợ</label>
+        </div>
+      </div>
     </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
-    <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
-    </table>
-  </main>
-</div>
+    <div class="summary-box">
+      <h3>Đơn hàng</h3>
+      <div id="mini-cart" style="max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+      <div class="summary-row"><span>Tạm tính</span><span class="mono" id="sum-subtotal">0₫</span></div>
+      <div class="summary-row"><span>Phí vận chuyển</span><span class="mono" id="sum-ship">0₫</span></div>
+      <div class="summary-row summary-row--total"><span>Tổng cộng</span><span class="mono" id="sum-total">0₫</span></div>
+      <button class="btn btn--primary btn--full" id="place-order-btn">Đặt hàng</button>
+    </div>
+  </div>
+</section>
 
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -682,46 +697,56 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
-    const ctx = await requireStaff();
-    if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+let user, cartItems = [];
 
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
-
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
+  async function render() {
+    user = await requireAuth();
+    if (!user) return;
+    cartItems = await getCartItems(user.id);
+    const miniCart = document.getElementById("mini-cart");
+    miniCart.innerHTML = "";
+    if (!cartItems.length) {
+      document.querySelector(".section").innerHTML = `<div class="empty-state"><h3>Giỏ hàng trống</h3><p>Hãy thêm sản phẩm trước khi thanh toán.</p><a href="index.html" class="btn btn--primary" style="margin-top:14px;">Về trang chủ</a></div>`;
+      return;
+    }
+    for (const it of cartItems) {
+      miniCart.appendChild(el("div", { style: "display:flex; justify-content:space-between; font-size:.85rem; margin-bottom:8px;" }, [
+        el("span", {}, `${it.products.name} × ${it.quantity}`),
+        el("span", { class: "mono" }, formatVND(cartLineTotal(it))),
       ]));
     }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
+    const subtotal = cartItems.reduce((s, it) => s + cartLineTotal(it), 0);
+    const ship = subtotal >= FREE_SHIP_THRESHOLD ? 0 : SHIPPING_FEE;
+    document.getElementById("sum-subtotal").textContent = formatVND(subtotal);
+    document.getElementById("sum-ship").textContent = ship === 0 ? "Miễn phí" : formatVND(ship);
+    document.getElementById("sum-total").textContent = formatVND(subtotal + ship);
   }
-  init();
+
+  document.getElementById("place-order-btn").addEventListener("click", async () => {
+    const name = document.getElementById("f-name").value.trim();
+    const phone = document.getElementById("f-phone").value.trim();
+    const address = document.getElementById("f-address").value.trim();
+    const note = document.getElementById("f-note").value.trim();
+    const paymentMethod = document.querySelector('input[name="pm"]:checked').value;
+
+    if (!name || !phone || !address) { toast("Vui lòng điền đầy đủ thông tin giao hàng", "error"); return; }
+
+    const btn = document.getElementById("place-order-btn");
+    btn.disabled = true; btn.textContent = "Đang xử lý...";
+    try {
+      const order = await placeOrder({
+        userId: user.id, cartItems, paymentMethod, note,
+        receiver: { name, phone, address },
+      });
+      window.location.href = `order-success.html?code=${order.code}`;
+    } catch (e) {
+      toast(e.message, "error");
+      btn.disabled = false; btn.textContent = "Đặt hàng";
+    }
+  });
+
+  mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+  render();
 </script>
 </body>
 </html>

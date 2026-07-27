@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Theo dõi đơn hàng — PC.STORE</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -274,29 +274,22 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
 </style>
 </head>
 <body>
-<div class="admin-shell">
-  <aside class="admin-side">
-    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
-    <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
-      <a href="staff.html">Nhân viên</a>
-    </nav>
-  </aside>
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
-    </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
-    <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
-    </table>
-  </main>
-</div>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <nav class="nav-links" id="user-slot" style="margin-left:auto;"></nav>
+  </div>
+</header>
+
+<section class="section container" style="max-width:720px;">
+  <h1>Theo dõi đơn hàng</h1>
+  <div style="display:flex; gap:10px; margin-bottom:24px;">
+    <input id="code-input" placeholder="Nhập mã đơn hàng, VD: PC260718..." style="flex:1; padding:10px 12px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--text); font-family:var(--font-mono);">
+    <button class="btn btn--primary" id="track-btn">Tra cứu</button>
+  </div>
+  <div id="result"></div>
+</section>
 
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -682,44 +675,70 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
-    const ctx = await requireStaff();
-    if (!ctx) return;
+let user;
+  const resultBox = document.getElementById("result");
+
+  function renderTracking(order) {
+    resultBox.innerHTML = "";
+    if (order.status === "cancelled") {
+      resultBox.appendChild(el("div", { class: "order-card" }, [
+        el("div", { class: "order-card-head" }, [
+          el("div", { class: "mono", style: "font-weight:700;" }, order.code),
+          el("span", { class: "badge badge--cancelled" }, "Đã huỷ"),
+        ]),
+        el("p", { style: "color:var(--muted);" }, "Đơn hàng này đã bị huỷ."),
+      ]));
+      return;
+    }
+
+    const currentIdx = STATUS_STEPS.indexOf(order.status);
+    const steps = el("div", { class: "track-steps" }, STATUS_STEPS.map((s, i) =>
+      el("div", { class: "track-step" + (i <= currentIdx ? " done" : "") }, [
+        el("div", { class: "track-dot" }, String(i + 1)),
+        el("div", { class: "track-label" }, STATUS_LABEL[s]),
+      ])
+    ));
+
+    const card = el("div", { class: "order-card" }, [
+      el("div", { class: "order-card-head" }, [
+        el("div", {}, [
+          el("div", { class: "mono", style: "font-weight:700; font-size:1.1rem;" }, order.code),
+          el("div", { style: "color:var(--muted); font-size:.85rem;" }, `Đặt lúc ${new Date(order.created_at).toLocaleString("vi-VN")}`),
+        ]),
+        el("span", { class: `badge badge--${order.status}` }, STATUS_LABEL[order.status]),
+      ]),
+      steps,
+      el("table", { class: "spec-table" }, [
+        el("tr", {}, [el("td", {}, "Người nhận"), el("td", {}, order.receiver_name)]),
+        el("tr", {}, [el("td", {}, "Điện thoại"), el("td", {}, order.receiver_phone)]),
+        el("tr", {}, [el("td", {}, "Địa chỉ"), el("td", {}, order.receiver_address)]),
+        el("tr", {}, [el("td", {}, "Thanh toán"), el("td", {}, order.payment_method.toUpperCase() + " — " + (order.payment_status === "paid" ? "Đã thanh toán" : "Chưa thanh toán"))]),
+        el("tr", {}, [el("td", {}, "Tổng tiền"), el("td", { class: "mono", style: "color:var(--cyan); font-weight:700;" }, formatVND(order.total))]),
+      ]),
+    ]);
+    resultBox.appendChild(card);
+  }
+
+  async function track(code) {
+    if (!code) return;
+    resultBox.innerHTML = `<div class="empty-state">Đang tra cứu...</div>`;
+    try {
+      const order = await fetchOrderByCode(code, user.id);
+      renderTracking(order);
+    } catch (e) {
+      resultBox.innerHTML = `<div class="empty-state"><h3>Không tìm thấy đơn hàng</h3><p>Kiểm tra lại mã đơn hàng.</p></div>`;
+    }
+  }
+
+  document.getElementById("track-btn").addEventListener("click", () => track(document.getElementById("code-input").value.trim()));
+  document.getElementById("code-input").addEventListener("keydown", (e) => { if (e.key === "Enter") track(e.target.value.trim()); });
+
+  async function init() {
+    user = await requireAuth(`login.html?redirect=${encodeURIComponent(location.pathname + location.search)}`);
+    if (!user) return;
     mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
-
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
-
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
+    const code = new URLSearchParams(location.search).get("code");
+    if (code) { document.getElementById("code-input").value = code; track(code); }
   }
   init();
 </script>

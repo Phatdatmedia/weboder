@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Đơn hàng — PC.STORE Admin</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -278,22 +278,28 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
   <aside class="admin-side">
     <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
     <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
+      <a href="index.html">Tổng quan</a>
       <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
+      <a href="orders.html" class="active">Đơn hàng</a>
       <a href="staff.html">Nhân viên</a>
     </nav>
   </aside>
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
+      <h1>Đơn hàng</h1>
+      <select class="sort-select" id="filter-status">
+        <option value="">Tất cả trạng thái</option>
+        <option value="pending">Chờ xác nhận</option>
+        <option value="confirmed">Đã xác nhận</option>
+        <option value="packing">Đang đóng gói</option>
+        <option value="shipping">Đang giao</option>
+        <option value="delivered">Đã giao</option>
+        <option value="cancelled">Đã huỷ</option>
+      </select>
     </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
     <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>SĐT</th><th>Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th><th>Ngày đặt</th><th></th></tr></thead>
+      <tbody id="order-tbody"></tbody>
     </table>
   </main>
 </div>
@@ -682,44 +688,66 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
+let staffId;
+
+  function orderRow(o) {
+    const statusSelect = el("select", { class: "status-select" },
+      Object.entries(STATUS_LABEL).map(([val, label]) => {
+        const opt = document.createElement("option");
+        opt.value = val; opt.textContent = label; if (val === o.status) opt.selected = true;
+        return opt;
+      })
+    );
+    statusSelect.addEventListener("change", async () => {
+      try { await adminUpdateOrderStatus(o.id, statusSelect.value, staffId); toast("Đã cập nhật trạng thái", "success"); }
+      catch (e) { toast(e.message, "error"); }
+    });
+
+    const paySelect = el("select", { class: "status-select" }, [
+      el("option", { value: "unpaid", selected: o.payment_status === "unpaid" ? "true" : null }, "Chưa thanh toán"),
+      el("option", { value: "paid", selected: o.payment_status === "paid" ? "true" : null }, "Đã thanh toán"),
+      el("option", { value: "refunded", selected: o.payment_status === "refunded" ? "true" : null }, "Đã hoàn tiền"),
+    ]);
+    paySelect.addEventListener("change", async () => {
+      try { await adminUpdatePaymentStatus(o.id, paySelect.value); toast("Đã cập nhật thanh toán", "success"); }
+      catch (e) { toast(e.message, "error"); }
+    });
+
+    return el("tr", {}, [
+      el("td", { class: "mono" }, o.code),
+      el("td", {}, o.profiles?.full_name || o.receiver_name),
+      el("td", { class: "mono" }, o.receiver_phone),
+      el("td", { class: "mono" }, formatVND(o.total)),
+      el("td", {}, paySelect),
+      el("td", {}, statusSelect),
+      el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
+      el("td", {}, el("button", { class: "btn btn--sm", onclick: () => showDetail(o) }, "Chi tiết")),
+    ]);
+  }
+
+  function showDetail(o) {
+    const items = o.order_items.map(it => `${it.product_name} × ${it.quantity} — ${formatVND(it.unit_price * it.quantity)}`).join("\n");
+    alert(`Đơn hàng ${o.code}\n\nNgười nhận: ${o.receiver_name}\nSĐT: ${o.receiver_phone}\nĐịa chỉ: ${o.receiver_address}\nGhi chú: ${o.note || "—"}\n\nSản phẩm:\n${items}\n\nTạm tính: ${formatVND(o.subtotal)}\nPhí ship: ${formatVND(o.shipping_fee)}\nTổng: ${formatVND(o.total)}`);
+  }
+
+  async function loadOrders() {
+    const tbody = document.getElementById("order-tbody");
+    tbody.innerHTML = `<tr><td colspan="8">Đang tải...</td></tr>`;
+    const status = document.getElementById("filter-status").value;
+    const orders = await adminFetchOrders({ status: status || undefined });
+    tbody.innerHTML = "";
+    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="8">Không có đơn hàng nào.</td></tr>`; return; }
+    for (const o of orders) tbody.appendChild(orderRow(o));
+  }
+
+  document.getElementById("filter-status").addEventListener("change", loadOrders);
+
+  async function init() {
     const ctx = await requireStaff();
     if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
-
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
-
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
+    staffId = ctx.user.id;
+    mountHeaderAuthState({});
+    loadOrders();
   }
   init();
 </script>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Sản phẩm — PC.STORE Admin</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -278,24 +278,43 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
   <aside class="admin-side">
     <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
     <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
+      <a href="index.html">Tổng quan</a>
+      <a href="products.html" class="active">Sản phẩm</a>
       <a href="orders.html">Đơn hàng</a>
       <a href="staff.html">Nhân viên</a>
     </nav>
   </aside>
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
+      <h1>Sản phẩm</h1>
+      <button class="btn btn--primary" id="new-product-btn">+ Thêm sản phẩm</button>
     </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
     <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
+      <thead><tr><th>Ảnh</th><th>Tên</th><th>Danh mục</th><th>Giá</th><th>Kho</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody id="product-tbody"></tbody>
     </table>
   </main>
+</div>
+
+<div class="modal-backdrop" id="modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-title">Thêm sản phẩm</h3><button class="modal-close" id="modal-close">×</button></div>
+    <form id="product-form">
+      <input type="hidden" id="f-id">
+      <div class="field"><label>Tên sản phẩm</label><input id="f-name" required></div>
+      <div class="field"><label>Slug (URL, không dấu, cách nhau bằng -)</label><input id="f-slug" required></div>
+      <div class="field"><label>Danh mục</label><select id="f-category"></select></div>
+      <div class="field"><label>Thương hiệu</label><input id="f-brand"></div>
+      <div class="field"><label>Giá (VND)</label><input type="number" id="f-price" required></div>
+      <div class="field"><label>Giá khuyến mãi (để trống nếu không có)</label><input type="number" id="f-sale-price"></div>
+      <div class="field"><label>Tồn kho</label><input type="number" id="f-stock" required></div>
+      <div class="field"><label>Link ảnh</label><input id="f-image"></div>
+      <div class="field"><label>Thông số kỹ thuật (JSON, VD: {"CPU":"i7-14700K"})</label><textarea id="f-specs">{}</textarea></div>
+      <div class="field"><label>Mô tả</label><textarea id="f-description"></textarea></div>
+      <div class="field"><label><input type="checkbox" id="f-active" checked style="width:auto;"> Đang bán</label></div>
+      <button class="btn btn--primary btn--full" type="submit">Lưu sản phẩm</button>
+    </form>
+  </div>
 </div>
 
 <script type="module">
@@ -682,44 +701,91 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
+let categories = [];
+
+  function openModal(product = null) {
+    document.getElementById("modal-title").textContent = product ? "Sửa sản phẩm" : "Thêm sản phẩm";
+    document.getElementById("f-id").value = product?.id || "";
+    document.getElementById("f-name").value = product?.name || "";
+    document.getElementById("f-slug").value = product?.slug || "";
+    document.getElementById("f-brand").value = product?.brand || "";
+    document.getElementById("f-price").value = product?.price || "";
+    document.getElementById("f-sale-price").value = product?.sale_price || "";
+    document.getElementById("f-stock").value = product?.stock ?? 0;
+    document.getElementById("f-image").value = product?.image_url || "";
+    document.getElementById("f-specs").value = JSON.stringify(product?.specs || {}, null, 2);
+    document.getElementById("f-description").value = product?.description || "";
+    document.getElementById("f-active").checked = product ? product.is_active : true;
+    document.getElementById("f-category").value = product?.category_id || "";
+    document.getElementById("modal").style.display = "flex";
+  }
+  document.getElementById("new-product-btn").addEventListener("click", () => openModal());
+  document.getElementById("modal-close").addEventListener("click", () => document.getElementById("modal").style.display = "none");
+
+  document.getElementById("product-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let specs = {};
+    try { specs = JSON.parse(document.getElementById("f-specs").value || "{}"); }
+    catch { toast("Thông số kỹ thuật phải là JSON hợp lệ", "error"); return; }
+
+    const payload = {
+      name: document.getElementById("f-name").value.trim(),
+      slug: document.getElementById("f-slug").value.trim(),
+      category_id: document.getElementById("f-category").value || null,
+      brand: document.getElementById("f-brand").value.trim(),
+      price: Number(document.getElementById("f-price").value),
+      sale_price: document.getElementById("f-sale-price").value ? Number(document.getElementById("f-sale-price").value) : null,
+      stock: Number(document.getElementById("f-stock").value),
+      image_url: document.getElementById("f-image").value.trim(),
+      specs, description: document.getElementById("f-description").value.trim(),
+      is_active: document.getElementById("f-active").checked,
+    };
+    const id = document.getElementById("f-id").value;
+    if (id) payload.id = id;
+
+    try {
+      await adminUpsertProduct(payload);
+      toast("Đã lưu sản phẩm", "success");
+      document.getElementById("modal").style.display = "none";
+      loadProducts();
+    } catch (err) { toast(err.message, "error"); }
+  });
+
+  function productRow(p) {
+    return el("tr", {}, [
+      el("td", {}, el("img", { src: p.image_url || "https://placehold.co/50x50/191C26/57E8CB?text=PC", style: "width:44px;height:44px;object-fit:cover;border-radius:4px;" })),
+      el("td", {}, p.name),
+      el("td", {}, p.categories?.name || "—"),
+      el("td", { class: "mono" }, formatVND(p.sale_price ?? p.price)),
+      el("td", { class: "mono" }, String(p.stock)),
+      el("td", {}, el("span", { class: `badge badge--${p.is_active ? "confirmed" : "cancelled"}` }, p.is_active ? "Đang bán" : "Ẩn")),
+      el("td", { class: "table-actions" }, [
+        el("button", { class: "btn btn--sm", onclick: () => openModal(p) }, "Sửa"),
+        el("button", { class: "btn btn--danger btn--sm", onclick: async () => {
+          if (!confirm("Xoá sản phẩm này?")) return;
+          try { await adminDeleteProduct(p.id); toast("Đã xoá", "success"); loadProducts(); }
+          catch (err) { toast(err.message, "error"); }
+        } }, "Xoá"),
+      ]),
+    ]);
+  }
+
+  async function loadProducts() {
+    const tbody = document.getElementById("product-tbody");
+    tbody.innerHTML = `<tr><td colspan="7">Đang tải...</td></tr>`;
+    const products = await adminFetchAllProducts();
+    tbody.innerHTML = "";
+    for (const p of products) tbody.appendChild(productRow(p));
+  }
+
+  async function init() {
     const ctx = await requireStaff();
     if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
-
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
-
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
+    mountHeaderAuthState({});
+    categories = await fetchCategories();
+    const select = document.getElementById("f-category");
+    select.innerHTML = `<option value="">— Chọn danh mục —</option>` + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+    loadProducts();
   }
   init();
 </script>

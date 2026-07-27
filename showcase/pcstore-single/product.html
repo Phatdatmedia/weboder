@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Chi tiết sản phẩm — PC.STORE</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -274,29 +274,21 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
 </style>
 </head>
 <body>
-<div class="admin-shell">
-  <aside class="admin-side">
-    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
-    <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
-      <a href="staff.html">Nhân viên</a>
-    </nav>
-  </aside>
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
-    </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
-    <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
-    </table>
-  </main>
-</div>
+
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+    <div class="nav-search"><input type="search" id="search-input" placeholder="Tìm CPU, VGA, RAM..."></div>
+    <nav class="nav-links" id="user-slot"></nav>
+    <a href="cart.html" class="nav-link cart-badge">🛒 Giỏ hàng <span class="cart-count" id="cart-count">0</span></a>
+  </div>
+</header>
+
+<section class="section container">
+  <div id="pd-root" class="pd-grid"></div>
+</section>
+
+<footer class="site-footer"><div class="container">PC.STORE — Demo website bán PC. © 2026.</div></footer>
 
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -682,46 +674,81 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
-    const ctx = await requireStaff();
-    if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+document.getElementById("search-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") window.location.href = `index.html?q=${encodeURIComponent(e.target.value)}`;
+  });
 
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
+  async function refreshCartCount() {
+    const user = await getCurrentUser();
+    document.getElementById("cart-count").textContent = await getCartCount(user?.id);
+  }
 
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
+  const slug = new URLSearchParams(location.search).get("slug");
+  const root = document.getElementById("pd-root");
 
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
+  async function render() {
+    if (!slug) { root.innerHTML = `<div class="empty-state"><h3>Không tìm thấy sản phẩm</h3></div>`; return; }
+    try {
+      const p = await fetchProductBySlug(slug);
+      document.title = `${p.name} — PC.STORE`;
+      const price = p.sale_price ?? p.price;
+      const specEntries = Object.entries(p.specs || {});
 
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
+      root.innerHTML = "";
+      root.appendChild(el("div", { class: "pd-image" }, el("img", { src: p.image_url || "https://placehold.co/600x600/191C26/57E8CB?text=PC.STORE", alt: p.name })));
+
+      const info = el("div", {}, [
+        el("div", { class: "product-cat" }, p.categories?.name || ""),
+        el("h1", { class: "pd-title" }, p.name),
+        el("div", { class: "pd-price mono" }, [
+          formatVND(price),
+          p.sale_price ? el("span", { class: "product-price--old mono", style: "margin-left:10px;" }, formatVND(p.price)) : null,
+        ]),
+        el("div", { class: "stock-tag" + (p.stock <= 0 ? " stock-tag--out" : "") }, p.stock > 0 ? `Còn ${p.stock} sản phẩm trong kho` : "Tạm hết hàng"),
+      ]);
+
+      if (specEntries.length) {
+        const table = el("table", { class: "spec-table" });
+        for (const [k, v] of specEntries) {
+          table.appendChild(el("tr", {}, [el("td", {}, k), el("td", {}, String(v))]));
+        }
+        info.appendChild(table);
+      }
+
+      if (p.description) info.appendChild(el("p", { style: "color:var(--muted);" }, p.description));
+
+      const stepper = el("div", { class: "qty-stepper" }, [
+        el("button", { onclick: () => { qtyInput.value = Math.max(1, +qtyInput.value - 1); } }, "−"),
+        (function () { const i = document.createElement("input"); i.value = 1; i.id = "qty-input"; return i; })(),
+        el("button", { onclick: () => { qtyInput.value = Math.min(p.stock, +qtyInput.value + 1); } }, "+"),
+      ]);
+      info.appendChild(el("div", { style: "margin:18px 0;" }, stepper));
+      const qtyInput = stepper.querySelector("#qty-input");
+
+      const addBtn = el("button", {
+        class: "btn btn--primary btn--full",
+        disabled: p.stock <= 0 ? "true" : null,
+        onclick: async () => {
+          const user = await getCurrentUser();
+          if (!user) { window.location.href = "login.html"; return; }
+          try {
+            await addToCart(user.id, p.id, Math.max(1, +qtyInput.value || 1));
+            toast("Đã thêm vào giỏ hàng", "success");
+            refreshCartCount();
+          } catch (e) { toast(e.message, "error"); }
+        },
+      }, p.stock > 0 ? "Thêm vào giỏ hàng" : "Hết hàng");
+      info.appendChild(addBtn);
+
+      root.appendChild(info);
+    } catch (e) {
+      root.innerHTML = `<div class="empty-state"><h3>Không tải được sản phẩm</h3><p>${e.message}</p></div>`;
     }
   }
-  init();
+
+  mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
+  refreshCartCount();
+  render();
 </script>
 </body>
 </html>

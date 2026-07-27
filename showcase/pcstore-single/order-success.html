@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bảng điều khiển — PC.STORE Admin</title>
+<title>Đặt hàng thành công — PC.STORE</title>
 <style>
 /* =========================================================
    PC STORE — DESIGN TOKENS
@@ -274,30 +274,21 @@ select.status-select { font-family: var(--font-mono); background: var(--panel-2)
 </style>
 </head>
 <body>
-<div class="admin-shell">
-  <aside class="admin-side">
-    <div class="logo"><span class="dot"></span>PC<span class="mono">.ADMIN</span></div>
-    <nav class="admin-nav">
-      <a href="index.html" class="active">Tổng quan</a>
-      <a href="products.html">Sản phẩm</a>
-      <a href="orders.html">Đơn hàng</a>
-      <a href="staff.html">Nhân viên</a>
-    </nav>
-  </aside>
-  <main class="admin-main">
-    <div class="admin-topbar">
-      <h1>Tổng quan</h1>
-      <nav id="user-slot" style="display:flex; gap:16px;"></nav>
-    </div>
-    <div class="stat-cards" id="stat-cards"></div>
-    <h3>Đơn hàng gần đây</h3>
-    <table class="data-table">
-      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Trạng thái</th><th>Tổng tiền</th><th>Ngày đặt</th></tr></thead>
-      <tbody id="recent-orders"></tbody>
-    </table>
-  </main>
-</div>
-
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="index.html" class="logo"><span class="dot"></span>PC<span class="mono">.STORE</span></a>
+  </div>
+</header>
+<section class="section container" style="text-align:center; padding-top:80px;">
+  <div style="font-size:3rem;">✅</div>
+  <h1>Đặt hàng thành công!</h1>
+  <p style="color:var(--muted);">Mã đơn hàng của bạn là</p>
+  <div class="mono" style="font-size:1.6rem; color:var(--cyan); font-weight:700; margin:10px 0 24px;" id="order-code">—</div>
+  <div style="display:flex; gap:12px; justify-content:center;">
+    <a href="index.html" class="btn">Tiếp tục mua sắm</a>
+    <a href="#" id="track-link" class="btn btn--primary">Theo dõi đơn hàng</a>
+  </div>
+</section>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -682,46 +673,9 @@ async function updateUserRole(userId, role) {
 }
 
 // ---- page logic ----
-async function init() {
-    const ctx = await requireStaff();
-    if (!ctx) return;
-    mountHeaderAuthState({ userSlotEl: document.getElementById("user-slot") });
-
-    const orders = await adminFetchOrders();
-    const { count: productCount } = await supabase.from("products").select("id", { count: "exact", head: true });
-    const { count: userCount } = await supabase.from("profiles").select("id", { count: "exact", head: true });
-
-    const revenue = orders.filter(o => o.payment_status === "paid" || o.status === "delivered")
-      .reduce((s, o) => s + Number(o.total), 0);
-    const pendingCount = orders.filter(o => o.status === "pending").length;
-
-    const stats = [
-      { label: "Doanh thu", value: formatVND(revenue) },
-      { label: "Tổng đơn hàng", value: orders.length },
-      { label: "Chờ xử lý", value: pendingCount },
-      { label: "Sản phẩm", value: productCount ?? 0 },
-      { label: "Người dùng", value: userCount ?? 0 },
-    ];
-    const statBox = document.getElementById("stat-cards");
-    for (const s of stats) {
-      statBox.appendChild(el("div", { class: "stat-card" }, [
-        el("div", { class: "label" }, s.label),
-        el("div", { class: "value mono" }, String(s.value)),
-      ]));
-    }
-
-    const tbody = document.getElementById("recent-orders");
-    for (const o of orders.slice(0, 10)) {
-      tbody.appendChild(el("tr", {}, [
-        el("td", { class: "mono" }, o.code),
-        el("td", {}, o.profiles?.full_name || "—"),
-        el("td", {}, el("span", { class: `badge badge--${o.status}` }, STATUS_LABEL[o.status])),
-        el("td", { class: "mono" }, formatVND(o.total)),
-        el("td", {}, new Date(o.created_at).toLocaleDateString("vi-VN")),
-      ]));
-    }
-  }
-  init();
+const code = new URLSearchParams(location.search).get("code") || "—";
+  document.getElementById("order-code").textContent = code;
+  document.getElementById("track-link").href = `track-order.html?code=${code}`;
 </script>
 </body>
 </html>
