@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phatdatagency — Studio thiết kế web, profile, slide & dịch vụ mạng xã hội</title>
+
+<!-- SEO -->
+<meta name="description" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile chuyên nghiệp. Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn.">
+<link rel="canonical" href="https://phatdatagency.id.vn/">
+
+<!-- Open Graph (Facebook, Zalo, Messenger...) -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile">
+<meta property="og:description" content="Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn. Xem showcase các dự án đã thực hiện.">
+<meta property="og:url" content="https://phatdatagency.id.vn/">
+<meta property="og:image" content="https://phatdatagency.id.vn/og-image.png">
+<meta property="og:locale" content="vi_VN">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Phatdatagency — Studio thiết kế Website, Tool, Slide, Profile">
+<meta name="twitter:description" content="Đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR, giao đúng hẹn.">
+<meta name="twitter:image" content="https://phatdatagency.id.vn/og-image.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<!-- ===================== MAINTENANCE MODE OVERLAY ===================== -->
+<div id="maintenanceOverlay" style="
+  display:none; position:fixed; inset:0; z-index:99999;
+  background:#121110; color:#F4EFE6;
+  font-family:'Inter',sans-serif;
+  display:none; align-items:center; justify-content:center; text-align:center; padding:24px;
+">
+  <div style="max-width:440px;">
+    <div style="font-size:52px; margin-bottom:16px;">🚧</div>
+    <h1 id="maintenanceOverlayTitle" style="font-family:'Fraunces',serif; font-size:26px; margin-bottom:12px;">Website đang bảo trì</h1>
+    <p id="maintenanceOverlayMsg" style="font-size:14.5px; color:#9C9284; line-height:1.7;">Chúng tôi đang nâng cấp hệ thống, vui lòng quay lại sau. Xin lỗi vì sự bất tiện này.</p>
+  </div>
+</div>
+
+
+<!-- ===================== END MAINTENANCE MODE OVERLAY ===================== -->
+
+
+<!-- OVERLAY CHÀO MỪNG KHÁCH HÀNG ƯU TIÊN -->
+<div class="vip-welcome-overlay" id="vipWelcomeOverlay">
+  <div class="vip-welcome-inner">
+    <div class="vip-welcome-crest">✨</div>
+    <div class="vip-welcome-tag">Khách hàng ưu tiên</div>
+    <div class="vip-welcome-name" id="vipWelcomeName">Chào mừng trở lại</div>
+    <div class="vip-welcome-line"></div>
+    <div class="vip-welcome-sub">Cảm ơn bạn đã đồng hành cùng Phatdatagency. Rất vui được phục vụ bạn hôm nay.</div>
+  </div>
+</div>
+
+<!-- ======================= MAIN PAGE ======================= -->
+<div id="main-page">
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">Phatdatagency<span class="dot">.</span></div>
+    <div class="nav-links">
+      <a href="#services">Dịch vụ</a>
+      <a href="#ai-slide">AI tạo slide</a>
+      <a href="/showcase/">Showcase</a>
+      <a href="#process">Quy trình</a>
+      <a href="#lookup">Tra cứu đơn</a>
+      <a href="/account/">Tài khoản</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/account/" id="navAccountBtn" class="btn btn-ghost btn-sm" style="display:none;"></a>
+      <a href="/account/" id="navLoginBtn" class="btn btn-ghost btn-sm">Đăng nhập</a>
+      <button class="btn btn-primary btn-sm" onclick="openOrderModal()">Đặt đơn</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <div class="eyebrow">Studio thiết kế · Web / Profile / Slide</div>
+      <h1>Ý tưởng của bạn,<br><em>thành hình</em> rõ ràng.</h1>
+      <p class="hero-sub">Đặt đơn thiết kế website, hồ sơ năng lực hoặc bài thuyết trình chỉ trong vài phút. Theo dõi tiến trình bằng mã đơn, thanh toán bằng QR — mọi thứ minh bạch từ đầu đến cuối.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openOrderModal()">Bắt đầu đặt đơn →</button>
+        <a href="#lookup" class="btn btn-ghost">Tra cứu đơn hàng</a>
+      </div>
+      <div class="hero-meta">
+        <div>
+          <div class="stat-num">Đa dạng</div>
+          <div class="stat-label">DỊCH VỤ THIẾT KẾ</div>
+        </div>
+        <div>
+          <div class="stat-num">24h</div>
+          <div class="stat-label">PHẢN HỒI BÁO GIÁ</div>
+        </div>
+        <div>
+          <div class="stat-num">AI</div>
+          <div class="stat-label">DÀN SLIDE TỰ ĐỘNG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-art">
+      <div class="hero-art-bar"><span></span><span></span><span></span></div>
+      <div class="hero-art-canvas">
+        <svg viewBox="0 0 360 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- browser frame sketch -->
+          <rect class="sketch-path" x="30" y="30" width="300" height="200" rx="8"/>
+          <rect class="fill-block" x="30" y="30" width="300" height="34" rx="8" fill="var(--paper-deep)" style="animation-delay:0s"/>
+          <circle class="fill-block" cx="48" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.1s"/>
+          <circle class="fill-block" cx="62" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.15s"/>
+          <circle class="fill-block" cx="76" cy="47" r="4" fill="#D8D0BF" style="animation-delay:.2s"/>
+
+          <rect class="sketch-path" x="50" y="86" width="140" height="14" rx="3" style="animation-delay:.3s"/>
+          <rect class="fill-block" x="50" y="86" width="140" height="14" rx="3" fill="var(--ink)" style="animation-delay:1.1s"/>
+          <rect class="sketch-path" x="50" y="110" width="220" height="8" rx="2" style="animation-delay:.4s"/>
+          <rect class="fill-block" x="50" y="110" width="220" height="8" rx="2" fill="var(--line)" style="animation-delay:1.2s"/>
+          <rect class="sketch-path" x="50" y="126" width="180" height="8" rx="2" style="animation-delay:.5s"/>
+          <rect class="fill-block" x="50" y="126" width="180" height="8" rx="2" fill="var(--line)" style="animation-delay:1.3s"/>
+
+          <rect class="sketch-path" x="50" y="152" width="110" height="32" rx="999" style="animation-delay:.6s"/>
+          <rect class="fill-block" x="50" y="152" width="110" height="32" rx="999" fill="var(--coral)" style="animation-delay:1.4s"/>
+          <text class="fill-block" x="65" y="173" font-family="Inter" font-size="11" fill="white" font-weight="600" style="animation-delay:1.6s">Xem dự án</text>
+
+          <!-- floating slide card -->
+          <rect class="sketch-path" x="190" y="190" width="120" height="84" rx="8" fill="var(--white)" style="animation-delay:.9s"/>
+          <rect class="fill-block" x="190" y="190" width="120" height="84" rx="8" fill="var(--white)" stroke="var(--line)" style="animation-delay:1.8s"/>
+          <rect class="fill-block" x="202" y="202" width="50" height="6" rx="2" fill="var(--coral)" style="animation-delay:2s"/>
+          <rect class="fill-block" x="202" y="216" width="96" height="5" rx="2" fill="var(--line)" style="animation-delay:2.1s"/>
+          <rect class="fill-block" x="202" y="227" width="80" height="5" rx="2" fill="var(--line)" style="animation-delay:2.2s"/>
+          <rect class="fill-block" x="202" y="238" width="88" height="5" rx="2" fill="var(--line)" style="animation-delay:2.3s"/>
+          <circle class="fill-block" cx="280" cy="252" r="10" fill="var(--coral-tint)" style="animation-delay:2.4s"/>
+
+          <!-- profile circle card -->
+          <rect class="sketch-path" x="30" y="250" width="130" height="100" rx="8" style="animation-delay:1.1s"/>
+          <rect class="fill-block" x="30" y="250" width="130" height="100" rx="8" fill="var(--white)" stroke="var(--line)" style="animation-delay:2.6s"/>
+          <circle class="fill-block" cx="62" cy="282" r="16" fill="var(--coral-tint)" style="animation-delay:2.7s"/>
+          <rect class="fill-block" x="88" y="276" width="56" height="6" rx="2" fill="var(--ink)" style="animation-delay:2.8s"/>
+          <rect class="fill-block" x="88" y="287" width="40" height="5" rx="2" fill="var(--line)" style="animation-delay:2.9s"/>
+          <rect class="fill-block" x="44" y="312" width="100" height="5" rx="2" fill="var(--line)" style="animation-delay:3s"/>
+          <rect class="fill-block" x="44" y="323" width="80" height="5" rx="2" fill="var(--line)" style="animation-delay:3.1s"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Dịch vụ</div>
+        <h2>Đa dạng dịch vụ,<br>một quy trình rõ ràng.</h2>
+      </div>
+      <p>Chọn dịch vụ cần đặt — mỗi đơn đều được theo dõi bằng mã riêng và cập nhật tiến trình minh bạch.</p>
+    </div>
+
+    <div class="services-grid" id="servicesGrid">
+      <div class="service-skeleton"></div>
+      <div class="service-skeleton"></div>
+      <div class="service-skeleton"></div>
+    </div>
+  </div>
+</section>
+
+<!-- AI SLIDE -->
+<section class="section" id="ai-slide" style="padding-top:0;">
+  <div class="ai-section">
+    <div class="ai-grid">
+      <div>
+        <div class="eyebrow">AI tạo slide tự động</div>
+        <h2>Tải nội dung lên,<br>AI lo phần dàn dựng.</h2>
+        <p class="desc">Không cần tự sắp xếp từng slide. Tải lên file nội dung (Word, PDF hoặc text), AI sẽ đọc, phân tích và phân bổ thành một bộ dàn ý slide hoàn chỉnh — sẵn sàng tải về dưới dạng PowerPoint.</p>
+        <div class="ai-steps">
+          <div class="ai-step">
+            <div class="ai-step-num">1</div>
+            <div class="ai-step-text"><b>Tải file nội dung</b> — Word (.docx), PDF hoặc văn bản thuần (.txt).</div>
+          </div>
+          <div class="ai-step">
+            <div class="ai-step-num">2</div>
+            <div class="ai-step-text"><b>AI phân tích & phân bổ</b> nội dung thành các slide có cấu trúc rõ ràng.</div>
+          </div>
+          <div class="ai-step">
+            <div class="ai-step-num">3</div>
+            <div class="ai-step-text"><b>Tải file .pptx</b> về máy, chỉnh sửa thêm trong PowerPoint hoặc Google Slides.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-panel">
+        <div class="dropzone" id="dropzone">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <p>Kéo thả file vào đây, hoặc <span class="dz-link" onclick="document.getElementById('fileInput').click()">chọn file</span></p>
+          <p style="margin-top:6px; opacity:.7; font-size:12px;">Hỗ trợ .docx, .pdf, .txt — tối đa 10MB</p>
+          <input type="file" id="fileInput" accept=".docx,.pdf,.txt">
+          <div class="filename" id="fileName"></div>
+        </div>
+
+        <div class="ai-panel-actions">
+          <button class="btn btn-primary btn-sm" id="generateBtn" onclick="handleGenerateSlide()" disabled style="flex:1;">
+            ✦ Tạo slide bằng AI
+          </button>
+        </div>
+
+        <div class="ai-progress" id="aiProgress">
+          <div class="ai-progress-bar"><div class="ai-progress-fill" id="aiProgressFill"></div></div>
+          <div class="ai-progress-label" id="aiProgressLabel">Đang đọc file...</div>
+        </div>
+
+        <div class="ai-result" id="aiResult">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--white); font-size:14px;" id="deckTitleLabel">Dàn ý slide</strong>
+            <span class="tag" id="slideCountTag" style="border-color:rgba(255,255,255,0.2); color:#C9C2B4;">0 slide</span>
+          </div>
+          <div class="outline-list" id="outlineList"></div>
+          <button class="btn btn-primary btn-sm" style="width:100%; margin-top:16px;" onclick="downloadPptx()">↓ Tải file .pptx</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section" id="process">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Quy trình</div>
+        <h2>Từ lúc đặt đơn<br>đến khi nhận file.</h2>
+      </div>
+      <p>Mỗi đơn đi qua 4 mốc rõ ràng, cập nhật trạng thái theo thời gian thực trên trang tra cứu.</p>
+    </div>
+    <div class="process-list">
+      <div class="process-item">
+        <div class="pnum">Bước 1</div>
+        <h4>Đặt đơn</h4>
+        <p>Điền thông tin yêu cầu, nhận mã đơn và quét QR thanh toán đặt cọc.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 2</div>
+        <h4>Xác nhận</h4>
+        <p>Đội ngũ kiểm tra yêu cầu, liên hệ làm rõ chi tiết nếu cần trong vòng 24h.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 3</div>
+        <h4>Thực hiện</h4>
+        <p>Tiến hành thiết kế, cập nhật trạng thái "Đang thực hiện" trên hệ thống tra cứu.</p>
+      </div>
+      <div class="process-item">
+        <div class="pnum">Bước 4</div>
+        <h4>Bàn giao</h4>
+        <p>Gửi file hoàn chỉnh, đơn chuyển trạng thái "Hoàn thành".</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE CTA -->
+<section style="padding: 0 0 96px;">
+  <div class="container">
+    <div style="
+      background: var(--ink);
+      border-radius: var(--radius-lg);
+      padding: 52px 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+      position: relative;
+      overflow: hidden;
+    ">
+      <!-- bg glow -->
+      <div style="
+        position:absolute; width:360px; height:360px;
+        background: radial-gradient(circle, rgba(255,75,46,0.22), transparent 70%);
+        top:-120px; right:-80px; pointer-events:none;
+      "></div>
+
+      <div style="position:relative; z-index:1; max-width:560px;">
+        <div class="eyebrow" style="color:var(--coral);">Portfolio</div>
+        <h2 style="font-size:clamp(24px,3vw,36px); color:var(--white); margin-top:12px; line-height:1.15;">
+          Xem những gì chúng tôi<br>đã tạo ra trước đây.
+        </h2>
+        <p style="margin-top:14px; font-size:15px; color:#C9C2B4; line-height:1.65;">
+          Bộ sưu tập website, công cụ, slide và hồ sơ năng lực — được thiết kế riêng cho từng khách hàng.
+        </p>
+      </div>
+
+      <div style="position:relative; z-index:1; flex-shrink:0;">
+        <a href="/showcase/" class="btn btn-primary" style="font-size:15px; padding:16px 32px;">
+          Xem Showcase →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOOKUP -->
+<section class="section" id="lookup">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Tra cứu</div>
+        <h2>Theo dõi đơn hàng<br>của bạn.</h2>
+      </div>
+      <p>Nhập mã đơn được cấp khi đặt hàng (ví dụ: DH-260620-1234) để xem trạng thái mới nhất.</p>
+    </div>
+
+    <div class="lookup-box">
+      <div class="lookup-form">
+        <label style="font-size:12.5px; font-weight:600; color:var(--ink-soft);">Mã đơn hàng</label>
+        <div class="input-row">
+          <input type="text" class="field mono" id="lookupCode" placeholder="DH-260620-1234">
+          <button class="btn btn-primary" onclick="handleLookup()" id="lookupBtn">Tra cứu</button>
+        </div>
+        <div class="lookup-error" id="lookupError">Không tìm thấy đơn hàng với mã này. Vui lòng kiểm tra lại.</div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-top:6px;">Mã đơn được gửi ngay sau khi bạn đặt đơn thành công, kèm theo trên màn hình thanh toán.</p>
+      </div>
+
+      <div>
+        <div class="lookup-empty" id="lookupEmpty">Kết quả tra cứu sẽ hiển thị ở đây.</div>
+        <div class="order-result" id="orderResult">
+          <div class="order-result-card">
+            <div class="or-code" id="orCode">DH-260620-1234</div>
+            <h3 style="margin-top:8px; font-size:18px;" id="orService">Thiết kế Website</h3>
+            <div class="or-status status-pending" id="orStatusBadge">Chờ xác nhận</div>
+
+            <div class="order-track" id="orderTrack"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-col">
+      <div class="footer-logo">Phatdatagency<span class="dot">.</span></div>
+      <p class="footer-tagline">Studio thiết kế Website, Tool, Slide, Profile — đặt cọc linh hoạt, thanh toán an toàn qua PayOS/VietQR.</p>
+      <div class="footer-contact" id="footerContact"></div>
+    </div>
+    <div class="footer-col">
+      <h4>Dịch vụ</h4>
+      <a href="#services">Dịch vụ</a>
+      <a href="/showcase/">Showcase</a>
+      <a href="#lookup">Tra cứu đơn hàng</a>
+      <a href="/account/">Tài khoản của tôi</a>
+    </div>
+    <div class="footer-col">
+      <h4>Chính sách</h4>
+      <a href="/dieu-khoan-dich-vu/">Điều khoản dịch vụ</a>
+      <a href="/chinh-sach-bao-mat/">Chính sách bảo mật</a>
+      <a href="/chinh-sach-dat-coc/">Chính sách đặt cọc</a>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <p>© 2026 Phatdatagency.</p>
+    <div class="footer-badges">
+      <a href="https://www.dmca.com/compliance/phatdatagency.id.vn" title="DMCA Compliance information for phatdatagency.id.vn"><img src="https://www.dmca.com/img/dmca-compliant-grayscale.png" alt="DMCA compliant image" height="20"/></a>
+      <a href="//www.dmca.com/Protection/Status.aspx?ID=add8c5bf-f097-4395-a395-030ffe881508" title="DMCA.com Protection Status" class="dmca-badge"><img src="https://images.dmca.com/Badges/dmca-badge-w200-5x1-11.png?ID=add8c5bf-f097-4395-a395-030ffe881508" alt="DMCA.com Protection Status" height="20"/></a>
+      <script src="https://images.dmca.com/Badges/DMCABadgeHelper.min.js"></script>
+    </div>
+  </div>
+</footer>
+
+<!-- NÚT LIÊN HỆ NỔI GÓC PHẢI (nội dung đọc từ Supabase, bảng site_config, key = contact_info) -->
+<button class="contact-fab" id="contactFab" style="display:none;" onclick="toggleContactCard()" aria-label="Liên hệ">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  <span class="chat-fab-badge" id="chatFabBadge" style="display:none;">1</span>
+</button>
+<div class="contact-card" id="contactCard">
+  <button class="cc-close" onclick="toggleContactCard()">&times;</button>
+  <h4>Liên hệ với chúng tôi</h4>
+  <div id="contactCardBody"></div>
+</div>
+
+<div class="chat-panel" id="chatPanel">
+  <!-- HEADER -->
+  <div class="chat-panel-head">
+    <div>
+      <h4>Chat hỗ trợ</h4>
+      <div class="chp-sub" id="chatPanelSub">Phatdatagency</div>
+    </div>
+    <button onclick="toggleChatPanel()">&times;</button>
+  </div>
+
+  <!-- MÀN HÌNH 1: MỞ CASE MỚI -->
+  <div class="chat-start" id="chatStartView">
+    <div class="warn-box">
+      ⚠️ <strong>Lưu ý trước khi bắt đầu:</strong> mỗi cuộc trò chuyện sẽ tạo 1 "case" hỗ trợ.
+      Case sẽ <strong>tự động đóng sau 3 ngày</strong> — sau thời điểm đó bạn sẽ không xem lại được nội dung chat này.
+      Toàn bộ dữ liệu sẽ được <strong>xoá vĩnh viễn sau 14 ngày</strong> kể từ lúc mở case.
+    </div>
+    <label>Họ tên của bạn</label>
+    <input type="text" id="chatStartName" placeholder="Nguyễn Văn A">
+    <label>Số điện thoại hoặc email (để tiện liên hệ lại)</label>
+    <input type="text" id="chatStartContact" placeholder="09xxxxxxxx hoặc email">
+    <div class="err" id="chatStartErr"></div>
+    <button class="btn btn-primary" style="width:100%;" onclick="handleStartChatCase()">Tôi hiểu, bắt đầu chat</button>
+  </div>
+
+  <!-- MÀN HÌNH 2: ĐANG CHAT -->
+  <div class="chat-body" id="chatBody" style="display:none;"></div>
+  <div class="chat-input-row" id="chatInputRow" style="display:none;">
+    <input type="text" id="chatInputMsg" placeholder="Nhập tin nhắn..." maxlength="1000">
+    <button onclick="sendChatMessage()" aria-label="Gửi">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+    </button>
+  </div>
+
+  <!-- MÀN HÌNH 3: CASE ĐÃ ĐÓNG -->
+  <div class="chat-closed-note" id="chatClosedView" style="display:none;">
+    Case chat này đã đóng (quá 3 ngày).<br>
+    <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="resetChatToStart()">Mở case mới</button>
+  </div>
+</div>
+
+</div> <!-- /#main-page -->
+
+<!-- ======================= ORDER MODAL ======================= -->
+<div class="modal-overlay" id="orderModalOverlay">
+  <div class="modal">
+
+    <!-- FORM VIEW -->
+    <div id="formView">
+      <div class="modal-head">
+        <h3>Đặt đơn thiết kế</h3>
+        <button class="modal-close" onclick="closeOrderModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group full" style="margin-bottom:18px;">
+          <label>Loại dịch vụ <span class="req">*</span></label>
+          <div class="service-pills" id="servicePills">
+            <span style="font-size:13px; color:var(--ink-soft);">Đang tải danh sách dịch vụ...</span>
+          </div>
+        </div>
+
+        <div class="form-group full" id="amountSection" style="margin-bottom:18px; display:none;">
+          <label>Số tiền thanh toán <span class="req">*</span></label>
+          <div class="service-pills" id="amountModePills">
+            <button type="button" class="service-pill" data-mode="deposit">💰 Đặt cọc</button>
+            <button type="button" class="service-pill" data-mode="full">✅ Thanh toán toàn bộ</button>
+          </div>
+          <div id="amountFullNote" style="font-size:12.5px; color:var(--ink-soft); margin-top:8px; display:none;"></div>
+          <div id="amountDepositWrap" style="margin-top:10px; display:none;">
+            <input type="number" class="field" id="f_deposit_amount" placeholder="Nhập số tiền đặt cọc (VNĐ)">
+            <p class="payment-hint" id="depositHint"></p>
+          </div>
+        </div>
+
+        <div class="form-group full" id="amountContactNote" style="margin-bottom:18px; display:none;">
+          <div style="font-size:12.5px; color:var(--ink-soft); background:var(--paper-deep); padding:12px 14px; border-radius:10px;">
+            📞 Dịch vụ này chưa có giá cụ thể — đội ngũ sẽ liên hệ tư vấn và báo giá trước khi bạn xác nhận đặt cọc.
+          </div>
+        </div>
+
+        <div class="form-group full" style="margin-bottom:18px;">
+          <label>Phương thức thanh toán <span class="req">*</span></label>
+          <div class="service-pills" id="paymentPills">
+            <button type="button" class="service-pill" data-payment="PayOS">⚡ PayOS (link tức thì)</button>
+            <button type="button" class="service-pill" data-payment="VietQR">📱 VietQR (quét mã)</button>
+            <button type="button" class="service-pill" data-payment="Thanh toán sau">🤝 Thanh toán sau</button>
+          </div>
+          <p class="payment-hint" id="paymentHint"></p>
+        </div>
+
+        <div class="form-grid">
+          <!-- Honeypot chống bot: người dùng thật không thấy field này, bot tự động sẽ điền vào -->
+          <div style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;" aria-hidden="true">
+            <label for="f_website">Website</label>
+            <input type="text" id="f_website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Họ và tên <span class="req">*</span></label>
+            <input type="text" class="field" id="f_name" placeholder="Nguyễn Văn A">
+          </div>
+          <div class="form-group">
+            <label>Số điện thoại <span class="req">*</span></label>
+            <input type="text" class="field" id="f_phone" placeholder="09xx xxx xxx">
+          </div>
+          <div class="form-group">
+            <label>Email <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(không bắt buộc)</span></label>
+            <input type="email" class="field" id="f_email" placeholder="ban@email.com">
+          </div>
+          <div class="form-group">
+            <label>Ngân sách dự kiến</label>
+            <input type="text" class="field" id="f_budget" placeholder="VD: 2.000.000đ">
+          </div>
+          <div class="form-group full">
+            <label>Deadline mong muốn</label>
+            <input type="date" class="field" id="f_deadline">
+          </div>
+          <div class="form-group full">
+            <label>Mô tả yêu cầu <span class="req">*</span></label>
+            <textarea class="field" id="f_desc" placeholder="Mô tả ngắn gọn về dự án, phong cách mong muốn, tài liệu tham khảo..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-error" id="formError">Vui lòng điền đầy đủ các trường bắt buộc.</div>
+
+        <div class="modal-submit-row">
+          <p style="font-size:12px; color:var(--ink-soft);">Sau khi đặt, bạn sẽ nhận được mã đơn hàng.</p>
+          <button class="btn btn-primary" id="submitOrderBtn" onclick="handleSubmitOrder()">Xác nhận đặt đơn</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT / SUCCESS VIEW -->
+    <div class="pay-view" id="payView">
+      <div class="modal-head">
+        <h3>Đặt đơn thành công 🎉</h3>
+        <button class="modal-close" onclick="closeOrderModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="pay-code-box">
+          <div class="pc-label">Mã đơn hàng của bạn</div>
+          <div class="pc-code" id="payOrderCode">DH-260620-1234</div>
+          <div class="pc-copy"><a href="javascript:void(0)" onclick="copyOrderCode()" style="text-decoration:underline; color:var(--coral-deep);">Sao chép mã</a></div>
+          <div id="payAmountBox" style="margin-top:14px; font-size:13.5px; color:var(--ink-soft); display:none;">
+            Số tiền cần thanh toán: <b id="payAmountVal" style="color:var(--ink); font-family:var(--font-mono);"></b>
+          </div>
+        </div>
+
+        <!-- Hiện khi chọn "Thanh toán trước" -->
+        <div id="payQrSection" style="display:none;">
+          <div class="pay-qr-wrap">
+            <img id="payQrImg" src="" alt="QR thanh toán VietQR">
+            <div class="pay-info">
+              <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
+              <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
+              <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
+              <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
+            </div>
+          </div>
+          <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán đặt cọc. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
+        </div>
+
+        <!-- Hiện khi chọn "Thanh toán sau" -->
+        <div id="payLaterSection" style="display:none;">
+          <div class="pay-note">Bạn đã chọn <b>thanh toán sau</b>. Đội ngũ sẽ liên hệ trao đổi chi tiết thanh toán khi xác nhận đơn. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn hàng".</div>
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="switchToPayNow()">↻ Đổi phương thức thanh toán</button>
+        </div>
+
+        <!-- Hiện khi chọn PayOS -->
+        <div id="payosSection" style="display:none;"></div>
+
+        <div class="modal-submit-row" style="justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="closeOrderModal()">Hoàn tất</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="t-dot"></span>
+  <span id="toastMsg">Đã sao chép</span>
+</div>
+
+<!-- ANNOUNCE POPUP (nội dung đọc từ Supabase, bảng site_config, key = announce_popup) -->
+<div class="announce-overlay" id="announceOverlay">
+  <div class="announce-box" id="announceBox">
+    <button class="announce-close" onclick="closeAnnouncePopup()" aria-label="Đóng">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="announceContent"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
