@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chạy quảng cáo tăng tương tác MXH — Phatdatagency</title>
+<meta name="description" content="Đặt đơn chạy quảng cáo tăng like, follow, bình luận, chia sẻ, lượt xem cho Facebook, Instagram, TikTok, YouTube. Báo giá tạm tính ngay, theo dõi bằng mã đơn.">
+<link rel="canonical" href="https://phatdatagency.id.vn/dat-don-quang-cao/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">Phatdatagency<span class="dot">.</span></div>
+    <a href="/" class="back-link">← Về trang chủ</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow">Dịch vụ mạng xã hội</div>
+    <h1>Chạy quảng cáo <em>tăng tương tác</em><br>cho fanpage & kênh của bạn.</h1>
+    <p>Tăng like, follow, bình luận, chia sẻ hoặc lượt xem cho Facebook, Instagram, TikTok, YouTube.</p>
+  </div>
+</header>
+
+<div class="container grid">
+
+  <!-- FORM -->
+  <div class="card">
+    <h2>Thông tin đơn hàng</h2>
+    
+
+    <div id="loggedInAs" style="display:none; background:var(--paper-deep); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:22px; font-size:13.5px; color:var(--ink-soft);">
+      Đặt đơn với tài khoản: <strong id="loggedInName" style="color:var(--ink);"></strong>
+      <a href="/account/" style="color:var(--coral-deep); font-weight:600; margin-left:6px;">Không phải bạn?</a>
+    </div>
+
+    <form id="boostForm">
+      <div class="row2" id="guestFields">
+        <div>
+          <label>Họ tên</label>
+          <input type="text" id="f_name" placeholder="Nguyễn Văn A">
+        </div>
+        <div>
+          <label>Số điện thoại / Zalo</label>
+          <input type="tel" id="f_phone" placeholder="09xxxxxxxx">
+        </div>
+      </div>
+
+      <div id="guestEmailField">
+        <label>Email (không bắt buộc)</label>
+        <input type="email" id="f_email" placeholder="ban@email.com">
+      </div>
+
+      <div class="row2">
+        <div>
+          <label>Nền tảng</label>
+          <select id="f_platform">
+            <option value="Facebook">Facebook</option>
+            <option value="Instagram">Instagram</option>
+            <option value="TikTok">TikTok</option>
+            <option value="YouTube">YouTube</option>
+          </select>
+        </div>
+        <div>
+          <label>Loại tương tác</label>
+          <select id="f_service">
+            <option value="Like">Tăng like</option>
+            <option value="Follow">Tăng follow</option>
+            <option value="Comment">Tăng bình luận</option>
+            <option value="Share">Tăng chia sẻ</option>
+            <option value="View">Tăng lượt xem</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Link bài viết / trang cần chạy</label>
+      <input type="url" id="f_link" required placeholder="https://facebook.com/...">
+
+      <div class="row2">
+        <div>
+          <label>Số lượng mong muốn</label>
+          <input type="number" id="f_qty" min="100" step="100" value="1000" required>
+        </div>
+        <div>
+          <label>Ngày muốn bắt đầu</label>
+          <input type="date" id="f_start">
+        </div>
+      </div>
+
+      <label>Ghi chú thêm</label>
+      <textarea id="f_note" placeholder="Ví dụ: cần chạy tăng dần tự nhiên, tránh giờ cao điểm..."></textarea>
+
+      <label>Phương thức thanh toán</label>
+      <div class="service-pills" id="paymentPills">
+        <button type="button" class="service-pill" data-payment="PayOS">⚡ Thanh toán tự động (quét mã ngay)</button>
+        <button type="button" class="service-pill" data-payment="Thanh toán sau">🤝 Thanh toán sau</button>
+      </div>
+      <p class="payment-hint" id="paymentHint"></p>
+
+      <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">Tạo đơn hàng</button>
+      <div class="msg" id="formMsg"></div>
+    </form>
+
+    <div id="successBox" class="success-box" style="display:none;">
+      <h2>Đã tạo đơn thành công 🎉</h2>
+      <div class="code" id="successCode">DH-000000-0000</div>
+
+      <div class="pay-amount-box" id="payAmountBox" style="display:none;">
+        Số tiền cần thanh toán: <b id="payAmountVal"></b>
+      </div>
+
+      <!-- Hiện khi chọn VietQR -->
+      <div id="payQrSection" style="display:none;">
+        <div class="pay-qr-wrap">
+          <img id="payQrImg" src="" alt="QR thanh toán VietQR">
+          <div class="pay-info">
+            <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
+            <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
+            <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
+            <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
+          </div>
+        </div>
+        <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn" trên trang chủ.</div>
+      </div>
+
+      <!-- Hiện khi chọn PayOS -->
+      <div id="payosSection" style="display:none;"></div>
+
+      <!-- Hiện khi chọn Thanh toán sau -->
+      <div id="payLaterSection" style="display:none;">
+        <div class="pay-note">Bạn đã chọn <b>thanh toán sau</b>. Đội ngũ Phatdatagency sẽ liên hệ qua số điện thoại/Zalo để xác nhận số lượng, thời gian và trao đổi thanh toán.</div>
+      </div>
+
+      <!-- Hiện tự động ngay khi hệ thống phát hiện đơn đã được thanh toán -->
+      <div id="receiptSection" class="receipt-box" style="display:none;">
+        <div class="receipt-check">✅</div>
+        <h3>Thanh toán thành công</h3>
+        <div class="receipt-paper" id="receiptPaper">
+          <div class="receipt-row"><span>Mã đơn</span><b id="rc_code">—</b></div>
+          <div class="receipt-row"><span>Dịch vụ</span><b id="rc_service">—</b></div>
+          <div class="receipt-row"><span>Nền tảng</span><b id="rc_platform">—</b></div>
+          <div class="receipt-row"><span>Số lượng</span><b id="rc_qty">—</b></div>
+          <div class="receipt-row"><span>Số tiền đã thanh toán</span><b id="rc_amount">—</b></div>
+          <div class="receipt-row"><span>Thời gian xác nhận</span><b id="rc_time">—</b></div>
+          <div class="receipt-row total"><span>Trạng thái</span><b>Đã xác nhận thanh toán</b></div>
+        </div>
+        <button type="button" class="btn btn-primary" id="printReceiptBtn" onclick="window.print()" style="margin-top:18px;">
+          🖨️ In biên lai
+        </button>
+        <p style="margin-top:14px; font-size:12.5px; color:var(--ink-soft);">Đội ngũ sẽ bắt đầu triển khai đơn của bạn. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào.</p>
+      </div>
+
+      <div id="pollingHint" class="payment-hint" style="text-align:center; margin-top:16px;"></div>
+
+      <p style="margin-top:18px;">Bạn cũng có thể tra cứu tiến trình đơn tại mục <a href="/#lookup" style="color:var(--coral-deep); font-weight:600;">Tra cứu đơn</a> trên trang chủ.</p>
+    </div>
+  </div>
+
+  <!-- QUOTE SIDEBAR -->
+  <div class="card quote-card">
+    <h3>Báo giá </h3>
+    <div class="quote-row"><span>Nền tảng</span><span id="q_platform">Facebook</span></div>
+    <div class="quote-row"><span>Dịch vụ</span><span id="q_service">Tăng like</span></div>
+    <div class="quote-row"><span>Đơn giá / 1 lượt</span><span id="q_unit">—</span></div>
+    <div class="quote-row"><span>Số lượng</span><span id="q_qty">1.000</span></div>
+    <div class="quote-total"><span>Tạm tính</span><span class="amount" id="q_total">0đ</span></div>
+    <div class="quote-note">Giá minh hoạ — chỉnh trực tiếp trong bảng <code>UNIT_PRICE</code> ở cuối file để phù hợp với đơn giá thực tế của bạn.</div>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

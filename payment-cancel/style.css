@@ -1,0 +1,15 @@
+:root{ --paper:#F2EEE6; --ink:#211C16; --ink-soft:#5B5347; --coral-deep:#D6391E; --white:#FFFCF6; }
+  *{ box-sizing:border-box; }
+  body{
+    font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:24px; margin:0;
+  }
+  .box{ max-width:420px; }
+  .icon{ font-size:52px; margin-bottom:8px; }
+  h1{ font-family:'Fraunces',serif; font-size:26px; color:var(--coral-deep); margin-bottom:10px; }
+  p{ font-size:15px; color:var(--ink-soft); line-height:1.6; }
+  a.btn{
+    display:inline-block; margin-top:26px; padding:13px 28px;
+    background:var(--ink); color:var(--white); border-radius:999px; text-decoration:none; font-weight:600;
+  }

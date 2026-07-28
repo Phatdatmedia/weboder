@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đăng ký — Hệ thống Bài tập</title>
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="/showcase/qlbt/css/style.css" />
+</head>
+<body>
+
+<div class="auth-shell">
+  <div class="auth-card">
+    <span class="eyebrow">Hệ thống giao bài tập</span>
+    <h1>Tạo tài khoản</h1>
+
+    <div class="auth-tabs">
+      <button type="button" id="tabStudent" class="active">Học sinh</button>
+      <button type="button" id="tabTeacher">Giáo viên</button>
+    </div>
+
+    <form id="registerForm" autocomplete="off">
+      <label for="fullName">Họ và tên</label>
+      <input type="text" id="fullName" required maxlength="100" />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" required autocomplete="username" />
+
+      <label for="password">Mật khẩu</label>
+      <input type="password" id="password" required autocomplete="new-password" minlength="12" />
+      <div class="hint">Tối thiểu 12 ký tự, gồm chữ hoa, chữ thường và số.</div>
+
+      <div id="inviteField" style="display:none;">
+        <label for="inviteCode">Mã mời giáo viên</label>
+        <input type="text" id="inviteCode" autocomplete="off" />
+        <div class="hint">Mã mời do quản trị hệ thống cấp riêng, dùng 1 lần. Liên hệ ban quản trị nếu chưa có.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="registerBtn">Đăng ký</button>
+    </form>
+
+    <div class="error-box" id="errorBox"></div>
+    <div class="success-box" id="successBox"></div>
+
+    <p style="margin-top:20px; font-size:.85rem; text-align:center;">
+      Đã có tài khoản? <a href="/showcase/qlbt/">Đăng nhập</a>
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/showcase/qlbt/js/config.js"></script>
+<script src="/showcase/qlbt/js/supabaseClient.js"></script>
+<script src="/showcase/qlbt/js/utils.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
