@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
-/* Bấm vào thông báo -> mở/focus đúng trang (admin.html hoặc account.html) */
+/* Bấm vào thông báo -> mở/focus đúng trang (/admin/ hoặc /account/) */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';
