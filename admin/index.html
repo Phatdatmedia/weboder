@@ -1434,5 +1434,43 @@
 
 <script src="script.js"></script>
 
+<!-- ======================= WALLET ADJUST MODAL ======================= -->
+<div class="modal-overlay" id="walletAdjustOverlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <h3>💰 Điều chỉnh ví khách hàng</h3>
+      <button class="modal-close" onclick="closeWalletAdjustModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px; color:var(--ink-soft);">Khách hàng</div>
+        <div id="waUserName" style="font-weight:600; font-size:15px; margin-top:2px;"></div>
+        <div style="font-size:13px; color:var(--ink-soft); margin-top:8px;">Số dư hiện tại</div>
+        <div id="waCurrentBalance" style="font-family:var(--font-mono); font-size:20px; font-weight:700; color:var(--coral-deep); margin-top:2px;"></div>
+      </div>
+
+      <label>Số tiền điều chỉnh (đ)</label>
+      <input type="number" class="field" id="wa_amount" min="1" placeholder="50000">
+
+      <label>Lý do (bắt buộc — để tra soát sau này)</label>
+      <textarea class="field" id="wa_note" rows="2" placeholder="Vd: hoàn tiền do lỗi hệ thống, bù cho đơn bị lỗi..."></textarea>
+
+      <div class="modal-error" id="walletAdjustError"></div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn btn-primary" style="flex:1; background:var(--sage);" onclick="submitWalletAdjust(1)">+ Cộng tiền</button>
+        <button class="btn btn-primary" style="flex:1; background:var(--danger);" onclick="submitWalletAdjust(-1)">− Trừ tiền</button>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Lịch sử giao dịch gần đây</div>
+        <div id="waHistory" style="max-height:220px; overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

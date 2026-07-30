@@ -1006,7 +1006,8 @@ async function loadUsersTable(){
       id: u.id, name: u.full_name, email: u.email,
       registeredAt: new Date(u.created_at).toLocaleDateString('vi-VN'),
       status: u.is_locked ? 'Đã khoá' : 'Hoạt động',
-      isPriority: !!u.is_priority
+      isPriority: !!u.is_priority,
+      walletBalance: Number(u.wallet_balance) || 0
     }));
     renderUsersTable(allUsers);
   } catch{ body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`; }
@@ -1022,7 +1023,7 @@ function renderUsersTable(users){
   if(!users.length){ body.innerHTML = `<div class="dash-empty">Chưa có tài khoản nào.</div>`; return; }
 
   let html = `<table class="dash-table"><thead><tr>
-    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Thao tác</th>
+    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Số dư ví</th><th>Thao tác</th>
   </tr></thead><tbody>`;
   users.forEach(u => {
     const locked = u.status === 'Đã khoá';
@@ -1035,6 +1036,7 @@ function renderUsersTable(users){
           ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:var(--ink-deep);color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
           : `<span style="font-size:11.5px;color:var(--ink-soft);">Thường</span>`}
       </td>
+      <td style="font-family:var(--font-mono); font-size:13px; font-weight:600;">${(u.walletBalance||0).toLocaleString('vi-VN')}đ</td>
       <td>
         <div class="svc-actions">
           <button onclick="handleToggleUser('${u.id}')" style="${locked?'color:var(--sage);':'color:#A8311A;'}">
@@ -1042,6 +1044,9 @@ function renderUsersTable(users){
           </button>
           <button onclick="handleTogglePriority('${u.id}')" style="color:${u.isPriority ? 'var(--ink-soft)' : '#B8860B'};">
             ${u.isPriority ? 'Hạ hạng' : '✨ Thăng hạng'}
+          </button>
+          <button onclick="openWalletAdjustModal('${u.id}')" style="color:var(--coral-deep);">
+            💰 Điều chỉnh ví
           </button>
         </div>
       </td>
@@ -3052,3 +3057,102 @@ CREATE POLICY "Admin full access" ON site_config
     if(event === 'SIGNED_OUT'){ currentAdmin = null; showLoginScreen(); }
   });
 })();
+
+/* =====================================================================
+   ĐIỀU CHỈNH VÍ KHÁCH HÀNG (tay) — dùng khi có sự cố/tranh chấp.
+   Gọi RPC admin_adjust_wallet, bản thân RPC tự kiểm tra quyền is_admin
+   và tự ghi lịch sử ai đã điều chỉnh, không cho sửa thẳng cột wallet_balance.
+===================================================================== */
+let _walletAdjustUserId = null;
+
+function openWalletAdjustModal(userId){
+  const user = allUsers.find(u => u.id === userId);
+  if(!user) return;
+  _walletAdjustUserId = userId;
+
+  document.getElementById('waUserName').textContent = user.name || user.email || userId;
+  document.getElementById('waCurrentBalance').textContent = (user.walletBalance||0).toLocaleString('vi-VN') + 'đ';
+  document.getElementById('wa_amount').value = '';
+  document.getElementById('wa_note').value = '';
+  document.getElementById('walletAdjustError').classList.remove('show');
+  document.getElementById('walletAdjustOverlay').classList.add('show');
+  loadWalletHistory(userId);
+}
+
+function closeWalletAdjustModal(){
+  document.getElementById('walletAdjustOverlay').classList.remove('show');
+  _walletAdjustUserId = null;
+}
+
+async function loadWalletHistory(userId){
+  const box = document.getElementById('waHistory');
+  box.innerHTML = `<div class="dash-loading" style="padding:10px 0;">Đang tải lịch sử...</div>`;
+  try{
+    const { data, error } = await sb.rpc('admin_get_wallet_history', { p_user_id: userId });
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">Chưa có giao dịch nào.</div>`;
+      return;
+    }
+    box.innerHTML = data.slice(0, 15).map(t => `
+      <div style="display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); font-size:12px;">
+        <div>
+          <span style="color:${t.type==='nap'?'var(--sage)':'var(--danger)'}; font-weight:600;">
+            ${t.type === 'nap' ? '+' : '−'}${Number(t.amount).toLocaleString('vi-VN')}đ
+          </span>
+          <div style="color:var(--ink-soft); margin-top:2px;">${escapeHtml(t.note||'')}</div>
+        </div>
+        <div style="color:var(--ink-soft); white-space:nowrap; font-family:var(--font-mono);">
+          ${new Date(t.created_at).toLocaleString('vi-VN')}
+        </div>
+      </div>`).join('');
+  } catch(e){
+    box.innerHTML = `<div style="font-size:12px; color:var(--danger);">Lỗi tải lịch sử: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function submitWalletAdjust(direction){
+  // direction: 1 = cộng tiền, -1 = trừ tiền
+  const errBox = document.getElementById('walletAdjustError');
+  const rawAmount = Number(document.getElementById('wa_amount').value);
+  const note = document.getElementById('wa_note').value.trim();
+
+  if(!rawAmount || rawAmount <= 0){
+    errBox.textContent = 'Nhập số tiền hợp lệ (lớn hơn 0).';
+    errBox.classList.add('show');
+    return;
+  }
+  if(!note){
+    errBox.textContent = 'Vui lòng ghi rõ lý do điều chỉnh (để tra soát sau này).';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const amount = rawAmount * direction;
+  const actionLabel = direction > 0 ? 'CỘNG' : 'TRỪ';
+  if(!confirm(`Xác nhận ${actionLabel} ${rawAmount.toLocaleString('vi-VN')}đ vào ví khách này?\nLý do: ${note}`)) return;
+
+  try{
+    const { data, error } = await sb.rpc('admin_adjust_wallet', {
+      p_user_id: _walletAdjustUserId, p_amount: amount, p_note: note
+    });
+    if(error || !data?.ok){
+      errBox.textContent = data?.error || error?.message || 'Có lỗi xảy ra.';
+      errBox.classList.add('show');
+      return;
+    }
+    showToast(`Đã ${actionLabel === 'CỘNG' ? 'cộng' : 'trừ'} ${rawAmount.toLocaleString('vi-VN')}đ. Số dư mới: ${Number(data.balance).toLocaleString('vi-VN')}đ`);
+    logAdminAction(`${actionLabel} tiền ví khách`, `${_walletAdjustUserId} — ${rawAmount.toLocaleString('vi-VN')}đ — ${note}`);
+
+    const user = allUsers.find(u => u.id === _walletAdjustUserId);
+    if(user) user.walletBalance = Number(data.balance);
+    document.getElementById('waCurrentBalance').textContent = Number(data.balance).toLocaleString('vi-VN') + 'đ';
+    document.getElementById('wa_amount').value = '';
+    document.getElementById('wa_note').value = '';
+    renderUsersTable(allUsers);
+    loadWalletHistory(_walletAdjustUserId);
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  }
+}

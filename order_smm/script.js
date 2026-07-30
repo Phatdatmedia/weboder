@@ -47,6 +47,13 @@ let UNIT_PRICE = {
 };
 const SERVICE_LABEL = { Like:'Tăng like', Follow:'Tăng follow', Comment:'Tăng bình luận', Share:'Tăng chia sẻ', View:'Tăng lượt xem' };
 
+// Khai báo TRƯỚC ở đây vì updateQuote() (gọi ngay bên dưới) cần dùng tới các
+// biến này qua updateWalletPillState() — để dưới cũ sẽ bị lỗi
+// "Cannot access before initialization" và làm gãy toàn bộ script.
+let loggedInProfile = null; // { id, name, email } — null nếu là khách vãng lai
+let walletBalance = 0;
+let selectedPayment = null;
+
 async function loadPricingFromSupabase(){
   try{
     const { data, error } = await sb.from('social_ads_pricing').select('*');
@@ -80,6 +87,7 @@ function updateQuote(){
   document.getElementById('q_unit').textContent = unit.toLocaleString('vi-VN') + 'đ';
   document.getElementById('q_qty').textContent = qty.toLocaleString('vi-VN');
   document.getElementById('q_total').textContent = total.toLocaleString('vi-VN') + 'đ';
+  updateWalletPillState(total);
   return total;
 }
 [els.platform, els.service, els.qty].forEach(el => el.addEventListener('input', updateQuote));
@@ -90,7 +98,6 @@ loadPricingFromSupabase();
 /* =====================================================================
    CHỌN PHƯƠNG THỨC THANH TOÁN
 ===================================================================== */
-let selectedPayment = null;
 document.querySelectorAll('#paymentPills .service-pill').forEach(pill=>{
   pill.addEventListener('click', ()=> selectPayment(pill.dataset.payment));
 });
@@ -106,6 +113,8 @@ function selectPayment(method){
     hint.textContent = "📱 Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản.";
   } else if(method === 'Thanh toán sau'){
     hint.textContent = "🤝 Đội ngũ sẽ trao đổi thanh toán khi xác nhận đơn.";
+  } else if(method === 'Ví'){
+    hint.textContent = "💰 Trừ thẳng từ số dư ví, đơn được xác nhận ngay lập tức, không cần chờ.";
   } else {
     hint.textContent = "";
   }
@@ -115,8 +124,6 @@ function selectPayment(method){
    ĐĂNG NHẬP — nếu khách đã login, ẩn Họ tên/SĐT/Email, lấy thông tin
    từ bảng "profiles" thay vì bắt nhập lại (khách vãng lai vẫn nhập bình thường).
 ===================================================================== */
-let loggedInProfile = null; // { id, name, email } — null nếu là khách vãng lai
-
 async function checkLoginState(){
   const { data } = await sb.auth.getSession();
   const session = data?.session;
@@ -141,8 +148,136 @@ async function checkLoginState(){
 
   document.getElementById('loggedInName').textContent = loggedInProfile.name;
   document.getElementById('loggedInAs').style.display = 'block';
+  document.getElementById('walletBox').style.display = 'block';
+  document.getElementById('walletPaymentPill').style.display = 'inline-block';
+
+  await refreshWalletBalance();
 }
 checkLoginState();
+
+/* =====================================================================
+   VÍ PHATDATAGENCY — nạp tiền / thanh toán bằng ví
+===================================================================== */
+async function refreshWalletBalance(){
+  if(!loggedInProfile) return;
+  try{
+    const { data, error } = await sb.rpc('get_my_wallet');
+    if(error || !data?.ok) return;
+    walletBalance = Number(data.balance) || 0;
+    document.getElementById('walletBalance').textContent = walletBalance.toLocaleString('vi-VN') + 'đ';
+    updateWalletPillState(updateQuoteSilent());
+  } catch(e){ /* bỏ qua lỗi mạng tạm thời */ }
+}
+
+// Tính lại tổng tạm tính mà không đụng vào DOM 2 lần (dùng nội bộ cho refreshWalletBalance)
+function updateQuoteSilent(){
+  const platform = els.platform.value;
+  const service = els.service.value;
+  const qty = Number(els.qty.value) || 0;
+  const unit = (UNIT_PRICE[platform] && UNIT_PRICE[platform][service]) || 0;
+  return Math.round(unit * qty);
+}
+
+function updateWalletPillState(currentTotal){
+  const pill = document.getElementById('walletPaymentPill');
+  if(!loggedInProfile || pill.style.display === 'none') return;
+  const enough = walletBalance >= currentTotal;
+  pill.classList.toggle('disabled', !enough);
+  pill.textContent = enough
+    ? `💰 Ví Phatdatagency (${walletBalance.toLocaleString('vi-VN')}đ)`
+    : `💰 Ví Phatdatagency (không đủ số dư)`;
+  if(!enough && selectedPayment === 'Ví'){
+    selectedPayment = null;
+    pill.classList.remove('active');
+  }
+}
+
+function toggleTopupPanel(){
+  const panel = document.getElementById('topupPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+async function startTopup(){
+  const amountInput = document.getElementById('topup_amount');
+  const amount = Number(amountInput.value);
+  const method = document.getElementById('topup_method').value;
+  const msg = document.getElementById('topupMsg');
+  msg.className = 'msg';
+
+  if(!amount || amount < 10000){
+    msg.textContent = 'Số tiền nạp tối thiểu là 10.000đ.';
+    msg.className = 'msg err';
+    return;
+  }
+  if(!loggedInProfile){
+    msg.textContent = 'Bạn cần đăng nhập để nạp tiền vào ví.';
+    msg.className = 'msg err';
+    return;
+  }
+
+  const now = new Date();
+  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+  const randPart = Math.floor(1000 + Math.random()*9000);
+  const topupCode = `NAP-${datePart}-${randPart}`;
+
+  try{
+    const { error: insertErr } = await sb.from('wallet_topup_requests').insert({
+      code: topupCode, user_id: loggedInProfile.id, amount
+    });
+    if(insertErr) throw insertErr;
+
+    window._lastAmount = amount;
+    window._lastOrderCode = topupCode;
+    window._lastBuyerName = loggedInProfile.name;
+    window._lastBuyerEmail = loggedInProfile.email || '';
+    window._lastBuyerPhone = '';
+
+    const resultBox = document.getElementById('topupResult');
+    resultBox.style.display = 'block';
+
+    if(method === 'PayOS'){
+      resultBox.innerHTML = `<div style="text-align:center; padding:16px 0;"><svg class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div>`;
+      const result = await createPayOSLink(topupCode);
+      if(result.ok && result.checkoutUrl){
+        const qrImgUrl = result.qrCode ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(result.qrCode)}` : null;
+        resultBox.innerHTML = `
+          ${qrImgUrl ? `<img src="${qrImgUrl}" alt="QR nạp tiền" width="200" height="200" style="border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px;">` : ''}
+          <div style="margin-top:12px;">
+            <a href="${result.checkoutUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">⚡ Mở trang thanh toán →</a>
+          </div>`;
+        startTopupPolling(topupCode);
+      } else {
+        resultBox.innerHTML = `<div class="pay-note" style="color:#9A3300; background:#FFF0DC;">Không tạo được link, thử lại hoặc chọn VietQR.</div>`;
+      }
+    } else {
+      const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png`
+        + `?amount=${amount}&addInfo=${encodeURIComponent(topupCode)}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
+      resultBox.innerHTML = `
+        <img src="${qrUrl}" alt="QR nạp tiền VietQR" width="200" height="200" style="border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px;">
+        <div class="pay-note" style="margin-top:12px; text-align:left;">Chuyển khoản đúng nội dung <b>${topupCode}</b> để hệ thống tự nhận ra.</div>`;
+      startTopupPolling(topupCode);
+    }
+  } catch(err){
+    msg.textContent = 'Lỗi: ' + err.message;
+    msg.className = 'msg err';
+  }
+}
+
+let _topupPollTimer = null;
+function startTopupPolling(code){
+  if(_topupPollTimer) clearInterval(_topupPollTimer);
+  let tries = 0;
+  const before = walletBalance;
+  _topupPollTimer = setInterval(async () => {
+    tries++;
+    if(tries > 225){ clearInterval(_topupPollTimer); return; }
+    await refreshWalletBalance();
+    if(walletBalance > before){
+      clearInterval(_topupPollTimer);
+      document.getElementById('topupResult').innerHTML = `<div style="font-size:14px; color:var(--sage); font-weight:600;">✅ Nạp tiền thành công! Số dư mới: ${walletBalance.toLocaleString('vi-VN')}đ</div>`;
+    }
+  }, 4000);
+}
 
 /* =====================================================================
    TẠO ĐƠN — insert vào bảng "orders" đã có sẵn, dùng đúng các cột hiện tại
@@ -198,7 +333,13 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       ? 'Thanh toán trước (Thanh toán tự động)'
       : selectedPayment === 'VietQR'
         ? 'Thanh toán trước (VietQR)'
-        : selectedPayment;
+        : selectedPayment === 'Ví'
+          ? 'Ví Phatdatagency'
+          : selectedPayment;
+
+    if(selectedPayment === 'Ví' && walletBalance < estimated){
+      throw new Error('Số dư ví không đủ, vui lòng nạp thêm hoặc chọn phương thức khác.');
+    }
 
     // Lưu lại để truyền sang bước tạo link PayOS / VietQR và hiện biên lai sau này
     window._lastAmount     = estimated;
@@ -235,6 +376,26 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     });
 
     if(error) throw error;
+
+    // Thanh toán bằng ví: gọi RPC trừ tiền NGAY (an toàn, chống double-spend
+    // nhờ khoá dòng trong hàm pay_order_with_wallet ở phía Postgres)
+    if(selectedPayment === 'Ví'){
+      const { data: payResult, error: payErr } = await sb.rpc('pay_order_with_wallet', { p_order_code: orderCode });
+      if(payErr || !payResult?.ok){
+        throw new Error(payResult?.error || payErr?.message || 'Không trừ được tiền từ ví.');
+      }
+      walletBalance = Number(payResult.balance) || 0;
+      document.getElementById('walletBalance').textContent = walletBalance.toLocaleString('vi-VN') + 'đ';
+
+      document.getElementById('boostForm').style.display = 'none';
+      document.getElementById('successCode').textContent = orderCode;
+      document.getElementById('successBox').style.display = 'block';
+      const amountBox = document.getElementById('payAmountBox');
+      amountBox.style.display = 'block';
+      document.getElementById('payAmountVal').textContent = Number(estimated).toLocaleString('vi-VN') + 'đ';
+      showReceipt();
+      return;
+    }
 
     document.getElementById('boostForm').style.display = 'none';
     document.getElementById('successCode').textContent = orderCode;
