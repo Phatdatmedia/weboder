@@ -571,7 +571,7 @@ function switchTab(tab){
   if(tab === 'traffic')  loadTrafficStats();
   if(tab === 'notifs')   loadCustomerNotifs();
   if(tab === 'marketing') loadMarketingConfig();
-  if(tab === 'security') loadSecurityTab();
+  if(tab === 'security'){ loadSecurityTab(); loadMoneyPinStatus(); }
   if(tab === 'livechat') loadLiveChatTab();
   if(tab === 'social')   loadSocialCareTable();
   if(tab === 'app')      refreshPushStatus();
@@ -2850,7 +2850,7 @@ function renderAdsOrdersTable(){
   }
 
   box.innerHTML = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th><th>Thao tác</th>
   </tr></thead><tbody>${allAdsOrders.map(o => `
     <tr>
       <td class="dt-code">${escapeHtml(o.order_code)}</td>
@@ -2864,6 +2864,11 @@ function renderAdsOrdersTable(){
       <td style="font-size:12px; color:var(--ink-soft);">${o.start_date ? new Date(o.start_date).toLocaleDateString('vi-VN') : '—'}</td>
       <td style="font-family:var(--font-mono); font-size:12px;">${o.amount != null ? Number(o.amount).toLocaleString('vi-VN') + 'đ' : '—'}</td>
       <td>${renderStatusSelect(o.order_code, o.status || 'Chờ xác nhận')}</td>
+      <td>
+        ${(o.status === 'Đã huỷ' || o.status === 'Hoàn thành')
+          ? `<span style="font-size:11.5px; color:var(--ink-soft);">${o.status === 'Đã huỷ' ? 'Đã huỷ' + (o.refund_amount!=null ? ' — hoàn '+Number(o.refund_amount).toLocaleString('vi-VN')+'đ' : '') : 'Đã hoàn thành'}</span>`
+          : `<button class="svc-actions" style="border:1.5px solid var(--danger); color:var(--danger); background:none; padding:6px 12px; border-radius:8px; font-size:12px; cursor:pointer;" onclick="openCancelOrderModal('${o.order_code}')">Huỷ đơn</button>`}
+      </td>
     </tr>`).join('')}</tbody></table>`;
 
   box.querySelectorAll('.status-select').forEach(sel=>{
@@ -3132,9 +3137,12 @@ async function submitWalletAdjust(direction){
   const actionLabel = direction > 0 ? 'CỘNG' : 'TRỪ';
   if(!confirm(`Xác nhận ${actionLabel} ${rawAmount.toLocaleString('vi-VN')}đ vào ví khách này?\nLý do: ${note}`)) return;
 
+  const pin = await requestMoneyPin(`Xác nhận ${actionLabel} ${rawAmount.toLocaleString('vi-VN')}đ vào ví khách`);
+  if(!pin) return; // admin huỷ nhập mã
+
   try{
     const { data, error } = await sb.rpc('admin_adjust_wallet', {
-      p_user_id: _walletAdjustUserId, p_amount: amount, p_note: note
+      p_user_id: _walletAdjustUserId, p_amount: amount, p_note: note, p_pin: pin
     });
     if(error || !data?.ok){
       errBox.textContent = data?.error || error?.message || 'Có lỗi xảy ra.';
@@ -3155,4 +3163,213 @@ async function submitWalletAdjust(direction){
     errBox.textContent = 'Lỗi: ' + e.message;
     errBox.classList.add('show');
   }
+}
+
+/* =====================================================================
+   HUỶ ĐƠN & HOÀN TIỀN (Đơn tương tác)
+   Toàn bộ tính toán số tiền hoàn được HIỂN THỊ ở client để admin xem trước,
+   nhưng số tiền cuối cùng được RPC admin_cancel_order tự kiểm tra lại
+   (không vượt quá số tiền đơn, không âm) trước khi cộng vào ví khách.
+===================================================================== */
+let _cancelOrderCode = null;
+let _cancelOrderData = null;
+
+function openCancelOrderModal(orderCode){
+  const order = allAdsOrders.find(o => o.order_code === orderCode);
+  if(!order) return;
+  _cancelOrderCode = orderCode;
+  _cancelOrderData = order;
+
+  document.getElementById('coOrderCode').textContent = orderCode;
+  document.getElementById('coOrderAmount').textContent = (Number(order.amount)||0).toLocaleString('vi-VN') + 'đ';
+  document.getElementById('coOrderQty').textContent = order.quantity != null ? Number(order.quantity).toLocaleString('vi-VN') : '—';
+
+  document.getElementById('co_type').value = 'admin';
+  document.getElementById('co_customerRate').value = '100';
+  document.getElementById('co_delivered').value = '';
+  document.getElementById('co_extraFee').checked = false;
+  document.getElementById('co_reason').value = '';
+  document.getElementById('cancelOrderError').classList.remove('show');
+
+  onCancelTypeChange();
+  document.getElementById('cancelOrderOverlay').classList.add('show');
+}
+
+function closeCancelOrderModal(){
+  document.getElementById('cancelOrderOverlay').classList.remove('show');
+  _cancelOrderCode = null;
+  _cancelOrderData = null;
+}
+
+function onCancelTypeChange(){
+  const type = document.getElementById('co_type').value;
+  document.getElementById('co_customerBlock').style.display = type === 'customer' ? 'block' : 'none';
+  document.getElementById('co_partialBlock').style.display = type === 'partial' ? 'block' : 'none';
+  recalcRefund();
+}
+
+// Tính số tiền hoàn dự kiến — CHỈ để hiển thị preview cho admin xem trước,
+// số tiền thật sẽ được gửi lên và RPC tự kiểm tra lại tính hợp lệ.
+function recalcRefund(){
+  const order = _cancelOrderData;
+  if(!order){ return 0; }
+  const amount = Number(order.amount) || 0;
+  const totalQty = Number(order.quantity) || 0;
+  const type = document.getElementById('co_type').value;
+  let refund = 0;
+
+  if(type === 'admin'){
+    refund = amount; // Admin tự huỷ -> hoàn 100%
+  } else if(type === 'customer'){
+    const rate = Number(document.getElementById('co_customerRate').value) / 100;
+    refund = amount * rate;
+  } else if(type === 'partial'){
+    const delivered = Number(document.getElementById('co_delivered').value) || 0;
+    const deliveredClamped = Math.min(delivered, totalQty);
+    const costUsed = totalQty > 0 ? (amount * deliveredClamped / totalQty) : 0;
+    let refundBeforeFee = Math.max(amount - costUsed, 0);
+    if(document.getElementById('co_extraFee').checked){
+      refundBeforeFee = refundBeforeFee * 0.97; // trừ thêm 3% phí phát sinh
+    }
+    refund = refundBeforeFee;
+  }
+
+  refund = Math.round(Math.max(0, Math.min(refund, amount)));
+  document.getElementById('co_refundPreview').textContent = refund.toLocaleString('vi-VN') + 'đ';
+  return refund;
+}
+
+async function submitCancelOrder(){
+  const errBox = document.getElementById('cancelOrderError');
+  errBox.classList.remove('show');
+
+  const type = document.getElementById('co_type').value;
+  const reason = document.getElementById('co_reason').value.trim();
+  const refundAmount = recalcRefund();
+  const deliveredQty = type === 'partial' ? (Number(document.getElementById('co_delivered').value) || 0) : null;
+
+  const typeLabel = { admin:'Admin huỷ', customer:'Khách yêu cầu huỷ', partial:'Huỷ dở dang' }[type];
+  if(!confirm(`Xác nhận HUỶ đơn ${_cancelOrderCode}?\nLoại: ${typeLabel}\nSố tiền hoàn vào ví khách: ${refundAmount.toLocaleString('vi-VN')}đ\n\nHành động này không thể hoàn tác.`)) return;
+
+  const pin = await requestMoneyPin(`Xác nhận huỷ đơn & hoàn ${refundAmount.toLocaleString('vi-VN')}đ`);
+  if(!pin) return; // admin huỷ nhập mã
+
+  const btn = document.getElementById('cancelOrderSubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang xử lý...';
+
+  try{
+    const { data, error } = await sb.rpc('admin_cancel_order', {
+      p_order_code: _cancelOrderCode,
+      p_cancel_type: type,
+      p_refund_amount: refundAmount,
+      p_delivered_quantity: deliveredQty,
+      p_reason: reason || null,
+      p_pin: pin
+    });
+
+    if(error || !data?.ok){
+      errBox.textContent = data?.error || error?.message || 'Có lỗi xảy ra.';
+      errBox.classList.add('show');
+      return;
+    }
+
+    if(data.refunded_to_wallet){
+      showToast(`✅ Đã huỷ đơn và hoàn ${Number(data.refund_amount).toLocaleString('vi-VN')}đ vào ví khách.`);
+    } else if(data.refund_amount > 0){
+      showToast(`⚠️ Đã huỷ đơn. Khách vãng lai không có ví — cần TỰ chuyển khoản hoàn ${Number(data.refund_amount).toLocaleString('vi-VN')}đ thủ công.`);
+    } else {
+      showToast('Đã huỷ đơn (không phát sinh hoàn tiền).');
+    }
+
+    logAdminAction('Huỷ đơn tương tác', `${_cancelOrderCode} — ${typeLabel} — hoàn ${refundAmount.toLocaleString('vi-VN')}đ — ${reason || '(không ghi chú)'}`);
+
+    closeCancelOrderModal();
+    await loadAdsOrders();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+/* =====================================================================
+   MÃ BẢO MẬT GIAO DỊCH (6 số) — bắt buộc cho mọi thao tác liên quan tiền.
+   Mã được băm bằng bcrypt hoàn toàn phía Postgres (pgcrypto), không lưu
+   hay so sánh dạng chữ thường ở bất kỳ đâu trong code, kể cả tạm thời.
+===================================================================== */
+
+async function loadMoneyPinStatus(){
+  const box = document.getElementById('moneyPinStatusBox');
+  if(!box) return;
+  box.textContent = 'Đang kiểm tra...';
+  try{
+    const { data, error } = await sb.rpc('admin_has_money_pin');
+    if(error) throw error;
+    box.innerHTML = data
+      ? `<span style="color:var(--sage);">✅ Đã thiết lập mã bảo mật.</span> Nhập mã mới bên dưới nếu muốn đổi.`
+      : `<span style="color:var(--danger);">⚠️ Chưa thiết lập mã bảo mật — mọi thao tác cộng/trừ tiền hoặc huỷ đơn hoàn tiền sẽ bị chặn cho tới khi bạn tạo mã.</span>`;
+  } catch(e){
+    box.textContent = 'Không kiểm tra được: ' + e.message;
+  }
+}
+
+async function handleSetMoneyPin(){
+  const input = document.getElementById('moneyPinNew');
+  const errBox = document.getElementById('moneyPinError');
+  errBox.classList.remove('show');
+  const pin = input.value.trim();
+
+  if(!/^\d{6}$/.test(pin)){
+    errBox.textContent = 'Mã bảo mật phải gồm đúng 6 chữ số.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  try{
+    const { data, error } = await sb.rpc('admin_set_money_pin', { p_new_pin: pin });
+    if(error || !data?.ok){
+      errBox.textContent = data?.error || error?.message || 'Có lỗi xảy ra.';
+      errBox.classList.add('show');
+      return;
+    }
+    input.value = '';
+    showToast('✅ Đã lưu mã bảo mật giao dịch.');
+    loadMoneyPinStatus();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  }
+}
+
+/* ── Modal xin mã PIN dùng chung — trả về Promise<string|null> ──────────
+   Cách dùng: const pin = await requestMoneyPin("Xác nhận cộng tiền ví");
+   pin === null nghĩa là admin bấm huỷ. */
+let _moneyPinResolver = null;
+
+function requestMoneyPin(description){
+  document.getElementById('moneyPinConfirmDesc').textContent = description || 'Nhập mã bảo mật 6 số để xác nhận thao tác này.';
+  document.getElementById('moneyPinConfirmInput').value = '';
+  document.getElementById('moneyPinConfirmError').classList.remove('show');
+  document.getElementById('moneyPinConfirmOverlay').classList.add('show');
+  setTimeout(()=> document.getElementById('moneyPinConfirmInput').focus(), 50);
+
+  return new Promise((resolve) => { _moneyPinResolver = resolve; });
+}
+
+function _resolveMoneyPinPrompt(){
+  const pin = document.getElementById('moneyPinConfirmInput').value.trim();
+  if(!/^\d{6}$/.test(pin)){
+    document.getElementById('moneyPinConfirmError').textContent = 'Mã phải gồm đúng 6 chữ số.';
+    document.getElementById('moneyPinConfirmError').classList.add('show');
+    return;
+  }
+  document.getElementById('moneyPinConfirmOverlay').classList.remove('show');
+  if(_moneyPinResolver){ _moneyPinResolver(pin); _moneyPinResolver = null; }
+}
+
+function _rejectMoneyPinPrompt(){
+  document.getElementById('moneyPinConfirmOverlay').classList.remove('show');
+  if(_moneyPinResolver){ _moneyPinResolver(null); _moneyPinResolver = null; }
 }

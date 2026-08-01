@@ -785,7 +785,27 @@
         </div>
       </div>
 
-      <!-- Phiên đăng nhập -->
+      <!-- Mã bảo mật giao dịch tiền -->
+      <div class="cfg-section">
+        <div class="cfg-section-head">
+          <div>
+            <h3>💰 Mã bảo mật giao dịch</h3>
+            <p>Mã 6 số riêng, bắt buộc nhập mỗi khi cộng/trừ tiền ví khách hoặc huỷ đơn hoàn tiền — kể cả khi đã đăng nhập admin. Mã được băm (hash) bằng bcrypt lưu trong database, không ai (kể cả admin khác) xem lại được mã gốc.</p>
+          </div>
+        </div>
+        <div class="cfg-body">
+          <div id="moneyPinStatusBox" style="margin-bottom:16px; font-size:13.5px;">Đang kiểm tra...</div>
+
+          <div id="moneyPinSetArea">
+            <label style="text-transform:uppercase; font-size:12px; color:var(--ink-soft); display:block; margin-bottom:6px;">Mã 6 số mới</label>
+            <input type="password" class="field" id="moneyPinNew" placeholder="••••••" inputmode="numeric" maxlength="6" style="max-width:140px; font-family:var(--font-mono); letter-spacing:6px; text-align:center;">
+            <div class="modal-error" id="moneyPinError" style="margin-top:8px;"></div>
+            <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="handleSetMoneyPin()">Lưu mã bảo mật</button>
+          </div>
+        </div>
+      </div>
+
+
       <div class="cfg-section">
         <div class="cfg-section-head">
           <div>
@@ -1468,6 +1488,82 @@
         <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Lịch sử giao dịch gần đây</div>
         <div id="waHistory" style="max-height:220px; overflow-y:auto;"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= CANCEL ORDER & REFUND MODAL ======================= -->
+<div class="modal-overlay" id="cancelOrderOverlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-head">
+      <h3>Huỷ đơn & hoàn tiền</h3>
+      <button class="modal-close" onclick="closeCancelOrderModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px;">
+      <div style="margin-bottom:16px; font-size:13px; color:var(--ink-soft);">
+        Đơn <b id="coOrderCode" style="color:var(--ink); font-family:var(--font-mono);"></b> —
+        Đã thanh toán: <b id="coOrderAmount" style="color:var(--coral-deep);"></b> —
+        Số lượng đặt: <b id="coOrderQty" style="color:var(--ink);"></b>
+      </div>
+
+      <label>Loại huỷ</label>
+      <select class="field" id="co_type" onchange="onCancelTypeChange()">
+        <option value="admin">Admin huỷ (hoàn 100%)</option>
+        <option value="customer">Khách yêu cầu huỷ</option>
+        <option value="partial">Huỷ dở dang (đơn đã chạy 1 phần)</option>
+      </select>
+
+      <!-- Hiện khi chọn "Khách yêu cầu huỷ" -->
+      <div id="co_customerBlock" style="display:none; margin-top:14px;">
+        <label>Mức hoàn</label>
+        <select class="field" id="co_customerRate" onchange="recalcRefund()">
+          <option value="100">Hoàn 100%</option>
+          <option value="95">Hoàn 95% (trừ 5% phí huỷ)</option>
+        </select>
+      </div>
+
+      <!-- Hiện khi chọn "Huỷ dở dang" -->
+      <div id="co_partialBlock" style="display:none; margin-top:14px;">
+        <label>Số lượng đã lên (đã giao cho khách)</label>
+        <input type="number" class="field" id="co_delivered" min="0" oninput="recalcRefund()">
+        <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="co_extraFee" onchange="recalcRefund()" style="width:16px; height:16px;">
+          <label for="co_extraFee" style="margin:0; text-transform:none; font-weight:400; font-size:13px; color:var(--ink);">Trừ thêm phí phát sinh (-3%)</label>
+        </div>
+      </div>
+
+      <label>Lý do / ghi chú</label>
+      <textarea class="field" id="co_reason" rows="2" placeholder="Vd: khách đổi ý, đơn spam, sai thông tin..."></textarea>
+
+      <div style="background:var(--surface-2); border-radius:10px; padding:14px 16px; margin-top:16px;">
+        <div style="font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;">Số tiền sẽ hoàn vào ví khách</div>
+        <div id="co_refundPreview" style="font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--coral-deep); margin-top:4px;">0đ</div>
+      </div>
+
+      <div class="modal-error" id="cancelOrderError"></div>
+      <button class="btn btn-primary" style="width:100%; margin-top:16px; background:var(--danger);" id="cancelOrderSubmitBtn" onclick="submitCancelOrder()">Xác nhận huỷ đơn</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= MONEY PIN CONFIRM MODAL (dùng chung) ======================= -->
+<div class="modal-overlay" id="moneyPinConfirmOverlay">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>🔒 Xác nhận giao dịch</h3>
+      <button class="modal-close" onclick="_rejectMoneyPinPrompt()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:24px 26px; text-align:center;">
+      <p id="moneyPinConfirmDesc" style="font-size:13.5px; color:var(--ink-soft); margin-bottom:16px;">Nhập mã bảo mật 6 số để xác nhận thao tác này.</p>
+      <input type="password" class="field" id="moneyPinConfirmInput" placeholder="••••••" inputmode="numeric" maxlength="6"
+        style="max-width:160px; margin:0 auto; font-family:var(--font-mono); letter-spacing:8px; text-align:center; font-size:20px;"
+        onkeydown="if(event.key==='Enter') _resolveMoneyPinPrompt()">
+      <div class="modal-error" id="moneyPinConfirmError" style="margin-top:10px;"></div>
+      <button class="btn btn-primary" style="width:100%; margin-top:16px;" onclick="_resolveMoneyPinPrompt()">Xác nhận</button>
     </div>
   </div>
 </div>
