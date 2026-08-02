@@ -551,7 +551,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -578,6 +578,7 @@ function switchTab(tab){
   if(tab === 'maintenance') loadMaintenanceConfig();
   if(tab === 'boost') loadBoostTable();
   if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
+  if(tab === 'partners') loadPartners();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -3372,4 +3373,258 @@ function _resolveMoneyPinPrompt(){
 function _rejectMoneyPinPrompt(){
   document.getElementById('moneyPinConfirmOverlay').classList.remove('show');
   if(_moneyPinResolver){ _moneyPinResolver(null); _moneyPinResolver = null; }
+}
+
+/* =====================================================================
+   ĐỐI TÁC & CỘNG TÁC VIÊN — quản lý danh sách + ghi nhận thanh toán
+   (tiền chuyển thật ngoài đời qua ngân hàng, hệ thống chỉ ghi lại để
+   theo dõi/tra soát, bắt buộc mã bảo mật 6 số cho mỗi lần ghi nhận).
+===================================================================== */
+let allPartners = [];
+const PARTNER_ROLE_LABEL = { doi_tac: 'Đối tác', ctv: 'Cộng tác viên' };
+
+async function loadPartners(){
+  const box = document.getElementById('partnersTableBody');
+  if(!isBackendConfigured() || !currentAdmin) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb.from('partners').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    allPartners = data || [];
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  renderPartnersTable();
+  loadPartnerPaymentsHistory();
+}
+
+function renderPartnersTable(){
+  const box = document.getElementById('partnersTableBody');
+  if(!allPartners.length){
+    box.innerHTML = `<div class="dash-empty">Chưa có đối tác/CTV nào. Bấm "+ Thêm đối tác/CTV".</div>`;
+    return;
+  }
+  box.innerHTML = `<table class="dash-table"><thead><tr>
+    <th>Tên</th><th>Vai trò</th><th>SĐT</th><th>Ngân hàng</th><th></th>
+  </tr></thead><tbody>${allPartners.map(p => `
+    <tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td><span class="svc-status-pill ${p.role==='doi_tac'?'svc-status-active':'svc-status-inactive'}">${PARTNER_ROLE_LABEL[p.role]||p.role}</span></td>
+      <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(p.phone||'—')}</td>
+      <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(p.bank_info||'—')}</td>
+      <td class="svc-actions">
+        <button onclick="openPartnerPayModal(${p.id})" style="color:var(--sage);">💸 Thanh toán</button>
+        <button onclick="openPartnerForm(${p.id})">Sửa</button>
+        <button onclick="handleDeletePartner(${p.id})" class="danger">Xoá</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+/* ── Thêm / sửa đối tác ── */
+let editingPartnerId = null;
+
+function openPartnerForm(id){
+  editingPartnerId = id || null;
+  const p = id ? allPartners.find(x => x.id === id) : null;
+  document.getElementById('partnerModalTitle').textContent = p ? 'Sửa đối tác/CTV' : 'Thêm đối tác/CTV';
+  document.getElementById('partnerModalError').classList.remove('show');
+  document.getElementById('pt_name').value = p?.name || '';
+  document.getElementById('pt_role').value = p?.role || 'doi_tac';
+  document.getElementById('pt_phone').value = p?.phone || '';
+  document.getElementById('pt_bank').value = p?.bank_info || '';
+  document.getElementById('pt_note').value = p?.note || '';
+  document.getElementById('partnerModalOverlay').classList.add('show');
+}
+
+function closePartnerForm(){
+  document.getElementById('partnerModalOverlay').classList.remove('show');
+}
+
+async function handleSavePartner(){
+  const errBox = document.getElementById('partnerModalError');
+  const name = document.getElementById('pt_name').value.trim();
+  if(!name){
+    errBox.textContent = 'Vui lòng nhập tên.';
+    errBox.classList.add('show');
+    return;
+  }
+  const row = {
+    name,
+    role: document.getElementById('pt_role').value,
+    phone: document.getElementById('pt_phone').value.trim() || null,
+    bank_info: document.getElementById('pt_bank').value.trim() || null,
+    note: document.getElementById('pt_note').value.trim() || null,
+  };
+
+  const btn = document.getElementById('partnerSaveBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+  try{
+    let error;
+    if(editingPartnerId){
+      ({ error } = await sb.from('partners').update(row).eq('id', editingPartnerId));
+    } else {
+      ({ error } = await sb.from('partners').insert(row));
+    }
+    if(error) throw error;
+    showToast('✅ Đã lưu.');
+    logAdminAction(editingPartnerId ? 'Sửa đối tác/CTV' : 'Thêm đối tác/CTV', name);
+    closePartnerForm();
+    await loadPartners();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function handleDeletePartner(id){
+  if(!confirm('Xoá đối tác/CTV này? (lịch sử thanh toán liên quan sẽ bị xoá theo)')) return;
+  try{
+    const { error } = await sb.from('partners').delete().eq('id', id);
+    if(error) throw error;
+    showToast('Đã xoá.');
+    logAdminAction('Xoá đối tác/CTV', String(id));
+    await loadPartners();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
+}
+
+/* ── Ghi nhận thanh toán cho đối tác/CTV (bắt buộc mã bảo mật) ── */
+let _payingPartnerId = null;
+
+function openPartnerPayModal(id){
+  const p = allPartners.find(x => x.id === id);
+  if(!p) return;
+  _payingPartnerId = id;
+  document.getElementById('ppPartnerName').textContent = `${p.name} (${PARTNER_ROLE_LABEL[p.role]||p.role})`;
+  document.getElementById('pp_amount').value = '';
+  document.getElementById('pp_reason').value = '';
+  document.getElementById('partnerPayError').classList.remove('show');
+  document.getElementById('partnerPayOverlay').classList.add('show');
+}
+
+function closePartnerPayModal(){
+  document.getElementById('partnerPayOverlay').classList.remove('show');
+  _payingPartnerId = null;
+}
+
+async function submitPartnerPayment(){
+  const errBox = document.getElementById('partnerPayError');
+  errBox.classList.remove('show');
+  const amount = Number(document.getElementById('pp_amount').value);
+  const reason = document.getElementById('pp_reason').value.trim();
+
+  if(!amount || amount <= 0){
+    errBox.textContent = 'Nhập số tiền hợp lệ.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const partner = allPartners.find(x => x.id === _payingPartnerId);
+  if(!confirm(`Xác nhận ĐÃ CHUYỂN KHOẢN ${amount.toLocaleString('vi-VN')}đ cho ${partner?.name}?\n(Hệ thống chỉ ghi nhận lại, không tự chuyển tiền — bạn cần tự chuyển khoản trước)`)) return;
+
+  const pin = await requestMoneyPin(`Xác nhận đã thanh toán ${amount.toLocaleString('vi-VN')}đ cho ${partner?.name}`);
+  if(!pin) return;
+
+  const btn = document.getElementById('partnerPaySubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+
+  try{
+    const { data, error } = await sb.rpc('admin_pay_partner', {
+      p_partner_id: _payingPartnerId, p_amount: amount, p_reason: reason || null, p_pin: pin
+    });
+    if(error || !data?.ok){
+      errBox.textContent = data?.error || error?.message || 'Có lỗi xảy ra.';
+      errBox.classList.add('show');
+      return;
+    }
+    showToast(`✅ Đã ghi nhận thanh toán ${amount.toLocaleString('vi-VN')}đ. Mã phiếu: ${data.code}`);
+    logAdminAction('Thanh toán đối tác/CTV', `${partner?.name} — ${amount.toLocaleString('vi-VN')}đ — ${data.code}`);
+    closePartnerPayModal();
+    await loadPartnerPaymentsHistory();
+
+    if(confirm('Xuất phiếu chi PDF cho khoản này luôn không?')){
+      printPartnerReceipt(data.code, partner?.name, amount, reason);
+    }
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function loadPartnerPaymentsHistory(){
+  const box = document.getElementById('partnerPaymentsHistoryBody');
+  if(!box) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb
+      .from('partner_payments')
+      .select('*, partners(name, role)')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<div class="dash-empty">Chưa có khoản thanh toán nào.</div>`;
+      return;
+    }
+    box.innerHTML = `<table class="dash-table"><thead><tr>
+      <th>Mã phiếu</th><th>Đối tác/CTV</th><th>Số tiền</th><th>Nội dung</th><th>Người chi</th><th>Thời gian</th><th></th>
+    </tr></thead><tbody>${data.map(pp => `
+      <tr>
+        <td class="dt-code">${escapeHtml(pp.code)}</td>
+        <td>${escapeHtml(pp.partners?.name||'')}</td>
+        <td style="font-family:var(--font-mono); font-weight:600;">${Number(pp.amount).toLocaleString('vi-VN')}đ</td>
+        <td style="font-size:12px; color:var(--ink-soft);">${escapeHtml(pp.reason||'—')}</td>
+        <td style="font-size:12px;">${escapeHtml(pp.paid_by_admin_email||'')}</td>
+        <td style="font-size:12px; color:var(--ink-soft);">${new Date(pp.created_at).toLocaleString('vi-VN')}</td>
+        <td><button class="svc-actions" style="border:1.5px solid var(--line); background:none; padding:5px 10px; border-radius:6px; font-size:11.5px; cursor:pointer;" onclick="printPartnerReceipt('${pp.code}','${escapeHtml(pp.partners?.name||'')}',${pp.amount},'${escapeHtml((pp.reason||'').replace(/'/g,"\\'"))}')">🖨️ PDF</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+/* Xuất phiếu chi PDF cho đối tác/CTV — dùng chung thư viện jsPDF */
+function printPartnerReceipt(code, partnerName, amount, reason){
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.text('PHATDATAGENCY', pageW/2, y, { align:'center' }); y += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text('Phieu chi - Thanh toan doi tac/CTV', pageW/2, y, { align:'center' }); y += 10;
+    doc.setDrawColor(200); doc.line(15, y, pageW-15, y); y += 10;
+
+    const rows = [
+      ['Ma phieu', code || ''],
+      ['Nguoi nhan', partnerName || ''],
+      ['So tien', (Number(amount)||0).toLocaleString('vi-VN') + ' d'],
+      ['Noi dung', reason || '(khong ghi chu)'],
+      ['Thoi gian', new Date().toLocaleString('vi-VN')],
+    ];
+    doc.setFontSize(11);
+    rows.forEach(([label, value]) => {
+      doc.setFont('helvetica','normal'); doc.text(label, 18, y);
+      doc.setFont('helvetica','bold');
+      const lines = doc.splitTextToSize(String(value), 70);
+      doc.text(lines, pageW-18, y, { align:'right' });
+      y += 9 * lines.length;
+    });
+
+    y += 10;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    doc.text('Nguoi lap phieu: ' + (currentAdmin?.email || ''), 18, y);
+
+    doc.save(`PhieuChi-${code || 'partner'}.pdf`);
+  } catch(e){
+    alert('Không tạo được PDF: ' + e.message);
+  }
 }

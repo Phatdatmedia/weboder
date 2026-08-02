@@ -297,6 +297,11 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     const link = document.getElementById('f_link').value.trim();
     const start = document.getElementById('f_start').value;
     const note = document.getElementById('f_note').value.trim();
+
+    // Tải lại giá MỚI NHẤT ngay trước khi tính tiền — tránh trường hợp
+    // khách mở trang từ lâu, admin đổi giá ở nơi khác trong lúc đó, mà
+    // trang vẫn dùng giá cũ đã tải từ lúc mở trang (không tự cập nhật).
+    await loadPricingFromSupabase();
     const estimated = updateQuote();
 
     if(!loggedInProfile && !document.getElementById('f_name').value.trim()){
@@ -615,4 +620,62 @@ function showReceipt(){
   document.getElementById('rc_time').textContent = new Date().toLocaleString('vi-VN');
 
   document.getElementById('receiptSection').style.display = 'block';
+}
+
+/* =====================================================================
+   XUẤT BIÊN LAI DẠNG FILE PDF THẬT (dùng jsPDF, chạy hoàn toàn phía
+   trình duyệt, không cần server) — thay vì chỉ mở hộp thoại in.
+===================================================================== */
+function downloadReceiptPDF(){
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+    const order = window._lastOrderDetails || {};
+    const code = order.order_code || window._lastOrderCode || '';
+
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('PHATDATAGENCY', pageW/2, y, { align: 'center' });
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Bien lai thanh toan', pageW/2, y, { align: 'center' });
+    y += 10;
+    doc.setDrawColor(200);
+    doc.line(15, y, pageW-15, y);
+    y += 10;
+
+    const rows = [
+      ['Ma don', code],
+      ['Dich vu', 'Chay quang cao tang tuong tac MXH'],
+      ['Nen tang', `${order.platform || ''} - ${SERVICE_LABEL[order.interaction_type] || order.interaction_type || ''}`],
+      ['So luong', order.quantity != null ? Number(order.quantity).toLocaleString('vi-VN') : '-'],
+      ['So tien da thanh toan', order.amount != null ? Number(order.amount).toLocaleString('vi-VN') + ' d' : '-'],
+      ['Thoi gian xac nhan', new Date().toLocaleString('vi-VN')],
+      ['Trang thai', 'Da xac nhan thanh toan'],
+    ];
+
+    doc.setFontSize(11);
+    rows.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'normal');
+      doc.text(label, 18, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(value), pageW-18, y, { align: 'right' });
+      y += 9;
+    });
+
+    y += 6;
+    doc.line(15, y, pageW-15, y);
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Cam on ban da su dung dich vu cua Phatdatagency.', pageW/2, y, { align: 'center' });
+
+    doc.save(`BienLai-${code || 'donhang'}.pdf`);
+  } catch(e){
+    alert('Không tạo được PDF: ' + e.message + ' — bạn có thể dùng nút "In biên lai" thay thế.');
+  }
 }
