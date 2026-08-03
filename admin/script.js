@@ -281,11 +281,31 @@ async function loadDashboard(){
 }
 
 function renderDashboard(orders){
+  renderGreeting();
+
   document.getElementById('statTotal').textContent = orders.length;
   const pendingCount = orders.filter(o=> o["Trạng thái"] === "Chờ xác nhận").length;
   document.getElementById('statPending').textContent = pendingCount;
   document.getElementById('statProgress').textContent = orders.filter(o=> ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
   document.getElementById('statDone').textContent = orders.filter(o=> o["Trạng thái"] === "Hoàn thành").length;
+
+  // Trend/sub-text cho từng KPI — chỉ hiển thị số liệu tính được thật, không bịa %.
+  const now = new Date();
+  const todayStr = now.toLocaleDateString('vi-VN');
+  const ordersToday = orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr);
+  document.getElementById('trendTotal').innerHTML = `<span class="${ordersToday.length>0?'up':'flat'}">+${ordersToday.length} hôm nay</span>`;
+
+  const pendingOrders = orders.filter(o => o["Trạng thái"] === "Chờ xác nhận" && o["_createdAtRaw"]);
+  if(pendingOrders.length){
+    const oldest = pendingOrders.reduce((a,b) => new Date(a["_createdAtRaw"]) < new Date(b["_createdAtRaw"]) ? a : b);
+    const hoursWaiting = Math.round((Date.now() - new Date(oldest["_createdAtRaw"])) / 3600000);
+    document.getElementById('trendPending').innerHTML = `<span class="${hoursWaiting>=24?'down':'flat'}">chờ lâu nhất: ${hoursWaiting}h</span>`;
+  } else {
+    document.getElementById('trendPending').innerHTML = `<span class="up">không có đơn chờ</span>`;
+  }
+  document.getElementById('trendProgress').innerHTML = `&nbsp;`;
+  const doneCount = orders.filter(o=> o["Trạng thái"] === "Hoàn thành").length;
+  document.getElementById('trendDone').innerHTML = orders.length ? `<span class="flat">${Math.round(doneCount/orders.length*100)}% tổng đơn</span>` : '&nbsp;';
 
   // Banner ưu tiên: chỉ hiện khi có đơn chờ xác nhận
   const banner = document.getElementById('attentionBanner');
@@ -298,12 +318,10 @@ function renderDashboard(orders){
   }
 
   // Tất cả các mốc doanh thu đều tính theo "Doanh thu thực" (nhập tay) để đồng bộ
-  const now = new Date();
-  const todayStr = now.toLocaleDateString('vi-VN');
   const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
   const sumActual = (list) => list.reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
 
-  const revToday = sumActual(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === todayStr));
+  const revToday = sumActual(ordersToday);
   const revWeek  = sumActual(orders.filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]) >= weekAgo));
   const revMonth = sumActual(orders.filter(o => {
     if(!o["_createdAtRaw"]) return false;
@@ -318,6 +336,10 @@ function renderDashboard(orders){
   document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
 
   loadTodayViewsQuickStat();
+  renderRevenueBarChart(orders);
+  renderStatusDonut(orders);
+  renderTopServices(orders);
+  renderRecentOrdersFeed(orders);
 
   const tableBody = document.getElementById('dashTableBody');
   if(orders.length === 0){
@@ -370,6 +392,120 @@ function renderStatusSelect(code, currentStatus){
     `<option value="${escapeHtml(s)}" ${s === currentStatus ? 'selected' : ''}>${escapeHtml(s)}</option>`
   ).join('');
   return `<select class="status-select ${meta.cls}" data-code="${code}">${options}</select>`;
+}
+
+/* ── Lời chào theo giờ + ngày hôm nay ── */
+function renderGreeting(){
+  const h = new Date().getHours();
+  const greet = h < 11 ? 'Chào buổi sáng' : h < 13 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  const name = currentAdmin?.email ? currentAdmin.email.split('@')[0] : 'admin';
+  document.getElementById('overviewGreeting').textContent = `${greet}, ${name} 👋`;
+  document.getElementById('overviewDate').textContent =
+    new Date().toLocaleDateString('vi-VN', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+}
+
+/* ── Biểu đồ cột doanh thu 7 ngày gần nhất (SVG/CSS thuần, không cần thư viện) ── */
+function renderRevenueBarChart(orders){
+  const box = document.getElementById('revenueBarChart');
+  const days = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const dStr = d.toLocaleDateString('vi-VN');
+    const total = orders
+      .filter(o => o["_createdAtRaw"] && new Date(o["_createdAtRaw"]).toLocaleDateString('vi-VN') === dStr)
+      .reduce((s,o)=> s + (Number(o["Doanh thu thực"]) || 0), 0);
+    days.push({ label: `${d.getDate()}/${d.getMonth()+1}`, total });
+  }
+  const max = Math.max(...days.map(d=>d.total), 1);
+
+  box.innerHTML = days.map(d => `
+    <div class="bar-col">
+      <div class="bar-value">${d.total>0 ? (d.total>=1000000 ? (d.total/1000000).toFixed(1)+'tr' : Math.round(d.total/1000)+'k') : ''}</div>
+      <div class="bar" style="height:${Math.max(d.total/max*110, d.total>0?4:2)}px;" title="${d.total.toLocaleString('vi-VN')}đ"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('');
+}
+
+/* ── Donut tỷ lệ trạng thái đơn (vẽ bằng SVG conic thủ công qua stroke-dasharray) ── */
+function renderStatusDonut(orders){
+  const box = document.getElementById('statusDonutChart');
+  const counts = {};
+  Object.keys(STATUS_MAP).forEach(s => counts[s] = 0);
+  orders.forEach(o => { const s = o["Trạng thái"] || "Chờ xác nhận"; if(counts[s] != null) counts[s]++; });
+
+  const colorMap = {
+    "Chờ xác nhận": "#FF5A3C", "Đã xác nhận": "#F5B85C", "Đang thực hiện": "#5CA8D6",
+    "Hoàn thành": "#8FB07E", "Đã huỷ": "#5C5650"
+  };
+  const total = orders.length || 1;
+  let offset = 0;
+  const circumference = 2 * Math.PI * 40;
+
+  const segments = Object.entries(counts).filter(([,c]) => c > 0).map(([status, count]) => {
+    const frac = count / total;
+    const dash = frac * circumference;
+    const seg = `<circle cx="50" cy="50" r="40" fill="none" stroke="${colorMap[status]||'#888'}" stroke-width="14"
+      stroke-dasharray="${dash} ${circumference-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 50 50)"/>`;
+    offset += dash;
+    return seg;
+  }).join('');
+
+  const legend = Object.entries(counts).map(([status,count]) => `
+    <div class="dl-item">
+      <span class="dl-dot" style="background:${colorMap[status]||'#888'};"></span>
+      <span>${escapeHtml(status)}</span>
+      <span class="dl-count">${count}</span>
+    </div>`).join('');
+
+  box.innerHTML = `
+    <svg viewBox="0 0 100 100" width="130" height="130">${segments}
+      <text x="50" y="46" text-anchor="middle" font-size="18" font-weight="700" fill="var(--ink)">${orders.length}</text>
+      <text x="50" y="60" text-anchor="middle" font-size="8" fill="var(--ink-soft)">đơn</text>
+    </svg>
+    <div class="donut-legend">${legend}</div>`;
+}
+
+/* ── Top 5 dịch vụ theo doanh thu thực ── */
+function renderTopServices(orders){
+  const box = document.getElementById('topServicesList');
+  const byService = {};
+  orders.forEach(o => {
+    const svc = o["Loại dịch vụ"] || 'Khác';
+    byService[svc] = (byService[svc] || 0) + (Number(o["Doanh thu thực"]) || 0);
+  });
+  const top = Object.entries(byService).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  if(!top.length){
+    box.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">Chưa có doanh thu thực được ghi nhận.</div>`;
+    return;
+  }
+  const max = top[0][1];
+  box.innerHTML = top.map(([svc, amount]) => `
+    <div class="ts-row">
+      <div class="ts-row-top"><span>${escapeHtml(svc)}</span><span class="ts-amount">${amount.toLocaleString('vi-VN')}đ</span></div>
+      <div class="ts-bar-track"><div class="ts-bar-fill" style="width:${Math.max(amount/max*100,3)}%;"></div></div>
+    </div>`).join('');
+}
+
+/* ── 5 đơn hàng mới nhất (feed hoạt động) ── */
+function renderRecentOrdersFeed(orders){
+  const box = document.getElementById('recentOrdersFeed');
+  const recent = orders.slice(0, 5);
+  if(!recent.length){
+    box.innerHTML = `<div style="font-size:12.5px; color:var(--ink-soft);">Chưa có đơn nào.</div>`;
+    return;
+  }
+  box.innerHTML = recent.map(o => {
+    const meta = STATUS_MAP[o["Trạng thái"]] || { cls:'status-pending' };
+    return `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line); font-size:12.5px;">
+      <div style="min-width:0;">
+        <div style="font-family:var(--font-mono); font-weight:600;">${escapeHtml(o["Mã đơn"])}</div>
+        <div style="color:var(--ink-soft); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(o["Họ tên"]||'')} — ${escapeHtml(o["Loại dịch vụ"]||'')}</div>
+      </div>
+      <span class="${meta.cls}" style="font-size:10.5px; padding:3px 9px; border-radius:20px; white-space:nowrap;">${escapeHtml(o["Trạng thái"]||'')}</span>
+    </div>`;
+  }).join('');
 }
 
 /* Cập nhật lại các thẻ tổng doanh thu (gọi sau khi sửa Doanh thu thực để không cần tải lại toàn trang) */
@@ -551,7 +687,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -579,6 +715,7 @@ function switchTab(tab){
   if(tab === 'boost') loadBoostTable();
   if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
   if(tab === 'partners') loadPartners();
+  if(tab === 'invoices'){ loadOrdersForInvoice(); loadInvoicesHistory(); }
   if(tab === 'pages') initPagesTab();
 }
 
@@ -3594,36 +3731,257 @@ function printPartnerReceipt(code, partnerName, amount, reason){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+    registerVietnameseFont(doc);
     const pageW = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
+    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(16);
     doc.text('PHATDATAGENCY', pageW/2, y, { align:'center' }); y += 6;
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-    doc.text('Phieu chi - Thanh toan doi tac/CTV', pageW/2, y, { align:'center' }); y += 10;
+    doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(10);
+    doc.text('Phiếu chi - Thanh toán đối tác/CTV', pageW/2, y, { align:'center' }); y += 10;
     doc.setDrawColor(200); doc.line(15, y, pageW-15, y); y += 10;
 
     const rows = [
-      ['Ma phieu', code || ''],
-      ['Nguoi nhan', partnerName || ''],
-      ['So tien', (Number(amount)||0).toLocaleString('vi-VN') + ' d'],
-      ['Noi dung', reason || '(khong ghi chu)'],
-      ['Thoi gian', new Date().toLocaleString('vi-VN')],
+      ['Mã phiếu', code || ''],
+      ['Người nhận', partnerName || ''],
+      ['Số tiền', (Number(amount)||0).toLocaleString('vi-VN') + ' đ'],
+      ['Nội dung', reason || '(không ghi chú)'],
+      ['Thời gian', new Date().toLocaleString('vi-VN')],
     ];
     doc.setFontSize(11);
     rows.forEach(([label, value]) => {
-      doc.setFont('helvetica','normal'); doc.text(label, 18, y);
-      doc.setFont('helvetica','bold');
+      doc.setFont('DejaVuSans','normal'); doc.text(label, 18, y);
+      doc.setFont('DejaVuSans','bold');
       const lines = doc.splitTextToSize(String(value), 70);
       doc.text(lines, pageW-18, y, { align:'right' });
       y += 9 * lines.length;
     });
 
     y += 10;
-    doc.setFont('helvetica','normal'); doc.setFontSize(9);
-    doc.text('Nguoi lap phieu: ' + (currentAdmin?.email || ''), 18, y);
+    doc.setFont('DejaVuSans','normal'); doc.setFontSize(9);
+    doc.text('Người lập phiếu: ' + (currentAdmin?.email || ''), 18, y);
 
     doc.save(`PhieuChi-${code || 'partner'}.pdf`);
+  } catch(e){
+    alert('Không tạo được PDF: ' + e.message);
+  }
+}
+
+/* =====================================================================
+   XUẤT HOÁ ĐƠN — chọn từ đơn hàng có sẵn hoặc tự nhập tay, xuất PDF,
+   lưu lại lịch sử để tra soát/tải lại sau này.
+===================================================================== */
+let allOrdersForInvoice = [];
+let _invoiceSelectedOrderCode = null;
+
+function setInvoiceSource(src){
+  document.querySelectorAll('#invSourcePills .service-pill').forEach(p => p.classList.toggle('active', p.dataset.src === src));
+  document.getElementById('invOrderPickBlock').style.display = src === 'order' ? 'block' : 'none';
+  if(src === 'manual'){
+    _invoiceSelectedOrderCode = null;
+    document.getElementById('invSelectedOrderBox').style.display = 'none';
+  }
+}
+
+async function loadOrdersForInvoice(){
+  try{
+    const { data, error } = await sb
+      .from('orders')
+      .select('order_code, customer_name, phone, email, service_type, amount, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if(error) throw error;
+    allOrdersForInvoice = data || [];
+    filterInvoiceOrders();
+  } catch(e){
+    document.getElementById('invOrderResults').innerHTML = `<div style="padding:12px; font-size:12px; color:var(--danger);">Không tải được đơn hàng: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function filterInvoiceOrders(){
+  const q = (document.getElementById('inv_orderSearch').value || '').toLowerCase().trim();
+  const box = document.getElementById('invOrderResults');
+  const list = !q ? allOrdersForInvoice.slice(0, 30) : allOrdersForInvoice.filter(o =>
+    (o.order_code||'').toLowerCase().includes(q) ||
+    (o.customer_name||'').toLowerCase().includes(q) ||
+    (o.phone||'').toLowerCase().includes(q)
+  ).slice(0, 30);
+
+  if(!list.length){
+    box.innerHTML = `<div style="padding:12px; font-size:12.5px; color:var(--ink-soft);">Không tìm thấy đơn nào.</div>`;
+    return;
+  }
+  box.innerHTML = list.map(o => `
+    <div onclick="selectInvoiceOrder('${o.order_code}')"
+      style="padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer; font-size:12.5px;"
+      onmouseover="this.style.background='var(--surface-2)'" onmouseout="this.style.background='transparent'">
+      <b style="font-family:var(--font-mono);">${escapeHtml(o.order_code)}</b> — ${escapeHtml(o.customer_name||'')}
+      <span style="color:var(--ink-soft); float:right;">${o.amount!=null ? Number(o.amount).toLocaleString('vi-VN')+'đ' : ''}</span>
+    </div>`).join('');
+}
+
+function selectInvoiceOrder(orderCode){
+  const o = allOrdersForInvoice.find(x => x.order_code === orderCode);
+  if(!o) return;
+  _invoiceSelectedOrderCode = orderCode;
+
+  document.getElementById('inv_recipientName').value = o.customer_name || '';
+  document.getElementById('inv_recipientInfo').value = o.phone || o.email || '';
+  document.getElementById('inv_content').value = o.service_type || '';
+  document.getElementById('inv_amount').value = o.amount || '';
+
+  document.getElementById('invSelectedOrderBox').style.display = 'block';
+  document.getElementById('invSelectedOrderBox').innerHTML =
+    `Đã chọn đơn <b style="font-family:var(--font-mono);">${escapeHtml(orderCode)}</b> — thông tin bên dưới đã tự điền, bạn có thể sửa lại nếu cần.`;
+}
+
+async function submitInvoice(){
+  const errBox = document.getElementById('invoiceError');
+  errBox.classList.remove('show');
+
+  const recipientName = document.getElementById('inv_recipientName').value.trim();
+  const recipientInfo = document.getElementById('inv_recipientInfo').value.trim();
+  const content = document.getElementById('inv_content').value.trim();
+  const amount = Number(document.getElementById('inv_amount').value);
+  const note = document.getElementById('inv_note').value.trim();
+
+  if(!recipientName || !content || !amount || amount <= 0){
+    errBox.textContent = 'Vui lòng nhập đủ Tên người nhận, Nội dung và Số tiền hợp lệ.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const now = new Date();
+  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+  const randPart = Math.floor(1000 + Math.random()*9000);
+  const invoiceNo = `HD-${datePart}-${randPart}`;
+
+  const btn = document.getElementById('invoiceSubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang xuất...';
+
+  try{
+    const { error } = await sb.from('invoices').insert({
+      invoice_no: invoiceNo,
+      order_code: _invoiceSelectedOrderCode,
+      recipient_name: recipientName,
+      recipient_info: recipientInfo || null,
+      content,
+      amount,
+      note: note || null,
+      created_by_admin_email: currentAdmin?.email || null,
+    });
+    if(error) throw error;
+
+    generateInvoicePDF({ invoice_no: invoiceNo, recipient_name: recipientName, recipient_info: recipientInfo, content, amount, created_at: now.toISOString() });
+    showToast(`✅ Đã xuất hoá đơn ${invoiceNo}.`);
+    logAdminAction('Xuất hoá đơn', `${invoiceNo} — ${recipientName} — ${amount.toLocaleString('vi-VN')}đ`);
+
+    // reset form nhưng giữ lại nếu muốn xuất tiếp cho người khác
+    document.getElementById('inv_recipientName').value = '';
+    document.getElementById('inv_recipientInfo').value = '';
+    document.getElementById('inv_content').value = '';
+    document.getElementById('inv_amount').value = '';
+    document.getElementById('inv_note').value = '';
+    document.getElementById('invSelectedOrderBox').style.display = 'none';
+    _invoiceSelectedOrderCode = null;
+
+    await loadInvoicesHistory();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function loadInvoicesHistory(){
+  const box = document.getElementById('invoicesHistoryBody');
+  if(!box) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb.from('invoices').select('*').order('created_at', { ascending: false }).limit(20);
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<div class="dash-empty">Chưa có hoá đơn nào.</div>`;
+      return;
+    }
+    box.innerHTML = `<table class="dash-table"><thead><tr>
+      <th>Số hoá đơn</th><th>Người nhận</th><th>Nội dung</th><th>Số tiền</th><th>Ngày xuất</th><th></th>
+    </tr></thead><tbody>${data.map(inv => `
+      <tr>
+        <td class="dt-code">${escapeHtml(inv.invoice_no)}</td>
+        <td>${escapeHtml(inv.recipient_name)}</td>
+        <td style="font-size:12px; color:var(--ink-soft); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(inv.content)}</td>
+        <td style="font-family:var(--font-mono); font-weight:600;">${Number(inv.amount).toLocaleString('vi-VN')}đ</td>
+        <td style="font-size:12px; color:var(--ink-soft);">${new Date(inv.created_at).toLocaleString('vi-VN')}</td>
+        <td><button class="svc-actions" style="border:1.5px solid var(--line); background:none; padding:5px 10px; border-radius:6px; font-size:11.5px; cursor:pointer;" onclick='generateInvoicePDF(${JSON.stringify(inv).replace(/'/g,"&apos;")})'>🖨️ PDF</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+/* Dựng file PDF hoá đơn — dùng chung thư viện jsPDF đã nạp sẵn cho phiếu chi */
+function generateInvoicePDF(inv){
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    registerVietnameseFont(doc);
+    const pageW = doc.internal.pageSize.getWidth();
+    let y = 22;
+
+    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(18);
+    doc.text('PHATDATAGENCY', 20, y);
+    doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(10);
+    doc.text('HOÁ ĐƠN', pageW-20, y, { align: 'right' });
+    y += 8;
+    doc.setFontSize(10);
+    doc.text('Số: ' + (inv.invoice_no||''), pageW-20, y, { align: 'right' });
+    y += 6;
+    doc.text('Ngày: ' + new Date(inv.created_at).toLocaleDateString('vi-VN'), pageW-20, y, { align: 'right' });
+    y += 14;
+
+    doc.setDrawColor(220); doc.line(20, y, pageW-20, y); y += 12;
+
+    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(11);
+    doc.text('Người nhận:', 20, y);
+    doc.setFont('DejaVuSans', 'normal');
+    doc.text(inv.recipient_name || '', 55, y);
+    y += 7;
+    if(inv.recipient_info){
+      doc.setFont('DejaVuSans', 'bold'); doc.text('Liên hệ:', 20, y);
+      doc.setFont('DejaVuSans', 'normal'); doc.text(inv.recipient_info, 55, y);
+      y += 7;
+    }
+    y += 8;
+
+    // Bảng nội dung
+    doc.setFillColor(245, 240, 230);
+    doc.rect(20, y, pageW-40, 10, 'F');
+    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(10);
+    doc.text('Nội dung', 24, y+7);
+    doc.text('Số tiền', pageW-24, y+7, { align: 'right' });
+    y += 14;
+
+    doc.setFont('DejaVuSans', 'normal');
+    const contentLines = doc.splitTextToSize(inv.content || '', pageW-90);
+    doc.text(contentLines, 24, y);
+    doc.setFont('DejaVuSans', 'bold');
+    doc.text((Number(inv.amount)||0).toLocaleString('vi-VN') + ' đ', pageW-24, y, { align: 'right' });
+    y += 8 * contentLines.length + 10;
+
+    doc.setDrawColor(220); doc.line(20, y, pageW-20, y); y += 10;
+
+    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12);
+    doc.text('TỔNG CỘNG:', 20, y);
+    doc.text((Number(inv.amount)||0).toLocaleString('vi-VN') + ' đ', pageW-20, y, { align: 'right' });
+
+    y += 30;
+    doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9);
+    doc.text('Cảm ơn quý khách / đối tác đã hợp tác cùng Phatdatagency.', 20, y);
+
+    doc.save(`HoaDon-${inv.invoice_no || 'moi'}.pdf`);
   } catch(e){
     alert('Không tạo được PDF: ' + e.message);
   }

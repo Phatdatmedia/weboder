@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="/vn-font-data.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
 </head>
 <body>
@@ -66,6 +67,7 @@
     <button id="mobileTabPages" onclick="switchTab('pages')">Nội dung trang</button>
     <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
     <button id="mobileTabPartners" onclick="switchTab('partners')">Đối tác & CTV</button>
+    <button id="mobileTabInvoices" onclick="switchTab('invoices')">Xuất hoá đơn</button>
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
@@ -141,6 +143,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Đối tác & CTV
       </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabInvoices" onclick="switchTab('invoices')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h2"/></svg>
+        Xuất hoá đơn
+      </a>
 
       <div class="dash-nav-section">Hệ thống</div>
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabTraffic" onclick="switchTab('traffic')">
@@ -176,8 +182,8 @@
     <div class="tab-panel active" id="tabOverview">
       <div class="dash-top">
         <div>
-          <h1>Tổng quan đơn hàng</h1>
-          <p>Ưu tiên hiển thị việc cần xử lý trước, số liệu chi tiết bên dưới.</p>
+          <h1 id="overviewGreeting">Chào buổi sáng 👋</h1>
+          <p id="overviewDate">Đang tải...</p>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Làm mới dữ liệu</button>
       </div>
@@ -194,28 +200,36 @@
         <button class="btn btn-primary btn-sm" onclick="scrollToPendingOrders()">Xem ngay →</button>
       </div>
 
-      <!-- THỐNG KÊ ƯU TIÊN — đơn cần xử lý lên đầu -->
-      <div class="dash-stats">
-        <div class="dash-stat-card" style="border-color:var(--coral);">
-          <div class="ds-label">🔴 Chờ xác nhận</div>
-          <div class="ds-val" id="statPending">—</div>
+      <!-- KPI CHÍNH -->
+      <div class="kpi-grid">
+        <div class="kpi-card accent-coral">
+          <div class="kpi-top"><span class="kpi-icon">🔴</span></div>
+          <div class="kpi-label">Chờ xác nhận</div>
+          <div class="kpi-val" id="statPending">—</div>
+          <div class="kpi-trend flat" id="trendPending">&nbsp;</div>
         </div>
-        <div class="dash-stat-card">
-          <div class="ds-label">Đang thực hiện</div>
-          <div class="ds-val" id="statProgress">—</div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-icon">⚙️</span></div>
+          <div class="kpi-label">Đang thực hiện</div>
+          <div class="kpi-val" id="statProgress">—</div>
+          <div class="kpi-trend flat" id="trendProgress">&nbsp;</div>
         </div>
-        <div class="dash-stat-card">
-          <div class="ds-label">Hoàn thành</div>
-          <div class="ds-val" id="statDone">—</div>
+        <div class="kpi-card accent-sage">
+          <div class="kpi-top"><span class="kpi-icon">✅</span></div>
+          <div class="kpi-label">Hoàn thành</div>
+          <div class="kpi-val" id="statDone">—</div>
+          <div class="kpi-trend flat" id="trendDone">&nbsp;</div>
         </div>
-        <div class="dash-stat-card">
-          <div class="ds-label">Tổng đơn</div>
-          <div class="ds-val" id="statTotal">—</div>
+        <div class="kpi-card">
+          <div class="kpi-top"><span class="kpi-icon">📦</span></div>
+          <div class="kpi-label">Tổng đơn</div>
+          <div class="kpi-val" id="statTotal">—</div>
+          <div class="kpi-trend flat" id="trendTotal">&nbsp;</div>
         </div>
       </div>
 
-      <!-- SỐ LIỆU NHANH: doanh thu + lượt truy cập -->
-      <div class="dash-stats" style="margin-top:14px; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));">
+      <!-- DOANH THU NHANH -->
+      <div class="dash-stats" style="margin-bottom:26px; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));">
         <div class="dash-stat-card">
           <div class="ds-label">✅ Doanh thu hôm nay</div>
           <div class="ds-val" id="statRevenueToday" style="font-size:22px;">—</div>
@@ -238,7 +252,57 @@
         </div>
       </div>
 
-      <div class="dash-table-wrap" id="dashOrdersTable" style="margin-top:24px;">
+      <!-- BIỂU ĐỒ: doanh thu 7 ngày + tỷ lệ trạng thái đơn -->
+      <div class="chart-row">
+        <div class="chart-card">
+          <h3>Doanh thu 7 ngày gần nhất</h3>
+          <div class="chart-sub">Tính theo "Doanh thu thực" đã ghi nhận từng ngày</div>
+          <div class="bar-chart" id="revenueBarChart"><div class="dash-loading" style="padding:0;">Đang tải...</div></div>
+        </div>
+        <div class="chart-card">
+          <h3>Tỷ lệ trạng thái đơn</h3>
+          <div class="chart-sub">Toàn bộ đơn hàng trong hệ thống</div>
+          <div class="donut-wrap" id="statusDonutChart"><div class="dash-loading" style="padding:0;">Đang tải...</div></div>
+        </div>
+      </div>
+
+      <!-- BIỂU ĐỒ: top dịch vụ theo doanh thu + hoạt động gần đây -->
+      <div class="chart-row-3">
+        <div class="chart-card">
+          <h3>Top dịch vụ theo doanh thu</h3>
+          <div class="chart-sub">5 loại dịch vụ mang lại doanh thu cao nhất</div>
+          <div class="top-services-list" id="topServicesList"><div class="dash-loading" style="padding:0;">Đang tải...</div></div>
+        </div>
+        <div class="chart-card">
+          <h3>Đơn hàng mới nhất</h3>
+          <div class="chart-sub">5 đơn được đặt gần đây nhất</div>
+          <div id="recentOrdersFeed"><div class="dash-loading" style="padding:0;">Đang tải...</div></div>
+        </div>
+      </div>
+
+      <!-- LỐI TẮT NHANH -->
+      <div class="quick-links">
+        <button class="quick-link-card" onclick="switchTab('adsorders')">
+          <span class="ql-icon">📣</span><span class="ql-label">Đơn tương tác</span><span class="ql-sub">Xem & xử lý đơn SMM</span>
+        </button>
+        <button class="quick-link-card" onclick="switchTab('users')">
+          <span class="ql-icon">👥</span><span class="ql-label">Người dùng</span><span class="ql-sub">Quản lý tài khoản & ví</span>
+        </button>
+        <button class="quick-link-card" onclick="switchTab('invoices')">
+          <span class="ql-icon">🧾</span><span class="ql-label">Xuất hoá đơn</span><span class="ql-sub">Tạo hoá đơn PDF</span>
+        </button>
+        <button class="quick-link-card" onclick="switchTab('partners')">
+          <span class="ql-icon">🤝</span><span class="ql-label">Đối tác & CTV</span><span class="ql-sub">Ghi nhận thanh toán</span>
+        </button>
+        <button class="quick-link-card" onclick="switchTab('livechat')">
+          <span class="ql-icon">💬</span><span class="ql-label">Live Chat</span><span class="ql-sub">Trả lời khách hàng</span>
+        </button>
+        <button class="quick-link-card" onclick="switchTab('security')">
+          <span class="ql-icon">🔒</span><span class="ql-label">Bảo mật</span><span class="ql-sub">2FA & mã giao dịch</span>
+        </button>
+      </div>
+
+      <div class="dash-table-wrap" id="dashOrdersTable" style="margin-top:8px;">
         <div class="dash-table-head">
           <h3>Danh sách đơn hàng</h3>
           <div class="dash-search">
@@ -1127,6 +1191,60 @@
 
       <div class="dash-table-wrap">
         <div id="partnerPaymentsHistoryBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tabInvoices">
+      <div class="dash-top">
+        <div>
+          <h1>Xuất hoá đơn</h1>
+          <p>Chọn từ đơn hàng có sẵn để tự điền, hoặc tự nhập tay cho bất kỳ ai (khách, đối tác, CTV...).</p>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:640px;">
+        <div class="service-pills" id="invSourcePills" style="margin-bottom:20px;">
+          <button type="button" class="service-pill active" data-src="order" onclick="setInvoiceSource('order')">📋 Chọn từ đơn hàng</button>
+          <button type="button" class="service-pill" data-src="manual" onclick="setInvoiceSource('manual')">✍️ Tự nhập tay</button>
+        </div>
+
+        <div id="invOrderPickBlock">
+          <label>Tìm đơn hàng (theo mã, tên khách...)</label>
+          <input type="text" class="field" id="inv_orderSearch" placeholder="Gõ để tìm..." oninput="filterInvoiceOrders()">
+          <div id="invOrderResults" style="max-height:220px; overflow-y:auto; margin-top:8px; border:1px solid var(--line); border-radius:10px;"></div>
+          <div id="invSelectedOrderBox" style="display:none; margin-top:12px; padding:12px 14px; background:var(--surface-2); border-radius:10px; font-size:13px;"></div>
+        </div>
+
+        <label>Tên người/đơn vị nhận hoá đơn</label>
+        <input type="text" class="field" id="inv_recipientName">
+
+        <label>Thông tin thêm (SĐT/email/địa chỉ — không bắt buộc)</label>
+        <input type="text" class="field" id="inv_recipientInfo">
+
+        <label>Nội dung</label>
+        <textarea class="field" id="inv_content" rows="2"></textarea>
+
+        <label>Số tiền (đ)</label>
+        <input type="number" class="field" id="inv_amount" min="1">
+
+        <label>Ghi chú nội bộ (không in ra hoá đơn)</label>
+        <textarea class="field" id="inv_note" rows="2"></textarea>
+
+        <div class="modal-error" id="invoiceError"></div>
+        <button class="btn btn-primary" style="width:100%; margin-top:14px;" id="invoiceSubmitBtn" onclick="submitInvoice()">Xuất hoá đơn (PDF)</button>
+      </div>
+
+      <div class="dash-top" style="margin-top:36px;">
+        <div>
+          <h2 style="font-size:18px;">Hoá đơn đã xuất</h2>
+          <p>20 hoá đơn gần nhất, có thể tải lại PDF bất cứ lúc nào.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadInvoicesHistory()">↻ Tải lại</button>
+      </div>
+      <div class="dash-table-wrap">
+        <div id="invoicesHistoryBody">
           <div class="dash-loading">Đang tải...</div>
         </div>
       </div>
