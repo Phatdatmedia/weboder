@@ -68,6 +68,7 @@
     <button id="mobileTabPayment"  onclick="switchTab('payment')">Thanh toán</button>
     <button id="mobileTabPartners" onclick="switchTab('partners')">Đối tác & CTV</button>
     <button id="mobileTabInvoices" onclick="switchTab('invoices')">Xuất hoá đơn</button>
+    <button id="mobileTabContracts" onclick="switchTab('contracts')">Tạo hợp đồng</button>
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
@@ -146,6 +147,10 @@
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabInvoices" onclick="switchTab('invoices')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h2"/></svg>
         Xuất hoá đơn
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabContracts" onclick="switchTab('contracts')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 13l2 2 4-4"/></svg>
+        Tạo hợp đồng
       </a>
 
       <div class="dash-nav-section">Hệ thống</div>
@@ -1250,6 +1255,78 @@
       </div>
     </div>
 
+    <div class="tab-panel" id="tabContracts">
+      <div class="dash-top">
+        <div>
+          <h1>Tạo hợp đồng</h1>
+          <p>Chọn loại dịch vụ, điền thông tin, hệ thống tự soạn hợp đồng đầy đủ điều khoản và xuất PDF.</p>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:720px;">
+        <label>Loại dịch vụ</label>
+        <select class="field" id="ct_serviceType" onchange="onContractTypeChange()">
+          <option value="unlock">Mở khoá tài khoản MXH (Facebook/TikTok...)</option>
+          <option value="ads">Chạy quảng cáo tăng tương tác MXH</option>
+          <option value="web">Thiết kế Website/Ứng dụng</option>
+        </select>
+
+        <h3 style="font-size:14px; margin:20px 0 8px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;">Bên A — Bên cung cấp dịch vụ</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Đại diện</label><input type="text" class="field" id="ct_aName" value="Lê Phát Đạt"></div>
+          <div class="form-group"><label>CCCD/CMND</label><input type="text" class="field" id="ct_aId"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Địa chỉ liên hệ</label><input type="text" class="field" id="ct_aAddress"></div>
+          <div class="form-group"><label>Điện thoại</label><input type="text" class="field" id="ct_aPhone"></div>
+        </div>
+        <label>Email</label>
+        <input type="email" class="field" id="ct_aEmail" value="admin@phatdatagency.id.vn">
+
+        <h3 style="font-size:14px; margin:20px 0 8px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;">Bên B — Khách hàng</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Họ và tên / Đơn vị</label><input type="text" class="field" id="ct_bName"></div>
+          <div class="form-group"><label>CCCD/CMND/MST</label><input type="text" class="field" id="ct_bId"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Địa chỉ</label><input type="text" class="field" id="ct_bAddress"></div>
+          <div class="form-group"><label>Điện thoại</label><input type="text" class="field" id="ct_bPhone"></div>
+        </div>
+        <label>Email</label>
+        <input type="email" class="field" id="ct_bEmail">
+
+        <h3 style="font-size:14px; margin:20px 0 8px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em;">Chi tiết dịch vụ & giá trị</h3>
+        <label id="ct_detailLabel">Mô tả chi tiết dịch vụ</label>
+        <textarea class="field" id="ct_detail" rows="3" placeholder="Vd: Hỗ trợ khôi phục quyền truy cập tài khoản Facebook tên 'Nguyễn Văn A', đang bị khoá xác minh 2 lớp."></textarea>
+
+        <div class="form-row">
+          <div class="form-group"><label>Giá trị hợp đồng (đ)</label><input type="number" class="field" id="ct_value" min="0"></div>
+          <div class="form-group"><label>Đặt cọc (đ, không bắt buộc)</label><input type="number" class="field" id="ct_deposit" min="0"></div>
+        </div>
+        <label>Thời gian thực hiện</label>
+        <input type="text" class="field" id="ct_duration" placeholder="Vd: 3 - 5 ngày làm việc kể từ khi nhận cọc">
+
+        <label>Ghi chú thêm (không bắt buộc, in cuối hợp đồng)</label>
+        <textarea class="field" id="ct_note" rows="2"></textarea>
+
+        <div class="modal-error" id="contractError"></div>
+        <button class="btn btn-primary" style="width:100%; margin-top:14px;" id="contractSubmitBtn" onclick="submitContract()">Tạo hợp đồng (PDF)</button>
+      </div>
+
+      <div class="dash-top" style="margin-top:36px;">
+        <div>
+          <h2 style="font-size:18px;">Hợp đồng đã tạo</h2>
+          <p>20 hợp đồng gần nhất, có thể tải lại PDF bất cứ lúc nào.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadContractsHistory()">↻ Tải lại</button>
+      </div>
+      <div class="dash-table-wrap">
+        <div id="contractsHistoryBody">
+          <div class="dash-loading">Đang tải...</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1323,6 +1400,10 @@
       </button>
     </div>
     <div style="padding:24px 26px;">
+      <div class="form-group">
+        <label>Tên server (nhóm chất lượng/nhà cung cấp)</label>
+        <input type="text" class="field" id="pr_server" placeholder="Vd: Việt Nam ổn định, Tây rẻ, VIP...">
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Nền tảng</label>
@@ -1351,6 +1432,10 @@
       <div class="form-group">
         <label>Đơn giá / 1 lượt (đ)</label>
         <input type="number" class="field" id="pr_price" min="0" step="1" placeholder="15">
+      </div>
+      <div class="form-group">
+        <label>Ghi chú riêng của server này (khách sẽ thấy khi chọn)</label>
+        <textarea class="field" id="pr_server_note" rows="3" placeholder="Vd: Không hủy được sau khi gửi. Số lượng phải là bội số của 10..."></textarea>
       </div>
       <div class="modal-error" id="priceModalError"></div>
       <button class="btn btn-primary" style="width:100%; margin-top:6px;" id="priceSaveBtn" onclick="handleSavePrice()">Lưu</button>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chạy quảng cáo tăng tương tác MXH — Phatdatagency</title>
-<meta name="description" content="Đặt đơn chạy quảng cáo tăng like, follow, bình luận, chia sẻ, lượt xem cho Facebook, Instagram, TikTok, YouTube. Báo giá tạm tính ngay, theo dõi bằng mã đơn.">
+<meta name="description" content="Đặt đơn tăng like, follow, bình luận, chia sẻ và lượt xem cho Facebook, Instagram, TikTok, YouTube. Giá hiển thị trực tiếp theo từng server, tạo đơn và theo dõi bằng mã riêng.">
 <link rel="canonical" href="https://phatdatagency.id.vn/dat-don-quang-cao/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="/vn-font-data.js"></script>
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -20,121 +21,217 @@
 
 <nav class="nav">
   <div class="nav-inner">
-    <div class="logo">Phatdatagency<span class="dot">.</span></div>
-    <a href="/" class="back-link">← Về trang chủ</a>
+    <a href="/" class="brand" aria-label="Phatdatagency — Trang chủ">
+      <span class="logo">Phatdatagency<span class="dot">.</span></span>
+      <span class="page-tag">Đặt đơn MXH</span>
+    </a>
+    <a href="/" class="back-link"><span aria-hidden="true">←</span> Về trang chủ</a>
   </div>
 </nav>
 
 <header class="hero">
-  <div class="container">
-    <div class="eyebrow">Dịch vụ mạng xã hội</div>
-    <h1>Chạy quảng cáo <em>tăng tương tác</em><br>cho fanpage & kênh của bạn.</h1>
-    <p>Tăng like, follow, bình luận, chia sẻ hoặc lượt xem cho Facebook, Instagram, TikTok, YouTube. Điền thông tin bên dưới — hệ thống báo giá tạm tính ngay, đội ngũ liên hệ xác nhận trong ngày.</p>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow"><span></span>Dịch vụ mạng xã hội</div>
+      <h1>Tăng tương tác đúng mục tiêu, <em>chốt đơn ngay.</em></h1>
+      <p>Chọn nền tảng, server và số lượng cần chạy. Giá hiển thị trực tiếp; hoàn tất thanh toán và nhận mã đơn ngay sau khi gửi.</p>
+      <div class="hero-badges">
+        <span>✓ Giá chốt rõ ràng</span>
+        <span>✓ Tạo đơn tức thì</span>
+        <span>✓ Theo dõi minh bạch</span>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="social-orbit orbit-one">f</div>
+      <div class="social-orbit orbit-two">♪</div>
+      <div class="social-orbit orbit-three">▶</div>
+      <div class="hero-card-mini">
+        <span class="mini-label">Đơn sẵn sàng</span>
+        <strong>1.000 lượt tương tác</strong>
+        <div class="mini-progress"><span></span></div>
+        <small>Thiết lập trong vài phút</small>
+      </div>
+    </div>
   </div>
 </header>
 
-<div class="container grid">
+<main class="container order-layout">
 
   <!-- FORM -->
-  <div class="card">
-    <h2>Thông tin đơn hàng</h2>
-    <div class="sub">Đơn sẽ được tạo với mã riêng để bạn tra cứu tại mục "Tra cứu đơn" ở trang chủ.</div>
-
-    <div id="loggedInAs" style="display:none; background:var(--paper-deep); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:22px; font-size:13.5px; color:var(--ink-soft);">
-      Đặt đơn với tài khoản: <strong id="loggedInName" style="color:var(--ink);"></strong>
-      <a href="/account/" style="color:var(--coral-deep); font-weight:600; margin-left:6px;">Không phải bạn?</a>
+  <div class="card form-card">
+    <div class="card-heading">
+      <div>
+        <span class="card-kicker">Tạo đơn mới</span>
+        <h2>Thông tin chiến dịch</h2>
+        <p>Hoàn tất 4 bước bên dưới. Thành tiền cập nhật ngay theo lựa chọn của bạn.</p>
+      </div>
+      <div class="secure-badge"><span>●</span> Kết nối an toàn</div>
     </div>
 
-    <div id="walletBox" class="wallet-box" style="display:none;">
-      <div class="wallet-row">
-        <div>
-          <div class="wallet-label">Số dư ví Phatdatagency</div>
-          <div class="wallet-balance" id="walletBalance">0đ</div>
+    <!-- Dùng chung phiên đăng nhập và ví với project mẹ Web3. Script giữ nguyên sẽ
+         tự hiện toàn bộ khu vực này khi Supabase nhận ra khách đã đăng nhập. -->
+    <div class="member-context">
+      <div id="loggedInAs" class="member-bar" style="display:none;">
+        <div class="member-avatar" aria-hidden="true">PĐ</div>
+        <div class="member-copy">
+          <span>Đang đặt đơn bằng tài khoản</span>
+          <strong id="loggedInName"></strong>
         </div>
-        <button type="button" class="btn btn-ghost btn-sm" id="walletTopupBtn" onclick="toggleTopupPanel()">+ Nạp tiền</button>
+        <a href="/account/" class="member-switch">Không phải bạn?</a>
       </div>
 
-      <div id="topupPanel" class="topup-panel" style="display:none;">
-        <label>Số tiền muốn nạp</label>
-        <div class="row2">
-          <input type="number" id="topup_amount" min="10000" step="10000" placeholder="50000">
-          <select id="topup_method">
-            <option value="PayOS">⚡ Thanh toán tự động</option>
-            <option value="VietQR">📱 VietQR</option>
-          </select>
+      <div id="walletBox" class="wallet-box" style="display:none;">
+        <div class="wallet-row">
+          <div>
+            <div class="wallet-label">Số dư ví Phatdatagency</div>
+            <div class="wallet-balance" id="walletBalance">0đ</div>
+            <div class="wallet-caption">Dùng chung với tài khoản ở trang chủ</div>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="walletTopupBtn" onclick="toggleTopupPanel()">+ Nạp tiền</button>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" style="width:100%; margin-top:10px;" onclick="startTopup()">Tạo mã nạp tiền</button>
-        <div class="msg" id="topupMsg"></div>
-        <div id="topupResult" style="display:none; margin-top:14px; text-align:center;"></div>
+
+        <div id="topupPanel" class="topup-panel" style="display:none;">
+          <label for="topup_amount">Số tiền muốn nạp</label>
+          <div class="row2">
+            <input type="number" id="topup_amount" min="10000" step="10000" placeholder="50000">
+            <select id="topup_method" aria-label="Phương thức nạp tiền">
+              <option value="PayOS">⚡ Thanh toán tự động</option>
+      
+            </select>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" style="width:100%; margin-top:10px;" onclick="startTopup()">Tạo mã nạp tiền</button>
+          <div class="msg" id="topupMsg"></div>
+          <div id="topupResult" style="display:none; margin-top:14px; text-align:center;"></div>
+        </div>
       </div>
     </div>
 
     <form id="boostForm">
-      <div class="row2" id="guestFields">
-        <div>
-          <label>Họ tên</label>
-          <input type="text" id="f_name" placeholder="Nguyễn Văn A">
+      <section class="form-section">
+        <div class="section-heading">
+          <span class="step-index">01</span>
+          <div><h3>Thông tin nhận đơn</h3><p>Dùng để nhận mã đơn và cập nhật tiến độ.</p></div>
         </div>
-        <div>
-          <label>Số điện thoại / Zalo</label>
-          <input type="tel" id="f_phone" placeholder="09xxxxxxxx">
+
+        <div class="form-grid two" id="guestFields">
+          <div class="field-group">
+            <label for="f_name">Họ tên</label>
+            <input type="text" id="f_name" placeholder="Nguyễn Văn A" autocomplete="name">
+          </div>
+          <div class="field-group">
+            <label for="f_phone">Số điện thoại / Zalo</label>
+            <input type="tel" id="f_phone" placeholder="09xxxxxxxx" autocomplete="tel">
+          </div>
         </div>
+
+        <div id="guestEmailField" class="field-group">
+          <label for="f_email">Email <span class="optional">Không bắt buộc</span></label>
+          <input type="email" id="f_email" placeholder="ban@email.com" autocomplete="email">
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-heading">
+          <span class="step-index">02</span>
+          <div><h3>Chọn gói tương tác</h3><p>Giá và điều kiện áp dụng hiển thị theo từng server.</p></div>
+        </div>
+
+        <div class="form-grid two">
+          <div class="field-group">
+            <label for="f_platform">Nền tảng</label>
+            <div class="select-wrap">
+              <select id="f_platform">
+                <option value="Facebook">Facebook</option>
+                <option value="Instagram">Instagram</option>
+                <option value="TikTok">TikTok</option>
+                <option value="YouTube">YouTube</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="f_server">Server</label>
+            <div class="select-wrap">
+              <select id="f_server">
+                <option value="">— Chọn nền tảng trước —</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="serverNoteBox" class="server-note-box" style="display:none;"></div>
+
+        <div class="form-grid two">
+          <div class="field-group">
+            <label for="f_service">Loại tương tác</label>
+            <div class="select-wrap">
+              <select id="f_service">
+                <option value="Like">Tăng like</option>
+                <option value="Follow">Tăng follow</option>
+                <option value="Comment">Tăng bình luận</option>
+                <option value="Share">Tăng chia sẻ</option>
+                <option value="View">Tăng lượt xem</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="f_qty">Số lượng mong muốn</label>
+            <input type="number" id="f_qty" min="100" step="100" value="1000" required inputmode="numeric">
+            <span class="field-help">Tối thiểu 100 lượt, tăng theo bội số 100.</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="f_link">Link bài viết / trang cần chạy</label>
+          <div class="url-input-wrap">
+            <span aria-hidden="true">↗</span>
+            <input type="url" id="f_link" required placeholder="https://facebook.com/..." inputmode="url">
+          </div>
+          <span class="field-help">Hãy kiểm tra link đang ở chế độ công khai trước khi gửi đơn.</span>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="section-heading">
+          <span class="step-index">03</span>
+          <div><h3>Thời gian triển khai</h3><p>Chọn ngày bắt đầu và thêm yêu cầu nếu cần.</p></div>
+        </div>
+
+        <div class="form-grid schedule-grid">
+          <div class="field-group">
+            <label for="f_start">Ngày muốn bắt đầu</label>
+            <input type="date" id="f_start">
+          </div>
+          <div class="field-group note-field">
+            <label for="f_note">Ghi chú thêm <span class="optional">Không bắt buộc</span></label>
+            <textarea id="f_note" placeholder="Ví dụ: chạy tăng dần tự nhiên, tránh giờ cao điểm..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section payment-section">
+        <div class="section-heading">
+          <span class="step-index">04</span>
+          <div><h3>Chốt phương thức thanh toán</h3><p>Chọn cách thanh toán để hoàn tất đơn.</p></div>
+        </div>
+
+        <div class="service-pills payment-options" id="paymentPills">
+          <button type="button" class="service-pill" id="walletPaymentPill" data-payment="Ví" style="display:none;">
+            <span class="payment-icon">💰</span><span><b>Ví Phatdatagency</b><small>Dùng số dư hiện có</small></span>
+          </button>
+          <button type="button" class="service-pill" data-payment="PayOS">
+            <span class="payment-icon">⚡</span><span><b>Thanh toán tự động</b><small>Quét mã, xác nhận ngay</small></span>
+          </button>
+  
+        </div>
+        <p class="payment-hint" id="paymentHint"></p>
+      </section>
+
+      <div class="submit-area">
+        <div class="submit-note"><span>✓</span> Thành tiền là giá áp dụng theo server đã chọn. Điều kiện riêng, nếu có, hiển thị tại ghi chú server.</div>
+        <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">
+          <span>Chốt đơn ngay</span><span aria-hidden="true">→</span>
+        </button>
       </div>
-
-      <div id="guestEmailField">
-        <label>Email (không bắt buộc)</label>
-        <input type="email" id="f_email" placeholder="ban@email.com">
-      </div>
-
-      <div class="row2">
-        <div>
-          <label>Nền tảng</label>
-          <select id="f_platform">
-            <option value="Facebook">Facebook</option>
-            <option value="Instagram">Instagram</option>
-            <option value="TikTok">TikTok</option>
-            <option value="YouTube">YouTube</option>
-          </select>
-        </div>
-        <div>
-          <label>Loại tương tác</label>
-          <select id="f_service">
-            <option value="Like">Tăng like</option>
-            <option value="Follow">Tăng follow</option>
-            <option value="Comment">Tăng bình luận</option>
-            <option value="Share">Tăng chia sẻ</option>
-            <option value="View">Tăng lượt xem</option>
-          </select>
-        </div>
-      </div>
-
-      <label>Link bài viết / trang cần chạy</label>
-      <input type="url" id="f_link" required placeholder="https://facebook.com/...">
-
-      <div class="row2">
-        <div>
-          <label>Số lượng mong muốn</label>
-          <input type="number" id="f_qty" min="100" step="100" value="1000" required>
-        </div>
-        <div>
-          <label>Ngày muốn bắt đầu</label>
-          <input type="date" id="f_start">
-        </div>
-      </div>
-
-      <label>Ghi chú thêm</label>
-      <textarea id="f_note" placeholder="Ví dụ: cần chạy tăng dần tự nhiên, tránh giờ cao điểm..."></textarea>
-
-      <label>Phương thức thanh toán</label>
-      <div class="service-pills" id="paymentPills">
-        <button type="button" class="service-pill" id="walletPaymentPill" data-payment="Ví" style="display:none;">💰 Ví Phatdatagency</button>
-        <button type="button" class="service-pill" data-payment="PayOS">⚡ Thanh toán tự động (quét mã ngay)</button>
-        <button type="button" class="service-pill" data-payment="VietQR">📱 VietQR (quét mã)</button>
-        <button type="button" class="service-pill" data-payment="Thanh toán sau">🤝 Thanh toán sau</button>
-      </div>
-      <p class="payment-hint" id="paymentHint"></p>
-
-      <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">Tạo đơn hàng</button>
       <div class="msg" id="formMsg"></div>
     </form>
 
@@ -149,7 +246,7 @@
       <!-- Hiện khi chọn VietQR -->
       <div id="payQrSection" style="display:none;">
         <div class="pay-qr-wrap">
-          <img id="payQrImg" src="" alt="QR thanh toán VietQR">
+          <img id="payQrImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="QR thanh toán VietQR">
           <div class="pay-info">
             <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
             <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
@@ -165,7 +262,7 @@
 
       <!-- Hiện khi chọn Thanh toán sau -->
       <div id="payLaterSection" style="display:none;">
-        <div class="pay-note">Bạn đã chọn <b>thanh toán sau</b>. Đội ngũ Phatdatagency sẽ liên hệ qua số điện thoại/Zalo để xác nhận số lượng, thời gian và trao đổi thanh toán.</div>
+        <div class="pay-note">Đơn đã được tạo thành công. Phatdatagency sẽ gửi hướng dẫn thanh toán qua số điện thoại/Zalo bạn cung cấp.</div>
       </div>
 
       <!-- Hiện tự động ngay khi hệ thống phát hiện đơn đã được thanh toán -->
@@ -187,7 +284,7 @@
         <button type="button" class="btn btn-ghost" id="downloadReceiptBtn" onclick="downloadReceiptPDF()" style="margin-top:18px; margin-left:10px;">
           ⬇️ Tải PDF biên lai
         </button>
-        <p style="margin-top:14px; font-size:12.5px; color:var(--ink-soft);">Đội ngũ sẽ bắt đầu triển khai đơn của bạn. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào.</p>
+        <p style="margin-top:14px; font-size:12.5px; color:var(--ink-soft);">Đơn đã chuyển sang triển khai. Lưu mã đơn để tra cứu tiến trình bất cứ lúc nào.</p>
       </div>
 
       <div id="pollingHint" class="payment-hint" style="text-align:center; margin-top:16px;"></div>
@@ -198,17 +295,32 @@
 
   <!-- QUOTE SIDEBAR -->
   <div class="card quote-card">
-    <h3>Báo giá tạm tính</h3>
-    <div class="sub">Chỉ mang tính tham khảo, giá cuối do đội ngũ xác nhận</div>
-    <div class="quote-row"><span>Nền tảng</span><span id="q_platform">Facebook</span></div>
-    <div class="quote-row"><span>Dịch vụ</span><span id="q_service">Tăng like</span></div>
-    <div class="quote-row"><span>Đơn giá / 1 lượt</span><span id="q_unit">—</span></div>
-    <div class="quote-row"><span>Số lượng</span><span id="q_qty">1.000</span></div>
-    <div class="quote-total"><span>Tạm tính</span><span class="amount" id="q_total">0đ</span></div>
-    <div class="quote-note">Giá minh hoạ — chỉnh trực tiếp trong bảng <code>UNIT_PRICE</code> ở cuối file để phù hợp với đơn giá thực tế của bạn.</div>
+    <div class="quote-live"><span></span> Giá cập nhật trực tiếp</div>
+    <h3>Thành tiền đơn hàng</h3>
+    <p class="sub">Giá áp dụng theo lựa chọn hiện tại</p>
+
+    <div class="quote-amount-box">
+      <span>Tổng thanh toán</span>
+      <strong id="q_total">0đ</strong>
+      <small>Giá theo server đã chọn</small>
+    </div>
+
+    <div class="quote-details">
+      <div class="quote-row"><span>Nền tảng</span><b id="q_platform">Facebook</b></div>
+      <div class="quote-row"><span>Server</span><b id="q_server">—</b></div>
+      <div class="quote-row"><span>Dịch vụ</span><b id="q_service">Tăng like</b></div>
+      <div class="quote-row"><span>Đơn giá / 1 lượt</span><b id="q_unit">—</b></div>
+      <div class="quote-row"><span>Số lượng</span><b id="q_qty">1.000</b></div>
+    </div>
+
+    <div class="quote-note"><span>i</span><p>Đây là giá chốt cho server hiện tại. Nếu server có điều kiện riêng, nội dung sẽ hiển thị ngay dưới mục Server.</p></div>
+    <div class="quote-support">
+      <div class="support-avatar">PĐ</div>
+      <div><b>Chọn đúng server</b><span>Đọc ghi chú của từng server trước khi chốt đơn.</span></div>
+    </div>
   </div>
 
-</div>
+</main>
 
 <script src="script.js"></script>
 </body>

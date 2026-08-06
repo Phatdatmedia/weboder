@@ -687,7 +687,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices'];
+const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices','contracts'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -716,6 +716,7 @@ function switchTab(tab){
   if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
   if(tab === 'partners') loadPartners();
   if(tab === 'invoices'){ loadOrdersForInvoice(); loadInvoicesHistory(); }
+  if(tab === 'contracts') loadContractsHistory();
   if(tab === 'pages') initPagesTab();
 }
 
@@ -2988,12 +2989,13 @@ function renderAdsOrdersTable(){
   }
 
   box.innerHTML = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th><th>Thao tác</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Server</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th><th>Thao tác</th>
   </tr></thead><tbody>${allAdsOrders.map(o => `
     <tr>
       <td class="dt-code">${escapeHtml(o.order_code)}</td>
       <td>${escapeHtml(o.customer_name||'')}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o.phone||o.email||'')}</span></td>
       <td>${escapeHtml(o.platform||'—')}</td>
+      <td style="font-size:12px;">${escapeHtml(o.server_name||'Mặc định')}</td>
       <td>${escapeHtml(o.interaction_type||'—')}</td>
       <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
         ${o.post_link ? `<a href="${escapeHtml(o.post_link)}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:underline;">${escapeHtml(o.post_link)}</a>` : '—'}
@@ -3051,9 +3053,13 @@ function renderAdsPricingTable(){
   }
 
   box.innerHTML = `<table class="dash-table"><thead><tr>
-    <th>Nền tảng</th><th>Loại</th><th>Tên hiển thị</th><th>Đơn giá / lượt</th><th></th>
+    <th>Server</th><th>Nền tảng</th><th>Loại</th><th>Tên hiển thị</th><th>Đơn giá / lượt</th><th></th>
   </tr></thead><tbody>${allAdsPricing.map(p => `
     <tr>
+      <td>
+        <div style="font-weight:600;">${escapeHtml(p.server_name||'Mặc định')}</div>
+        ${p.server_note ? `<div style="font-size:11px; color:var(--ink-soft); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.server_note)}">${escapeHtml(p.server_note)}</div>` : ''}
+      </td>
       <td>${escapeHtml(p.platform)}</td>
       <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(p.interaction_type)}</td>
       <td>${escapeHtml(p.interaction_label||'')}</td>
@@ -3062,6 +3068,7 @@ function renderAdsPricingTable(){
           style="width:100px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:var(--font-mono); font-size:12px;">
       </td>
       <td class="svc-actions">
+        <button onclick="openPriceForm(${p.id})">Sửa</button>
         <button onclick="handleDeletePrice(${p.id})" class="danger">Xoá</button>
       </td>
     </tr>`).join('')}</tbody></table>`;
@@ -3092,14 +3099,17 @@ async function handlePriceInlineChange(id, rawValue, inputEl){
   }
 }
 
-function openPriceForm(){
-  editingPriceId = null;
-  document.getElementById('priceModalTitle').textContent = 'Thêm dòng giá';
+function openPriceForm(id){
+  editingPriceId = id || null;
+  const p = id ? allAdsPricing.find(x => x.id === id) : null;
+  document.getElementById('priceModalTitle').textContent = p ? 'Sửa dòng giá' : 'Thêm dòng giá';
   document.getElementById('priceModalError').classList.remove('show');
-  document.getElementById('pr_platform').value = 'Facebook';
-  document.getElementById('pr_type').value = 'Like';
-  document.getElementById('pr_label').value = 'Tăng like';
-  document.getElementById('pr_price').value = '';
+  document.getElementById('pr_server').value = p?.server_name || '';
+  document.getElementById('pr_platform').value = p?.platform || 'Facebook';
+  document.getElementById('pr_type').value = p?.interaction_type || 'Like';
+  document.getElementById('pr_label').value = p?.interaction_label || 'Tăng like';
+  document.getElementById('pr_price').value = p?.unit_price ?? '';
+  document.getElementById('pr_server_note').value = p?.server_note || '';
   document.getElementById('priceModalOverlay').classList.add('show');
 }
 
@@ -3109,23 +3119,27 @@ function closePriceForm(){
 
 async function handleSavePrice(){
   const errBox = document.getElementById('priceModalError');
+  const serverName = document.getElementById('pr_server').value.trim() || 'Mặc định';
   const row = {
+    server_name: serverName,
+    server_note: document.getElementById('pr_server_note').value.trim() || null,
     platform: document.getElementById('pr_platform').value,
     interaction_type: document.getElementById('pr_type').value,
     interaction_label: document.getElementById('pr_label').value.trim() || document.getElementById('pr_type').value,
     unit_price: Number(document.getElementById('pr_price').value) || 0,
     updated_at: new Date().toISOString(),
   };
+  if(editingPriceId) row.id = editingPriceId;
 
   const btn = document.getElementById('priceSaveBtn');
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = 'Đang lưu...';
 
   try{
-    const { error } = await sb.from('social_ads_pricing').upsert(row, { onConflict: 'platform,interaction_type' });
+    const { error } = await sb.from('social_ads_pricing').upsert(row, { onConflict: 'platform,server_name,interaction_type' });
     if(error) throw error;
     showToast('✅ Đã lưu dòng giá.');
-    logAdminAction('Thêm/sửa giá tương tác', `${row.platform} - ${row.interaction_type} → ${row.unit_price}đ`);
+    logAdminAction('Thêm/sửa giá tương tác', `${serverName} — ${row.platform} - ${row.interaction_type} → ${row.unit_price}đ`);
     closePriceForm();
     await loadAdsPricing();
   } catch(e){
@@ -3984,5 +3998,297 @@ function generateInvoicePDF(inv){
     doc.save(`HoaDon-${inv.invoice_no || 'moi'}.pdf`);
   } catch(e){
     alert('Không tạo được PDF: ' + e.message);
+  }
+}
+
+/* =====================================================================
+   TẠO HỢP ĐỒNG — soạn theo bố cục hợp đồng dân sự chuẩn (căn cứ pháp lý,
+   các Điều khoản, chữ ký hai bên). Điều 1 (nội dung dịch vụ) viết riêng
+   cho từng loại dịch vụ, các Điều còn lại dùng chung.
+===================================================================== */
+const CONTRACT_TYPE_LABEL = {
+  unlock: 'MỞ KHOÁ TÀI KHOẢN MẠNG XÃ HỘI',
+  ads:    'CHẠY QUẢNG CÁO TĂNG TƯƠNG TÁC MẠNG XÃ HỘI',
+  web:    'THIẾT KẾ WEBSITE / ỨNG DỤNG',
+};
+
+function onContractTypeChange(){
+  const type = document.getElementById('ct_serviceType').value;
+  const label = document.getElementById('ct_detailLabel');
+  const detail = document.getElementById('ct_detail');
+  if(type === 'unlock'){
+    label.textContent = 'Mô tả tài khoản cần hỗ trợ mở khoá';
+    detail.placeholder = "Vd: Hỗ trợ khôi phục quyền truy cập tài khoản Facebook tên 'Nguyễn Văn A' (link: fb.com/...), đang bị khoá xác minh 2 lớp.";
+  } else if(type === 'ads'){
+    label.textContent = 'Mô tả nội dung cần tăng tương tác';
+    detail.placeholder = "Vd: Tăng 5.000 lượt Like cho bài viết Facebook tại đường dẫn https://facebook.com/..., nền tảng Facebook, server Việt Nam ổn định.";
+  } else {
+    label.textContent = 'Mô tả hạng mục thiết kế';
+    detail.placeholder = "Vd: Thiết kế website bán hàng gồm 10 trang, tích hợp giỏ hàng, thanh toán online, giao diện responsive trên di động.";
+  }
+}
+
+/* Chuyển số tiền sang chữ (tiếng Việt) — dùng cho dòng "Bằng chữ:" trong hợp đồng */
+function numberToVietnameseWords(num){
+  if(num === 0) return 'Không đồng';
+  const chuSo = ['không','một','hai','ba','bốn','năm','sáu','bảy','tám','chín'];
+  const doc3 = (n) => {
+    let str = '';
+    const tram = Math.floor(n/100), chuc = Math.floor((n%100)/10), donvi = n%10;
+    if(tram > 0){ str += chuSo[tram] + ' trăm '; if(chuc===0 && donvi>0) str += 'lẻ '; }
+    if(chuc > 1){ str += chuSo[chuc] + ' mươi '; if(chuc>=2 && donvi===1) return str.trim()+' mốt'; }
+    else if(chuc === 1){ str += 'mười '; }
+    if(donvi > 0){
+      if(donvi===5 && chuc>=1) str += 'lăm';
+      else str += chuSo[donvi];
+    }
+    return str.trim();
+  };
+  const units = ['', ' nghìn', ' triệu', ' tỷ'];
+  let n = Math.floor(Math.abs(num));
+  const groups = [];
+  while(n > 0){ groups.unshift(n % 1000); n = Math.floor(n/1000); }
+  let result = groups.map((g, i) => {
+    if(g === 0) return '';
+    const idx = groups.length - 1 - i;
+    return doc3(g) + units[idx];
+  }).filter(Boolean).join(' ');
+  result = result.charAt(0).toUpperCase() + result.slice(1);
+  return result + ' đồng';
+}
+
+/* Nội dung Điều 1 riêng cho từng loại dịch vụ */
+function getArticle1Content(type, detail){
+  if(type === 'unlock'){
+    return [
+      `1.1. Bên A hỗ trợ Bên B trong quá trình khôi phục quyền truy cập/mở khoá đối với tài khoản mạng xã hội thuộc sở hữu hợp pháp của Bên B, cụ thể: ${detail}`,
+      `1.2. Bên B cam kết là chủ sở hữu hợp pháp hoặc người được uỷ quyền hợp pháp đối với tài khoản nêu tại Mục 1.1, và chịu hoàn toàn trách nhiệm trước pháp luật về tính xác thực của cam kết này. Bên A có quyền từ chối hoặc dừng thực hiện dịch vụ ngay khi phát hiện thông tin không trung thực.`,
+      `1.3. Do quyết định mở khoá tài khoản thuộc thẩm quyền của nền tảng mạng xã hội, Bên A cam kết nỗ lực hỗ trợ tối đa trong khả năng chuyên môn, nhưng không đảm bảo tỷ lệ thành công tuyệt đối 100%; kết quả cuối cùng phụ thuộc vào chính sách và quyết định của nền tảng mạng xã hội đó.`,
+    ];
+  }
+  if(type === 'ads'){
+    return [
+      `1.1. Bên A cung cấp dịch vụ tăng lượt tương tác (like/theo dõi/bình luận/chia sẻ/lượt xem theo lựa chọn cụ thể) cho nền tảng mạng xã hội và nội dung do Bên B cung cấp, cụ thể: ${detail}`,
+      `1.2. Bên B cam kết nội dung, bài viết, tài khoản được cung cấp là hợp pháp, không vi phạm tiêu chuẩn cộng đồng của nền tảng và không thuộc các lĩnh vực bị pháp luật Việt Nam cấm hoặc hạn chế kinh doanh.`,
+      `1.3. Do đặc thù của nền tảng mạng xã hội, chỉ số tương tác có thể biến động theo thời gian do chính sách rà soát tự động của nền tảng; Bên A cam kết bàn giao đúng số lượng đã thoả thuận tại thời điểm hoàn thành đơn hàng, việc duy trì chỉ số về sau (nếu có) thực hiện theo chính sách bảo hành riêng của Bên A.`,
+    ];
+  }
+  return [
+    `1.1. Bên A thực hiện thiết kế và bàn giao sản phẩm theo yêu cầu của Bên B, cụ thể: ${detail}`,
+    `1.2. Số lần chỉnh sửa, điều chỉnh giao diện/nội dung miễn phí trong phạm vi yêu cầu ban đầu: tối đa 03 (ba) lần. Các yêu cầu thay đổi vượt phạm vi ban đầu do hai bên thoả thuận chi phí phát sinh riêng, lập thành phụ lục hoặc xác nhận qua văn bản/tin nhắn.`,
+    `1.3. Bên A bàn giao mã nguồn (nếu có) và toàn quyền sử dụng sản phẩm cho Bên B ngay sau khi Bên B hoàn tất thanh toán đầy đủ giá trị hợp đồng quy định tại Điều 2.`,
+  ];
+}
+
+function buildContractArticles(type, data){
+  return [
+    { title: 'Điều 1. Nội dung dịch vụ', body: getArticle1Content(type, data.detail) },
+    { title: 'Điều 2. Giá trị hợp đồng và phương thức thanh toán', body: [
+      `2.1. Tổng giá trị hợp đồng là ${Number(data.value).toLocaleString('vi-VN')} đồng (Bằng chữ: ${numberToVietnameseWords(data.value)}).`,
+      data.deposit > 0
+        ? `2.2. Bên B thanh toán đặt cọc ${Number(data.deposit).toLocaleString('vi-VN')} đồng ngay khi ký hợp đồng, số tiền còn lại là ${Number(data.value - data.deposit).toLocaleString('vi-VN')} đồng được thanh toán khi Bên A hoàn thành và bàn giao dịch vụ.`
+        : `2.2. Bên B thanh toán toàn bộ giá trị hợp đồng ngay khi ký hợp đồng hoặc theo tiến độ do hai bên thống nhất.`,
+      `2.3. Hình thức thanh toán: chuyển khoản ngân hàng, ví điện tử hoặc hình thức khác theo thông tin do Bên A cung cấp tại từng thời điểm.`,
+    ]},
+    { title: 'Điều 3. Thời gian thực hiện', body: [
+      `3.1. Bên A bắt đầu triển khai dịch vụ sau khi Bên B hoàn tất thanh toán (hoặc đặt cọc, nếu có) và cung cấp đầy đủ thông tin cần thiết.`,
+      `3.2. Thời gian thực hiện dự kiến: ${data.duration || 'theo thoả thuận cụ thể giữa hai bên'}. Thời gian này có thể thay đổi tuỳ khối lượng công việc thực tế và được hai bên trao đổi, thống nhất kịp thời.`,
+    ]},
+    { title: 'Điều 4. Quyền và nghĩa vụ của Bên A', body: [
+      `4.1. Bên A có nghĩa vụ thực hiện dịch vụ đúng nội dung, đúng chất lượng đã thoả thuận tại Điều 1; bảo mật toàn bộ thông tin do Bên B cung cấp, chỉ sử dụng cho mục đích thực hiện hợp đồng này; thông báo kịp thời cho Bên B nếu có phát sinh ảnh hưởng đến tiến độ hoặc kết quả dịch vụ.`,
+      `4.2. Bên A có quyền yêu cầu Bên B cung cấp đầy đủ, chính xác thông tin cần thiết để thực hiện dịch vụ; có quyền tạm dừng hoặc từ chối tiếp tục thực hiện nếu phát hiện Bên B cung cấp thông tin sai sự thật hoặc yêu cầu thực hiện hành vi vi phạm pháp luật.`,
+    ]},
+    { title: 'Điều 5. Quyền và nghĩa vụ của Bên B', body: [
+      `5.1. Bên B có nghĩa vụ cung cấp thông tin, tài khoản, tài liệu cần thiết đầy đủ và chính xác cho Bên A; thanh toán đúng, đủ theo thoả thuận tại Điều 2; chịu trách nhiệm về tính hợp pháp của thông tin, nội dung, tài khoản mà mình cung cấp cho Bên A.`,
+      `5.2. Bên B có quyền được Bên A tư vấn, hỗ trợ trong suốt quá trình thực hiện dịch vụ; có quyền yêu cầu Bên A thực hiện đúng nội dung đã cam kết tại Điều 1.`,
+    ]},
+    { title: 'Điều 6. Chính sách huỷ và hoàn tiền', body: [
+      `6.1. Trường hợp huỷ dịch vụ do lỗi từ phía Bên A, Bên A hoàn lại 100% số tiền Bên B đã thanh toán cho phần dịch vụ chưa thực hiện.`,
+      `6.2. Trường hợp Bên B chủ động huỷ dịch vụ khi dịch vụ chưa được triển khai, Bên B được hoàn tối đa 95% số tiền đã thanh toán, phần còn lại (tối đa 5%) là chi phí xử lý mà Bên A được giữ lại.`,
+      `6.3. Trường hợp huỷ khi dịch vụ đã được triển khai một phần, Bên A hoàn lại phần chênh lệch giữa số tiền đã thanh toán và giá trị phần công việc đã thực hiện tương ứng, có thể trừ thêm chi phí phát sinh thực tế (nếu có, tối đa 3%) sau khi thông báo cho Bên B.`,
+      `6.4. Số tiền hoàn được ghi nhận vào ví điện tử của Bên B trên hệ thống của Bên A hoặc hoàn trả trực tiếp qua chuyển khoản theo thoả thuận của hai bên.`,
+    ]},
+    { title: 'Điều 7. Cam kết bảo mật thông tin', body: [
+      `7.1. Hai bên cam kết bảo mật toàn bộ thông tin, tài liệu, dữ liệu trao đổi trong quá trình thực hiện hợp đồng này, không tiết lộ cho bên thứ ba khi chưa được sự đồng ý bằng văn bản của bên còn lại, trừ trường hợp pháp luật có quy định khác.`,
+    ]},
+    { title: 'Điều 8. Giải quyết tranh chấp', body: [
+      `8.1. Mọi tranh chấp phát sinh trong quá trình thực hiện hợp đồng được hai bên ưu tiên giải quyết thông qua thương lượng, hoà giải trên cơ sở tôn trọng quyền lợi của nhau.`,
+      `8.2. Trường hợp không đạt được thoả thuận, tranh chấp sẽ được giải quyết tại Toà án có thẩm quyền theo quy định của pháp luật Việt Nam.`,
+    ]},
+    { title: 'Điều 9. Điều khoản chung', body: [
+      `9.1. Hợp đồng có hiệu lực kể từ ngày ký và có giá trị đến khi hai bên hoàn thành đầy đủ quyền và nghĩa vụ theo hợp đồng.`,
+      `9.2. Hợp đồng được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản để thực hiện.`,
+      `9.3. Mọi sửa đổi, bổ sung hợp đồng phải được lập thành văn bản và có xác nhận của hai bên mới có hiệu lực.`,
+      ...(data.note ? [`9.4. Ghi chú thêm: ${data.note}`] : []),
+    ]},
+  ];
+}
+
+/* ── Xuất PDF hợp đồng đầy đủ, tự xuống trang khi hết chỗ ── */
+function generateContractPDF(c){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  registerVietnameseFont(doc);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 20, maxW = pageW - marginX*2;
+  let y = 20;
+
+  function checkPageBreak(needed){
+    if(y + needed > pageH - 18){ doc.addPage(); y = 20; }
+  }
+  function writeCentered(text, size, style){
+    doc.setFont('DejaVuSans', style||'normal'); doc.setFontSize(size);
+    doc.text(text, pageW/2, y, { align:'center' }); y += size*0.5 + 2;
+  }
+  function writeParagraph(text, opts={}){
+    doc.setFont('DejaVuSans', opts.bold ? 'bold':'normal'); doc.setFontSize(opts.size||10.5);
+    const lines = doc.splitTextToSize(text, maxW);
+    checkPageBreak(lines.length * 5.2 + 2);
+    doc.text(lines, marginX, y);
+    y += lines.length * 5.2 + (opts.gap ?? 3);
+  }
+
+  writeCentered('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', 12, 'bold');
+  writeCentered('Độc lập - Tự do - Hạnh phúc', 11, 'normal');
+  y += 4;
+  writeCentered('———o0o———', 10, 'normal');
+  y += 6;
+  writeCentered('HỢP ĐỒNG DỊCH VỤ', 15, 'bold');
+  writeCentered(CONTRACT_TYPE_LABEL[c.service_type] || '', 12, 'bold');
+  y += 3;
+  writeCentered(`Số: ${c.contract_no}`, 10, 'normal');
+  y += 6;
+
+  writeParagraph('Căn cứ Bộ luật Dân sự nước Cộng hoà xã hội chủ nghĩa Việt Nam năm 2015;', { size:10 });
+  writeParagraph('Căn cứ nhu cầu và sự thoả thuận thống nhất giữa hai bên;', { size:10, gap:5 });
+  writeParagraph(`Hôm nay, ngày ${new Date(c.created_at).toLocaleDateString('vi-VN')}, hai bên chúng tôi gồm:`, { size:10, gap:5 });
+
+  writeParagraph('BÊN A (BÊN CUNG CẤP DỊCH VỤ):', { bold:true, size:11, gap:2 });
+  writeParagraph(`- Đại diện: ${c.party_a_name || ''}`, { size:10, gap:1.5 });
+  if(c.party_a_id) writeParagraph(`- CCCD/CMND: ${c.party_a_id}`, { size:10, gap:1.5 });
+  if(c.party_a_address) writeParagraph(`- Địa chỉ liên hệ: ${c.party_a_address}`, { size:10, gap:1.5 });
+  if(c.party_a_phone) writeParagraph(`- Điện thoại: ${c.party_a_phone}`, { size:10, gap:1.5 });
+  writeParagraph(`- Email: ${c.party_a_email || ''}`, { size:10, gap:5 });
+
+  writeParagraph('BÊN B (BÊN SỬ DỤNG DỊCH VỤ):', { bold:true, size:11, gap:2 });
+  writeParagraph(`- Họ và tên/Đơn vị: ${c.party_b_name || ''}`, { size:10, gap:1.5 });
+  if(c.party_b_id) writeParagraph(`- CCCD/CMND/MST: ${c.party_b_id}`, { size:10, gap:1.5 });
+  if(c.party_b_address) writeParagraph(`- Địa chỉ: ${c.party_b_address}`, { size:10, gap:1.5 });
+  if(c.party_b_phone) writeParagraph(`- Điện thoại: ${c.party_b_phone}`, { size:10, gap:1.5 });
+  if(c.party_b_email) writeParagraph(`- Email: ${c.party_b_email}`, { size:10, gap:1.5 });
+  writeParagraph('Hai bên thống nhất ký kết hợp đồng với các điều khoản sau:', { size:10, gap:6 });
+
+  const articles = buildContractArticles(c.service_type, {
+    detail: c.service_detail, value: c.contract_value, deposit: c.deposit_amount || 0,
+    duration: c.duration_text, note: c.extra_note
+  });
+  articles.forEach(art => {
+    checkPageBreak(10);
+    writeParagraph(art.title, { bold:true, size:11.5, gap:3 });
+    art.body.forEach(p => writeParagraph(p, { size:10.2, gap:3 }));
+    y += 2;
+  });
+
+  checkPageBreak(40);
+  y += 6;
+  const halfW = pageW/2;
+  doc.setFont('DejaVuSans','bold'); doc.setFontSize(11);
+  doc.text('ĐẠI DIỆN BÊN A', marginX + (halfW-marginX)/2, y, { align:'center' });
+  doc.text('ĐẠI DIỆN BÊN B', halfW + (halfW-marginX)/2, y, { align:'center' });
+  y += 5;
+  doc.setFont('DejaVuSans','normal'); doc.setFontSize(9);
+  doc.text('(Ký, ghi rõ họ tên)', marginX + (halfW-marginX)/2, y, { align:'center' });
+  doc.text('(Ký, ghi rõ họ tên)', halfW + (halfW-marginX)/2, y, { align:'center' });
+
+  doc.save(`HopDong-${c.contract_no}.pdf`);
+}
+
+async function submitContract(){
+  const errBox = document.getElementById('contractError');
+  errBox.classList.remove('show');
+
+  const serviceType = document.getElementById('ct_serviceType').value;
+  const bName = document.getElementById('ct_bName').value.trim();
+  const detail = document.getElementById('ct_detail').value.trim();
+  const value = Number(document.getElementById('ct_value').value);
+
+  if(!bName || !detail || !value || value <= 0){
+    errBox.textContent = 'Vui lòng nhập đủ Tên khách hàng (Bên B), Mô tả dịch vụ và Giá trị hợp đồng hợp lệ.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const now = new Date();
+  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+  const randPart = Math.floor(1000 + Math.random()*9000);
+  const contractNo = `HD-${datePart}-${randPart}`;
+
+  const record = {
+    contract_no: contractNo,
+    service_type: serviceType,
+    party_a_name: document.getElementById('ct_aName').value.trim(),
+    party_a_id: document.getElementById('ct_aId').value.trim() || null,
+    party_a_address: document.getElementById('ct_aAddress').value.trim() || null,
+    party_a_phone: document.getElementById('ct_aPhone').value.trim() || null,
+    party_a_email: document.getElementById('ct_aEmail').value.trim() || null,
+    party_b_name: bName,
+    party_b_id: document.getElementById('ct_bId').value.trim() || null,
+    party_b_address: document.getElementById('ct_bAddress').value.trim() || null,
+    party_b_phone: document.getElementById('ct_bPhone').value.trim() || null,
+    party_b_email: document.getElementById('ct_bEmail').value.trim() || null,
+    service_detail: detail,
+    contract_value: value,
+    deposit_amount: Number(document.getElementById('ct_deposit').value) || null,
+    duration_text: document.getElementById('ct_duration').value.trim() || null,
+    extra_note: document.getElementById('ct_note').value.trim() || null,
+    created_by_admin_email: currentAdmin?.email || null,
+  };
+
+  const btn = document.getElementById('contractSubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang tạo...';
+
+  try{
+    const { error } = await sb.from('contracts').insert(record);
+    if(error) throw error;
+
+    generateContractPDF({ ...record, created_at: now.toISOString() });
+    showToast(`✅ Đã tạo hợp đồng ${contractNo}.`);
+    logAdminAction('Tạo hợp đồng', `${contractNo} — ${bName} — ${value.toLocaleString('vi-VN')}đ`);
+
+    await loadContractsHistory();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+async function loadContractsHistory(){
+  const box = document.getElementById('contractsHistoryBody');
+  if(!box) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb.from('contracts').select('*').order('created_at', { ascending:false }).limit(20);
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<div class="dash-empty">Chưa có hợp đồng nào.</div>`;
+      return;
+    }
+    box.innerHTML = `<table class="dash-table"><thead><tr>
+      <th>Số hợp đồng</th><th>Loại dịch vụ</th><th>Khách hàng</th><th>Giá trị</th><th>Ngày tạo</th><th></th>
+    </tr></thead><tbody>${data.map(c => `
+      <tr>
+        <td class="dt-code">${escapeHtml(c.contract_no)}</td>
+        <td style="font-size:12px;">${escapeHtml(CONTRACT_TYPE_LABEL[c.service_type]||c.service_type)}</td>
+        <td>${escapeHtml(c.party_b_name)}</td>
+        <td style="font-family:var(--font-mono); font-weight:600;">${Number(c.contract_value).toLocaleString('vi-VN')}đ</td>
+        <td style="font-size:12px; color:var(--ink-soft);">${new Date(c.created_at).toLocaleString('vi-VN')}</td>
+        <td><button class="svc-actions" style="border:1.5px solid var(--line); background:none; padding:5px 10px; border-radius:6px; font-size:11.5px; cursor:pointer;" onclick='generateContractPDF(${JSON.stringify(c).replace(/'/g,"&apos;")})'>🖨️ PDF</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được: ${escapeHtml(e.message)}</div>`;
   }
 }

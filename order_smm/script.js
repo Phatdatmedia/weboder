@@ -37,15 +37,22 @@ let paymentConfigReady = (async () => {
   } catch(e){ /* giữ giá trị mặc định nếu chưa cấu hình */ }
 })();
 
-/* Đơn giá lấy từ bảng social_ads_pricing (quản lý ở admin.html, tab "Đơn tương tác").
-   Bộ giá minh hoạ bên dưới chỉ dùng tạm khi chưa tải được từ Supabase (mất mạng, chưa tạo bảng...). */
+/* Đơn giá lấy từ bảng social_ads_pricing (quản lý ở admin, tab "Đơn tương tác").
+   Cấu trúc 3 cấp: Nền tảng -> Server -> Loại tương tác -> {price, label}.
+   Bộ giá minh hoạ bên dưới chỉ dùng tạm khi chưa tải được từ Supabase. */
 let UNIT_PRICE = {
-  Facebook:  { Like: 15, Follow: 20, Comment: 60, Share: 25, View: 5 },
-  Instagram: { Like: 12, Follow: 25, Comment: 65, Share: 20, View: 6 },
-  TikTok:    { Like: 10, Follow: 22, Comment: 55, Share: 18, View: 4 },
-  YouTube:   { Like: 25, Follow: 40, Comment: 90, Share: 30, View: 8 },
+  Facebook:  { 'Mặc định': { Like:{price:15,label:'Tăng like'}, Follow:{price:20,label:'Tăng follow'}, Comment:{price:60,label:'Tăng bình luận'}, Share:{price:25,label:'Tăng chia sẻ'}, View:{price:5,label:'Tăng lượt xem'} } },
+  Instagram: { 'Mặc định': { Like:{price:12,label:'Tăng like'}, Follow:{price:25,label:'Tăng follow'}, Comment:{price:65,label:'Tăng bình luận'}, Share:{price:20,label:'Tăng chia sẻ'}, View:{price:6,label:'Tăng lượt xem'} } },
+  TikTok:    { 'Mặc định': { Like:{price:10,label:'Tăng like'}, Follow:{price:22,label:'Tăng follow'}, Comment:{price:55,label:'Tăng bình luận'}, Share:{price:18,label:'Tăng chia sẻ'}, View:{price:4,label:'Tăng lượt xem'} } },
+  YouTube:   { 'Mặc định': { Like:{price:25,label:'Tăng like'}, Follow:{price:40,label:'Tăng follow'}, Comment:{price:90,label:'Tăng bình luận'}, Share:{price:30,label:'Tăng chia sẻ'}, View:{price:8,label:'Tăng lượt xem'} } },
 };
-const SERVICE_LABEL = { Like:'Tăng like', Follow:'Tăng follow', Comment:'Tăng bình luận', Share:'Tăng chia sẻ', View:'Tăng lượt xem' };
+// Danh sách server + ghi chú riêng cho từng nền tảng: { [platform]: [{name, note}] }
+let SERVER_LIST = {
+  Facebook:  [{ name:'Mặc định', note:'' }],
+  Instagram: [{ name:'Mặc định', note:'' }],
+  TikTok:    [{ name:'Mặc định', note:'' }],
+  YouTube:   [{ name:'Mặc định', note:'' }],
+};
 
 // Khai báo TRƯỚC ở đây vì updateQuote() (gọi ngay bên dưới) cần dùng tới các
 // biến này qua updateWalletPillState() — để dưới cũ sẽ bị lỗi
@@ -56,43 +63,100 @@ let selectedPayment = null;
 
 async function loadPricingFromSupabase(){
   try{
-    const { data, error } = await sb.from('social_ads_pricing').select('*');
+    const { data, error } = await sb.from('social_ads_pricing').select('*').order('server_order', { ascending: true });
     if(error || !data || !data.length) return; // giữ bộ giá tạm nếu chưa có bảng/dữ liệu
-    const table = {};
+
+    const priceTable = {};
+    const serverTable = {};
     data.forEach(row => {
-      if(!table[row.platform]) table[row.platform] = {};
-      table[row.platform][row.interaction_type] = Number(row.unit_price) || 0;
-      if(row.interaction_label) SERVICE_LABEL[row.interaction_type] = row.interaction_label;
+      const platform = row.platform;
+      const server = row.server_name || 'Mặc định';
+      if(!priceTable[platform]) priceTable[platform] = {};
+      if(!priceTable[platform][server]) priceTable[platform][server] = {};
+      priceTable[platform][server][row.interaction_type] = {
+        price: Number(row.unit_price) || 0,
+        label: row.interaction_label || row.interaction_type,
+      };
+
+      if(!serverTable[platform]) serverTable[platform] = [];
+      if(!serverTable[platform].some(s => s.name === server)){
+        serverTable[platform].push({ name: server, note: row.server_note || '' });
+      }
     });
-    UNIT_PRICE = table;
-    updateQuote();
+
+    UNIT_PRICE = priceTable;
+    SERVER_LIST = serverTable;
+    populateServerDropdown(true);
   } catch(e){ /* im lặng giữ bộ giá tạm nếu lỗi mạng */ }
 }
 
 const els = {
   platform: document.getElementById('f_platform'),
+  server:   document.getElementById('f_server'),
   service:  document.getElementById('f_service'),
   qty:      document.getElementById('f_qty'),
 };
 
+/* Đổ danh sách server theo nền tảng đang chọn, giữ lại lựa chọn cũ nếu vẫn tồn tại */
+function populateServerDropdown(keepSelection){
+  const platform = els.platform.value;
+  const servers = SERVER_LIST[platform] || [];
+  const prevValue = keepSelection ? els.server.value : null;
+
+  els.server.innerHTML = servers.map(s => `<option value="${s.name}">${s.name}</option>`).join('')
+    || `<option value="">Chưa có server</option>`;
+
+  if(prevValue && servers.some(s => s.name === prevValue)){
+    els.server.value = prevValue;
+  }
+  onServerChange();
+}
+
+/* Đổ danh sách loại tương tác theo server đang chọn + hiện ghi chú riêng của server */
+function onServerChange(){
+  const platform = els.platform.value;
+  const server = els.server.value;
+  const types = (UNIT_PRICE[platform] && UNIT_PRICE[platform][server]) || {};
+
+  const prevType = els.service.value;
+  els.service.innerHTML = Object.keys(types).map(t =>
+    `<option value="${t}">${types[t].label}</option>`).join('') || `<option value="">—</option>`;
+  if(prevType && types[prevType]) els.service.value = prevType;
+
+  const serverInfo = (SERVER_LIST[platform] || []).find(s => s.name === server);
+  const noteBox = document.getElementById('serverNoteBox');
+  if(serverInfo && serverInfo.note){
+    noteBox.style.display = 'block';
+    noteBox.textContent = '⚠️ ' + serverInfo.note;
+  } else {
+    noteBox.style.display = 'none';
+  }
+
+  updateQuote();
+}
+
 function updateQuote(){
   const platform = els.platform.value;
+  const server = els.server.value;
   const service = els.service.value;
   const qty = Number(els.qty.value) || 0;
-  const unit = (UNIT_PRICE[platform] && UNIT_PRICE[platform][service]) || 0;
-  const total = Math.round(unit * qty);
+  const entry = (UNIT_PRICE[platform] && UNIT_PRICE[platform][server] && UNIT_PRICE[platform][server][service]) || { price:0, label:service };
+  const total = Math.round(entry.price * qty);
 
   document.getElementById('q_platform').textContent = platform;
-  document.getElementById('q_service').textContent = SERVICE_LABEL[service];
-  document.getElementById('q_unit').textContent = unit.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('q_server').textContent = server || '—';
+  document.getElementById('q_service').textContent = entry.label;
+  document.getElementById('q_unit').textContent = entry.price.toLocaleString('vi-VN') + 'đ';
   document.getElementById('q_qty').textContent = qty.toLocaleString('vi-VN');
   document.getElementById('q_total').textContent = total.toLocaleString('vi-VN') + 'đ';
   updateWalletPillState(total);
   return total;
 }
-[els.platform, els.service, els.qty].forEach(el => el.addEventListener('input', updateQuote));
+els.platform.addEventListener('input', () => populateServerDropdown(false));
+els.server.addEventListener('input', onServerChange);
+[els.service, els.qty].forEach(el => el.addEventListener('input', updateQuote));
 document.getElementById('f_start').valueAsDate = new Date();
-updateQuote();
+populateServerDropdown(false);
 loadPricingFromSupabase();
 
 /* =====================================================================
@@ -112,7 +176,7 @@ function selectPayment(method){
   } else if(method === 'VietQR'){
     hint.textContent = "📱 Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản.";
   } else if(method === 'Thanh toán sau'){
-    hint.textContent = "🤝 Đội ngũ sẽ trao đổi thanh toán khi xác nhận đơn.";
+    hint.textContent = "🤝 Đơn được tạo ngay. Thanh toán theo hướng dẫn gửi sau.";
   } else if(method === 'Ví'){
     hint.textContent = "💰 Trừ thẳng từ số dư ví, đơn được xác nhận ngay lập tức, không cần chờ.";
   } else {
@@ -172,10 +236,17 @@ async function refreshWalletBalance(){
 // Tính lại tổng tạm tính mà không đụng vào DOM 2 lần (dùng nội bộ cho refreshWalletBalance)
 function updateQuoteSilent(){
   const platform = els.platform.value;
+  const server = els.server.value;
   const service = els.service.value;
   const qty = Number(els.qty.value) || 0;
-  const unit = (UNIT_PRICE[platform] && UNIT_PRICE[platform][service]) || 0;
-  return Math.round(unit * qty);
+  const entry = (UNIT_PRICE[platform] && UNIT_PRICE[platform][server] && UNIT_PRICE[platform][server][service]) || { price:0 };
+  return Math.round(entry.price * qty);
+}
+
+/* Lấy tên hiển thị của loại tương tác theo đúng platform+server đang chọn */
+function getInteractionLabel(platform, server, type){
+  const entry = UNIT_PRICE[platform] && UNIT_PRICE[platform][server] && UNIT_PRICE[platform][server][type];
+  return entry ? entry.label : type;
 }
 
 function updateWalletPillState(currentTotal){
@@ -292,6 +363,7 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
 
   try{
     const platform = els.platform.value;
+    const server = els.server.value;
     const service = els.service.value;
     const qty = Number(els.qty.value);
     const link = document.getElementById('f_link').value.trim();
@@ -319,10 +391,12 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     const randPart = Math.floor(1000 + Math.random()*9000);
     const orderCode = `DH-${datePart}-${randPart}`;
 
+    const serverInfo = (SERVER_LIST[platform] || []).find(s => s.name === server);
     const description =
       `[Chạy QC tăng tương tác]\n` +
       `Nền tảng: ${platform}\n` +
-      `Loại: ${SERVICE_LABEL[service]}\n` +
+      `Server: ${server}\n` +
+      `Loại: ${getInteractionLabel(platform, server, service)}\n` +
       `Link: ${link}\n` +
       `Số lượng: ${qty.toLocaleString('vi-VN')}\n` +
       `Ngày bắt đầu mong muốn: ${start || 'chưa chọn'}` +
@@ -355,7 +429,7 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     window._lastOrderDetails = {
       order_code: orderCode,
       service_type: 'Chạy quảng cáo tăng tương tác MXH',
-      platform, interaction_type: service,
+      platform, server_name: server, interaction_type: service,
       quantity: qty, amount: estimated
     };
 
@@ -374,6 +448,8 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       // lọc và hiển thị có cấu trúc, thay vì phải đọc description.
       order_group: 'social_ads',
       platform,
+      server_name: server,
+      server_note: serverInfo?.note || null,
       interaction_type: service,
       quantity: qty,
       post_link: link,
@@ -614,7 +690,7 @@ function showReceipt(){
 
   document.getElementById('rc_code').textContent = order.order_code || window._lastOrderCode || '—';
   document.getElementById('rc_service').textContent = order.service_type || 'Chạy quảng cáo tăng tương tác MXH';
-  document.getElementById('rc_platform').textContent = `${order.platform || ''} — ${SERVICE_LABEL[order.interaction_type] || order.interaction_type || ''}`;
+  document.getElementById('rc_platform').textContent = `${order.platform || ''} (${order.server_name || 'Mặc định'}) — ${getInteractionLabel(order.platform, order.server_name, order.interaction_type) || order.interaction_type || ''}`;
   document.getElementById('rc_qty').textContent = order.quantity != null ? Number(order.quantity).toLocaleString('vi-VN') : '—';
   document.getElementById('rc_amount').textContent = order.amount != null ? Number(order.amount).toLocaleString('vi-VN') + 'đ' : '—';
   document.getElementById('rc_time').textContent = new Date().toLocaleString('vi-VN');
@@ -630,39 +706,42 @@ function downloadReceiptPDF(){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+    registerVietnameseFont(doc);
     const order = window._lastOrderDetails || {};
     const code = order.order_code || window._lastOrderCode || '';
 
     const pageW = doc.internal.pageSize.getWidth();
     let y = 20;
 
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('DejaVuSans', 'bold');
     doc.setFontSize(16);
     doc.text('PHATDATAGENCY', pageW/2, y, { align: 'center' });
     y += 6;
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('DejaVuSans', 'normal');
     doc.setFontSize(10);
-    doc.text('Bien lai thanh toan', pageW/2, y, { align: 'center' });
+    doc.text('Biên lai thanh toán', pageW/2, y, { align: 'center' });
     y += 10;
     doc.setDrawColor(200);
     doc.line(15, y, pageW-15, y);
     y += 10;
 
     const rows = [
-      ['Ma don', code],
-      ['Dich vu', 'Chay quang cao tang tuong tac MXH'],
-      ['Nen tang', `${order.platform || ''} - ${SERVICE_LABEL[order.interaction_type] || order.interaction_type || ''}`],
-      ['So luong', order.quantity != null ? Number(order.quantity).toLocaleString('vi-VN') : '-'],
-      ['So tien da thanh toan', order.amount != null ? Number(order.amount).toLocaleString('vi-VN') + ' d' : '-'],
-      ['Thoi gian xac nhan', new Date().toLocaleString('vi-VN')],
-      ['Trang thai', 'Da xac nhan thanh toan'],
+      ['Mã đơn', code],
+      ['Dịch vụ', 'Chạy quảng cáo tăng tương tác MXH'],
+      ['Nền tảng', order.platform || ''],
+      ['Server', order.server_name || 'Mặc định'],
+      ['Loại tương tác', getInteractionLabel(order.platform, order.server_name, order.interaction_type) || order.interaction_type || ''],
+      ['Số lượng', order.quantity != null ? Number(order.quantity).toLocaleString('vi-VN') : '-'],
+      ['Số tiền đã thanh toán', order.amount != null ? Number(order.amount).toLocaleString('vi-VN') + ' đ' : '-'],
+      ['Thời gian xác nhận', new Date().toLocaleString('vi-VN')],
+      ['Trạng thái', 'Đã xác nhận thanh toán'],
     ];
 
     doc.setFontSize(11);
     rows.forEach(([label, value]) => {
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('DejaVuSans', 'normal');
       doc.text(label, 18, y);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('DejaVuSans', 'bold');
       doc.text(String(value), pageW-18, y, { align: 'right' });
       y += 9;
     });
@@ -670,9 +749,9 @@ function downloadReceiptPDF(){
     y += 6;
     doc.line(15, y, pageW-15, y);
     y += 8;
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('DejaVuSans', 'normal');
     doc.setFontSize(9);
-    doc.text('Cam on ban da su dung dich vu cua Phatdatagency.', pageW/2, y, { align: 'center' });
+    doc.text('Cảm ơn bạn đã sử dụng dịch vụ của Phatdatagency.', pageW/2, y, { align: 'center' });
 
     doc.save(`BienLai-${code || 'donhang'}.pdf`);
   } catch(e){
