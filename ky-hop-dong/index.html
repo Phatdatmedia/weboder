@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ký hợp đồng — Phatdatagency</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/contract-template.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">Phatdatagency<span class="dot">.</span></div>
+    <a href="/" class="back-link">← Về trang chủ</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow">Ký hợp đồng điện tử</div>
+    <h1>Xem lại nội dung <em>và ký</em> hợp đồng của bạn.</h1>
+    <p>Đọc kỹ toàn bộ nội dung bên dưới trước khi ký. Chữ ký điện tử của bạn có giá trị xác nhận tương đương chữ ký tay theo Luật Giao dịch điện tử.</p>
+  </div>
+</header>
+
+<div class="container" style="max-width:760px; padding-bottom:80px;">
+
+  <div id="loadingBox" class="card" style="text-align:center; padding:60px 20px;">
+    <div>Đang tải hợp đồng...</div>
+  </div>
+
+  <div id="errorBox" class="card" style="display:none; text-align:center; padding:40px 20px; color:var(--coral-deep);"></div>
+
+  <div id="contractBox" style="display:none;">
+    <div class="card contract-paper" id="contractContent"></div>
+
+    <div class="card" style="margin-top:22px;" id="signSection">
+      <h2>Ký xác nhận (Bên B)</h2>
+      <div class="sub">Ký bằng ngón tay (điện thoại/máy tính bảng) hoặc chuột (máy tính).</div>
+
+      <canvas id="custSignCanvas" width="600" height="200" class="sign-canvas"></canvas>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="clearSignCanvas('custSignCanvas')">Xoá, ký lại</button>
+
+      <label class="agree-row">
+        <input type="checkbox" id="agreeCheck">
+        <span>Tôi đã đọc, hiểu rõ và đồng ý với toàn bộ nội dung hợp đồng nêu trên.</span>
+      </label>
+
+      <div class="msg" id="signMsg"></div>
+      <button type="button" class="btn btn-primary" id="signBtn" style="width:100%; margin-top:14px;" onclick="submitSignature()">✍️ Ký hợp đồng</button>
+    </div>
+
+    <div class="card" id="alreadySignedBox" style="display:none; text-align:center; margin-top:22px;">
+      <div style="font-size:38px;">✅</div>
+      <h2>Bạn đã ký hợp đồng này</h2>
+      <p class="sub" id="signedAtText"></p>
+    </div>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
