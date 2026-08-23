@@ -49,9 +49,25 @@
 <nav class="nav">
   <div class="nav-inner">
     <a href="/" class="nav-brand">Phatdatagency<span class="dot">.</span></a>
+
+    <div class="dash-top-context">
+      <div class="dash-breadcrumb">
+        <a href="/">Trang chủ</a><span>/</span><strong id="dashBreadcrumbTitle">Tài khoản</strong>
+      </div>
+      <label class="dash-search" aria-label="Tìm dịch vụ">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+        <input id="dashServiceSearch" type="search" placeholder="Tìm dịch vụ seeding" autocomplete="off">
+        <kbd>Ctrl K</kbd>
+      </label>
+    </div>
+
     <div class="nav-right">
-      <a href="/">Trang chủ</a>
-      <a href="/showcase/">Showcase</a>
+      <a href="/" class="nav-public-link">Trang chủ</a>
+      <a href="/showcase/" class="nav-public-link">Showcase</a>
+
+      <button class="top-icon-btn dash-only" type="button" aria-label="Cài đặt" onclick="switchDashTab('profile')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+      </button>
 
       <div style="position:relative;">
         <button class="notif-bell" id="notifBell" style="display:none;" onclick="toggleNotifDropdown()" aria-label="Thông báo">
@@ -64,6 +80,12 @@
         </div>
       </div>
 
+      <div class="language-pill dash-only"><span>VN</span> Tiếng Việt <span>⌄</span></div>
+      <button class="account-chip dash-only" type="button" onclick="switchDashTab('profile')">
+        <span class="account-chip-avatar" id="topAvatar">P</span>
+        <span id="topUserName">Tài khoản</span>
+        <span class="account-chip-chevron">⌄</span>
+      </button>
       <a href="/#services" class="btn btn-primary btn-sm">Đặt đơn</a>
     </div>
   </div>
@@ -224,7 +246,9 @@
 
   <!-- Mobile tabbar -->
   <nav class="mobile-tabbar">
-    <button class="active" id="mTabOrders"  onclick="switchDashTab('orders')">Đơn hàng</button>
+    <button class="active" id="mTabOverview" onclick="switchDashTab('overview')">Tổng quan</button>
+    <button id="mTabWallet"  onclick="switchDashTab('wallet')">Ví</button>
+    <button id="mTabOrders"  onclick="switchDashTab('orders')">Đơn hàng</button>
     <button id="mTabProfile" onclick="switchDashTab('profile')">Tài khoản</button>
     <button id="mTabApp" onclick="switchDashTab('app')">📲 App</button>
     <button class="m-logout" onclick="handleLogout()">Đăng xuất</button>
@@ -232,36 +256,162 @@
 
   <!-- Sidebar -->
   <aside class="dash-side">
-    <div class="dash-avatar" id="sideAvatar">A</div>
-    <div class="dash-user-name"  id="sideName">Người dùng</div>
-    <div class="dash-user-email" id="sideEmail">email@example.com</div>
+    <a href="/" class="dash-brand">Phatdatagency<span>.</span></a>
 
     <nav class="dash-nav">
-      <a href="javascript:void(0)" class="dash-nav-item active" id="navOrders" onclick="switchDashTab('orders')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 2h6v4H9z"/><path d="M5 6h14v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6z"/></svg>
-        Đơn hàng của tôi
+      <div class="dash-nav-section">Quản lý chung</div>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navOverview" onclick="switchDashTab('overview')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+        Tổng quan
       </a>
-      <a href="javascript:void(0)" class="dash-nav-item" id="navProfile" onclick="switchDashTab('profile')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        Thông tin cá nhân
+      <a href="/#services" class="dash-nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h15l-1.5 8h-12z"/><path d="M6 7 5 3H2"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+        Đặt dịch vụ
       </a>
+
+      <div class="dash-nav-section">Tài khoản</div>
+      <a href="javascript:void(0)" class="dash-nav-item active" id="navProfile" onclick="switchDashTab('profile')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Cập nhật thông tin
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navWallet" onclick="switchDashTab('wallet')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+        Nạp tiền
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navOrders" onclick="switchDashTab('orders')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Nhật ký hoạt động
+      </a>
+
+      <div class="dash-nav-section">Dịch vụ</div>
+      <a href="/order_smm/" class="dash-nav-item"><span class="nav-service-icon">f</span> Facebook <span class="nav-arrow">›</span></a>
+      <a href="/order_smm/" class="dash-nav-item"><span class="nav-service-icon">◎</span> Instagram <span class="nav-arrow">›</span></a>
+      <a href="/order_smm/" class="dash-nav-item"><span class="nav-service-icon">@</span> Threads <span class="nav-arrow">›</span></a>
+      <a href="/order_smm/" class="dash-nav-item"><span class="nav-service-icon">♪</span> TikTok <span class="nav-arrow">›</span></a>
+      <a href="/order_smm/" class="dash-nav-item"><span class="nav-service-icon">▶</span> YouTube <span class="nav-arrow">›</span></a>
+
+      <div class="dash-nav-section">Hỗ trợ</div>
       <a href="javascript:void(0)" class="dash-nav-item" id="navApp" onclick="switchDashTab('app')">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-        Cài app
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+        Cài ứng dụng
       </a>
     </nav>
 
-    <div class="dash-logout" onclick="handleLogout()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
-      Đăng xuất
+    <div class="dash-side-account">
+      <div class="dash-avatar" id="sideAvatar">A</div>
+      <div class="dash-side-account-copy">
+        <div class="dash-user-name" id="sideName">Người dùng</div>
+        <div class="dash-user-email" id="sideEmail">email@example.com</div>
+      </div>
+      <button class="dash-logout" type="button" onclick="handleLogout()" aria-label="Đăng xuất">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
     </div>
   </aside>
 
   <!-- Main -->
   <main class="dash-main">
 
+    <!-- TAB: TỔNG QUAN -->
+    <div class="dash-section active" id="secOverview">
+      <div class="overview-profile-card">
+        <div class="op-avatar" id="ovAvatar">A</div>
+        <div>
+          <div class="op-name" id="ovName">Người dùng <span class="verified-badge" title="Đã xác thực">✔️</span></div>
+          <div class="op-email" id="ovEmail">email@example.com</div>
+        </div>
+        <div class="icon-stat-row" style="flex:1; border-top:none; margin-top:0; padding-top:0; justify-content:flex-end;">
+          <div class="icon-stat">
+            <div class="is-icon c-coral">💰</div>
+            <div><div class="is-label">Số dư ví</div><div class="is-val" id="ovWalletBalance">0đ</div></div>
+          </div>
+          <div class="icon-stat">
+            <div class="is-icon c-sage">📦</div>
+            <div><div class="is-label">Tổng đơn</div><div class="is-val" id="ovStatTotal">—</div></div>
+          </div>
+          <div class="icon-stat">
+            <div class="is-icon c-ink">✅</div>
+            <div><div class="is-label">Hoàn thành</div><div class="is-val" id="ovStatDone">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-tiles">
+        <button class="quick-tile" onclick="window.location.href='/#services'">
+          <span class="qt-icon">🛒</span><span class="qt-label">Đặt đơn mới</span><span class="qt-sub">Xem dịch vụ</span>
+        </button>
+        <button class="quick-tile" onclick="switchDashTab('wallet')">
+          <span class="qt-icon">💰</span><span class="qt-label">Nạp tiền</span><span class="qt-sub">Vào ví ngay</span>
+        </button>
+        <button class="quick-tile" onclick="switchDashTab('orders')">
+          <span class="qt-icon">📦</span><span class="qt-label">Đơn hàng</span><span class="qt-sub">Xem tiến trình</span>
+        </button>
+        <button class="quick-tile" onclick="switchDashTab('profile')">
+          <span class="qt-icon">⚙️</span><span class="qt-label">Tài khoản</span><span class="qt-sub">Thông tin cá nhân</span>
+        </button>
+      </div>
+
+      <div class="orders-table-wrap" style="margin-bottom:22px;">
+        <div class="orders-table-head">
+          <h3>Đơn hàng gần đây</h3>
+          <button class="btn btn-ghost btn-sm" onclick="switchDashTab('orders')">Xem tất cả →</button>
+        </div>
+        <div id="ovRecentOrders"><div class="orders-loading">Đang tải...</div></div>
+      </div>
+
+      <div class="orders-table-wrap">
+        <div class="orders-table-head"><h3>Bạn cần hỗ trợ?</h3></div>
+        <div style="padding:18px 20px;">
+          <div class="support-grid">
+            <a class="support-tile" href="https://facebook.com/phatdatagency" target="_blank" rel="noopener">📘 Fanpage hỗ trợ</a>
+            <a class="support-tile" href="https://zalo.me/" target="_blank" rel="noopener">💬 Zalo hỗ trợ</a>
+            <a class="support-tile" href="/#lookup">🔎 Tra cứu đơn</a>
+            <a class="support-tile" href="javascript:void(0)" onclick="switchDashTab('wallet')">💰 Nạp tiền</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: VÍ -->
+    <div class="dash-section" id="secWallet">
+      <div class="section-head">
+        <h2>Ví Phatdatagency</h2>
+        <p>Nạp tiền vào ví để thanh toán đơn hàng nhanh hơn, không cần quét mã mỗi lần.</p>
+      </div>
+
+      <div class="wallet-hero">
+        <div>
+          <div class="wh-label">Số dư khả dụng</div>
+          <div class="wh-val" id="walletHeroBalance">0đ</div>
+        </div>
+        <button class="btn btn-primary" onclick="toggleAccTopupPanel()">+ Nạp tiền</button>
+      </div>
+
+      <div class="topup-panel-acc" id="accTopupPanel">
+        <label style="display:block; font-size:12px; text-transform:uppercase; color:var(--ink-soft); margin-bottom:6px;">Số tiền muốn nạp</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="number" class="field" id="acc_topup_amount" min="10000" step="10000" placeholder="50000" style="flex:1; min-width:160px;">
+          <select class="field" id="acc_topup_method" style="max-width:200px;">
+            <option value="PayOS">⚡ Thanh toán tự động</option>
+            <option value="VietQR">📱 VietQR</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="startAccTopup()">Tạo mã nạp tiền</button>
+        <div class="ok-msg" id="accTopupMsg" style="margin-top:10px;"></div>
+        <div id="accTopupResult" style="display:none; margin-top:14px; text-align:center;"></div>
+      </div>
+
+      <div class="orders-table-wrap">
+        <div class="orders-table-head">
+          <h3>Lịch sử giao dịch ví</h3>
+          <button class="btn btn-ghost btn-sm" onclick="loadWalletHistoryAcc()">↻ Làm mới</button>
+        </div>
+        <div id="walletHistoryBody" style="padding:6px 20px;"><div class="orders-loading">Đang tải...</div></div>
+      </div>
+    </div>
+
     <!-- TAB: ĐƠN HÀNG -->
-    <div class="dash-section active" id="secOrders">
+    <div class="dash-section" id="secOrders">
       <div class="section-head">
         <h2>Đơn hàng của tôi</h2>
         <p>Tất cả đơn hàng bạn đã đặt qua tài khoản này.</p>
@@ -303,61 +453,155 @@
 
     <!-- TAB: TÀI KHOẢN -->
     <div class="dash-section" id="secProfile">
-      <div class="section-head">
-        <h2>Thông tin cá nhân</h2>
-        <p>Cập nhật tên hiển thị và đổi mật khẩu của bạn.</p>
-      </div>
+      <div class="account-page-grid">
+        <aside class="account-profile-rail">
+          <section class="account-identity-card">
+            <div class="profile-avatar-shell">
+              <div class="profile-avatar" id="profileAvatar">A</div>
+              <span class="profile-camera" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 5 13 3h-2L9.5 5H5a2 2 0 0 0-2 2v11h18V7a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+            </div>
+            <div class="profile-name-row">
+              <h2 id="profileDisplayName">Người dùng</h2>
+              <span class="profile-rank" id="profileRoleText">Thành viên</span>
+            </div>
 
-      <!-- Cập nhật tên -->
-      <div class="profile-card">
-        <h3>Thông tin cơ bản</h3>
-        <div class="err-msg" id="profileErr"></div>
-        <div class="ok-msg"  id="profileOk"></div>
-        <div class="form-group">
-          <label>Họ và tên</label>
-          <input type="text" class="field" id="p_name" placeholder="Nguyễn Văn A">
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" class="field" id="p_email" disabled style="opacity:.6; cursor:not-allowed;">
-          <p class="field-hint">Email không thể thay đổi.</p>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="handleUpdateProfile()">Lưu thay đổi</button>
-      </div>
+            <div class="profile-balance-box">
+              <div><span>Số dư tài khoản</span><strong id="profileWalletBalance">0đ</strong></div>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+            </div>
 
-      <!-- Đổi mật khẩu -->
-      <div class="profile-card">
-        <h3>Đổi mật khẩu</h3>
-        <div class="err-msg" id="passErr"></div>
-        <div class="ok-msg"  id="passOk"></div>
-        <div class="form-group">
-          <label>Mật khẩu hiện tại</label>
-          <div class="input-pass-wrap">
-            <input type="password" class="field" id="p_old_pass" placeholder="••••••••">
-            <button type="button" onclick="togglePass('p_old_pass',this)" tabindex="-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
+            <div class="profile-facts">
+              <div class="profile-fact">
+                <span class="profile-fact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                </span>
+                <div><span>Email</span><strong id="profileEmailText">email@example.com</strong></div>
+                <em id="profileEmailState" class="state-ok">Đã xác minh</em>
+              </div>
+              <div class="profile-fact">
+                <span class="profile-fact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </span>
+                <div><span>Cấp bậc</span><strong id="profileTierText">Khách hàng</strong></div>
+              </div>
+              <div class="profile-fact">
+                <span class="profile-fact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+                </span>
+                <div><span>Thành viên từ</span><strong id="profileMemberSince">—</strong></div>
+              </div>
+              <div class="profile-fact">
+                <span class="profile-fact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </span>
+                <div><span>Cập nhật lần cuối</span><strong id="profileLastUpdate">Vừa đăng nhập</strong></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="account-quick-card">
+            <h3>Liên kết nhanh</h3>
+            <button class="active" type="button" onclick="switchDashTab('profile')"><span>♙</span> Thông tin tài khoản <i></i></button>
+            <button type="button" onclick="document.getElementById('securityCard').scrollIntoView({behavior:'smooth'})"><span>▣</span> Đổi mật khẩu</button>
+            <button type="button" onclick="switchDashTab('wallet')"><span>◫</span> Nạp tiền vào ví</button>
+            <button type="button" onclick="switchDashTab('orders')"><span>◷</span> Lịch sử đơn hàng</button>
+          </section>
+        </aside>
+
+        <div class="account-profile-content">
+          <section class="profile-completion-card">
+            <div class="completion-heading">
+              <div class="completion-ring" id="profileCompletionRing"><span id="profileCompletionValue">100%</span></div>
+              <div>
+                <h2>Hoàn thiện hồ sơ của bạn</h2>
+                <p>Cập nhật đầy đủ thông tin để tài khoản luôn an toàn và thuận tiện khi đặt dịch vụ.</p>
+              </div>
+            </div>
+            <div class="profile-status-grid">
+              <div class="profile-status-item"><span class="status-icon status-blue">✉</span><div><strong>Email</strong><small id="profileEmailStatusText">Đã kết nối</small></div></div>
+              <div class="profile-status-item"><span class="status-icon status-green">✓</span><div><strong>Tài khoản</strong><small class="ok">Đang hoạt động</small></div></div>
+              <div class="profile-status-item"><span class="status-icon status-green">●</span><div><strong>Ví dịch vụ</strong><small class="ok">Đã kích hoạt</small></div></div>
+              <div class="profile-status-item"><span class="status-icon status-orange">◆</span><div><strong>Bảo mật</strong><small>Mật khẩu đã bật</small></div></div>
+              <div class="profile-status-item"><span class="status-icon status-blue">▤</span><div><strong>Đơn hàng</strong><small id="profileOrderStatus">Sẵn sàng theo dõi</small></div></div>
+            </div>
+          </section>
+
+          <section class="account-form-card">
+            <div class="account-card-title">
+              <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+              <h3>Thông tin tài khoản</h3>
+            </div>
+
+            <div class="err-msg" id="profileErr"></div>
+            <div class="ok-msg" id="profileOk"></div>
+            <div class="account-form-grid">
+              <div class="form-group">
+                <label>Họ và tên</label>
+                <input type="text" class="field" id="p_name" placeholder="Nguyễn Văn A">
+              </div>
+              <div class="form-group">
+                <label>Tên tài khoản</label>
+                <input type="text" class="field" id="p_username" disabled>
+              </div>
+              <div class="form-group">
+                <label>Email <span class="field-state" id="profileEmailLabelState">Đã xác minh</span></label>
+                <input type="email" class="field" id="p_email" disabled>
+              </div>
+              <div class="form-group">
+                <label>Trạng thái</label>
+                <input type="text" class="field" value="Tài khoản đang hoạt động" disabled>
+              </div>
+            </div>
+            <div class="account-form-actions">
+              <p>Email được quản lý bởi hệ thống đăng nhập và không thể thay đổi tại đây.</p>
+              <button class="btn btn-primary btn-sm" onclick="handleUpdateProfile()">Lưu thay đổi</button>
+            </div>
+          </section>
+
+          <section class="account-form-card security-card" id="securityCard">
+            <div class="account-card-title">
+              <span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+              <div><h3>Đổi mật khẩu</h3><p>Bảo vệ tài khoản bằng mật khẩu mạnh và không dùng lại ở dịch vụ khác.</p></div>
+            </div>
+            <div class="err-msg" id="passErr"></div>
+            <div class="ok-msg" id="passOk"></div>
+            <div class="security-form-grid">
+              <div class="form-group">
+                <label>Mật khẩu hiện tại</label>
+                <div class="input-pass-wrap">
+                  <input type="password" class="field" id="p_old_pass" placeholder="••••••••">
+                  <button type="button" onclick="togglePass('p_old_pass',this)" tabindex="-1" aria-label="Hiện mật khẩu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Mật khẩu mới</label>
+                <div class="input-pass-wrap">
+                  <input type="password" class="field" id="p_new_pass" placeholder="Tối thiểu 6 ký tự">
+                  <button type="button" onclick="togglePass('p_new_pass',this)" tabindex="-1" aria-label="Hiện mật khẩu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Xác nhận mật khẩu mới</label>
+                <div class="input-pass-wrap">
+                  <input type="password" class="field" id="p_new_pass2" placeholder="Nhập lại mật khẩu mới">
+                  <button type="button" onclick="togglePass('p_new_pass2',this)" tabindex="-1" aria-label="Hiện mật khẩu">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="account-form-actions compact">
+              <p>Mật khẩu mới cần có ít nhất 6 ký tự.</p>
+              <button class="btn btn-primary btn-sm" onclick="handleChangePassword()">Đổi mật khẩu</button>
+            </div>
+          </section>
         </div>
-        <div class="form-group">
-          <label>Mật khẩu mới</label>
-          <div class="input-pass-wrap">
-            <input type="password" class="field" id="p_new_pass" placeholder="Tối thiểu 6 ký tự">
-            <button type="button" onclick="togglePass('p_new_pass',this)" tabindex="-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Xác nhận mật khẩu mới</label>
-          <div class="input-pass-wrap">
-            <input type="password" class="field" id="p_new_pass2" placeholder="Nhập lại mật khẩu mới">
-            <button type="button" onclick="togglePass('p_new_pass2',this)" tabindex="-1">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="handleChangePassword()">Đổi mật khẩu</button>
       </div>
     </div>
 

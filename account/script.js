@@ -39,9 +39,30 @@ const isRecoveryFlow = /type=recovery/.test(window.location.hash);
 ============================================================ */
 const CONFIG = {
   SUPABASE_URL: "https://npsylbxggliczhtnzzgl.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig"
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig",
+  BANK_ID: "970407",
+  BANK_NAME: "Techcombank",
+  ACCOUNT_NUMBER: "3838648888",
+  ACCOUNT_NAME: "LE PHAT DAT",
+  PAYOS_RETURN_URL: "https://phatdatagency.id.vn/payment-success",
+  PAYOS_CANCEL_URL: "https://phatdatagency.id.vn/payment-cancel",
 };
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+/* Nạp cấu hình thanh toán thật từ site_config (đồng bộ với admin tab "Thanh toán") */
+(async () => {
+  try{
+    const { data } = await sb.from('site_config').select('value').eq('key', 'payment_config').single();
+    const c = data?.value;
+    if(!c) return;
+    if(c.bankName)  CONFIG.BANK_NAME      = c.bankName;
+    if(c.bankId)    CONFIG.BANK_ID        = c.bankId;
+    if(c.accNum)    CONFIG.ACCOUNT_NUMBER = c.accNum;
+    if(c.accName)   CONFIG.ACCOUNT_NAME   = c.accName;
+    if(c.returnUrl) CONFIG.PAYOS_RETURN_URL = c.returnUrl;
+    if(c.cancelUrl) CONFIG.PAYOS_CANCEL_URL = c.cancelUrl;
+  } catch(e){ /* giữ mặc định nếu chưa cấu hình */ }
+})();
 
 /* Vẫn giữ listener này như lớp bảo vệ thứ 2 (đăng xuất tự động khi user
    đăng xuất ở tab khác) — nhưng không còn dùng để phát hiện recovery nữa. */
@@ -53,6 +74,21 @@ sb.auth.onAuthStateChange((event) => {
    STATE
 ============================================================ */
 let currentUser = null;   // { id, name, email }
+
+/* Thanh tìm kiếm trên dashboard chỉ điều hướng tới khu vực dịch vụ,
+   không can thiệp vào dữ liệu hay luồng xác thực hiện có. */
+const dashServiceSearch = document.getElementById('dashServiceSearch');
+if(dashServiceSearch){
+  dashServiceSearch.addEventListener('keydown', e => {
+    if(e.key === 'Enter') window.location.href = '/#services';
+  });
+  document.addEventListener('keydown', e => {
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && document.body.classList.contains('dashboard-active')){
+      e.preventDefault();
+      dashServiceSearch.focus();
+    }
+  });
+}
 
 /* ============================================================
    HELPERS
@@ -438,12 +474,15 @@ async function enterDashboard(){
     id: session.user.id,
     name: profile?.full_name || session.user.email,
     email: profile?.email || session.user.email,
-    isPriority: !!profile?.is_priority
+    isPriority: !!profile?.is_priority,
+    createdAt: session.user.created_at || null,
+    emailVerified: !!session.user.email_confirmed_at
   };
 
   document.getElementById("authWrap").style.display = "none";
   document.getElementById("dashWrap").classList.add("show");
   document.getElementById("dashWrap").classList.toggle("vip-mode", currentUser.isPriority);
+  document.body.classList.add("dashboard-active");
 
   const initial = (currentUser.name || "U")[0].toUpperCase();
   document.getElementById("sideAvatar").textContent = initial;
@@ -453,8 +492,16 @@ async function enterDashboard(){
   document.getElementById("p_name").value  = currentUser.name  || "";
   document.getElementById("p_email").value = currentUser.email || "";
 
-  switchDashTab("orders");
+  document.getElementById("ovAvatar").textContent = initial;
+  document.getElementById("ovName").innerHTML = escHtml(currentUser.name || "Người dùng")
+    + ' <span class="verified-badge" title="Đã xác thực">✔️</span>'
+    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
+  document.getElementById("ovEmail").textContent = currentUser.email || "";
+  renderAccountProfile();
+
+  switchDashTab("profile");
   loadUserOrders();
+  refreshWalletBalance();
 
   document.getElementById("notifBell").style.display = "flex";
   loadNotifications();
@@ -488,9 +535,65 @@ function escHtml(str){
   d.textContent = str ?? '';
   return d.innerHTML;
 }
+
+/* Đồng bộ dữ liệu tài khoản hiện có vào giao diện hồ sơ mới.
+   Không phát sinh cột dữ liệu hoặc truy vấn backend mới. */
+function renderAccountProfile(){
+  if(!currentUser) return;
+
+  const name = currentUser.name || 'Người dùng';
+  const email = currentUser.email || '';
+  const initial = name.trim().charAt(0).toUpperCase() || 'U';
+  const username = (email.split('@')[0] || name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9._-]/g, '');
+
+  const setText = (id, value) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  };
+
+  setText('profileAvatar', initial);
+  setText('profileDisplayName', name);
+  setText('profileEmailText', email);
+  setText('profileRoleText', currentUser.isPriority ? 'Khách hàng ưu tiên' : 'Thành viên');
+  setText('profileTierText', currentUser.isPriority ? 'Ưu tiên' : 'Khách hàng');
+  setText('topAvatar', initial);
+  setText('topUserName', name);
+
+  const usernameInput = document.getElementById('p_username');
+  if(usernameInput) usernameInput.value = username || 'tai-khoan';
+
+  const created = currentUser.createdAt ? new Date(currentUser.createdAt) : null;
+  setText('profileMemberSince', created && !Number.isNaN(created.getTime())
+    ? created.toLocaleDateString('vi-VN')
+    : 'Đang cập nhật');
+  setText('profileLastUpdate', new Date().toLocaleString('vi-VN', {
+    hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric'
+  }));
+
+  const verified = currentUser.emailVerified;
+  const emailState = document.getElementById('profileEmailState');
+  if(emailState){
+    emailState.textContent = verified ? 'Đã xác minh' : 'Chưa xác minh';
+    emailState.className = verified ? 'state-ok' : 'state-warn';
+  }
+  setText('profileEmailStatusText', verified ? 'Đã xác minh' : 'Chưa xác minh');
+  setText('profileEmailLabelState', verified ? 'Đã xác minh' : 'Chưa xác minh');
+
+  const completed = [name, email, verified].filter(Boolean).length;
+  const percent = Math.round((completed / 3) * 100);
+  setText('profileCompletionValue', percent + '%');
+  const ring = document.getElementById('profileCompletionRing');
+  if(ring) ring.style.setProperty('--progress', percent + '%');
+}
+
 function exitDashboard(){
   document.getElementById("dashWrap").classList.remove("show");
   document.getElementById("dashWrap").classList.remove("vip-mode");
+  document.body.classList.remove("dashboard-active");
   document.getElementById("authWrap").style.display = "block";
   document.getElementById("notifBell").style.display = "none";
   document.getElementById("notifDropdown").classList.remove("show");
@@ -498,12 +601,22 @@ function exitDashboard(){
 }
 
 function switchDashTab(tab){
-  ["orders","profile","app"].forEach(t => {
+  ["overview","wallet","orders","profile","app"].forEach(t => {
     document.getElementById("sec"   + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
     document.getElementById("nav"   + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
-    document.getElementById("mTab"  + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle("active", t===tab);
+    const mTab = document.getElementById("mTab" + t.charAt(0).toUpperCase() + t.slice(1));
+    if(mTab) mTab.classList.toggle("active", t===tab);
   });
+  const breadcrumb = document.getElementById('dashBreadcrumbTitle');
+  if(breadcrumb){
+    breadcrumb.textContent = ({
+      overview:'Tổng quan', wallet:'Nạp tiền', orders:'Nhật ký hoạt động',
+      profile:'Tài khoản', app:'Cài ứng dụng'
+    })[tab] || 'Tài khoản';
+  }
   if(tab === 'app') refreshPushStatus();
+  if(tab === 'wallet'){ refreshWalletBalance(); loadWalletHistoryAcc(); }
+  if(tab === 'overview'){ refreshWalletBalance(); }
 }
 
 /* ============================================================
@@ -559,6 +672,19 @@ function renderUserOrders(orders){
   document.getElementById("uStatTotal").textContent    = orders.length;
   document.getElementById("uStatProgress").textContent = orders.filter(o => ["Đã xác nhận","Đang thực hiện"].includes(o["Trạng thái"])).length;
   document.getElementById("uStatDone").textContent     = orders.filter(o => o["Trạng thái"] === "Hoàn thành").length;
+
+  // Đồng bộ sang tab Tổng quan
+  const ovTotal = document.getElementById("ovStatTotal");
+  const ovDone = document.getElementById("ovStatDone");
+  if(ovTotal) ovTotal.textContent = orders.length;
+  if(ovDone) ovDone.textContent = orders.filter(o => o["Trạng thái"] === "Hoàn thành").length;
+  const profileOrderStatus = document.getElementById('profileOrderStatus');
+  if(profileOrderStatus){
+    profileOrderStatus.textContent = orders.length
+      ? `${orders.length} đơn đã ghi nhận`
+      : 'Chưa có đơn hàng';
+  }
+  renderRecentOrdersOverview(orders.slice(0, 4));
 
   const body = document.getElementById("ordersTableBody");
   if(orders.length === 0){
@@ -617,6 +743,11 @@ async function handleUpdateProfile(){
     document.getElementById("sideName").innerHTML = escHtml(name)
       + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
     document.getElementById("sideAvatar").textContent = name[0].toUpperCase();
+    document.getElementById("ovAvatar").textContent = name[0].toUpperCase();
+    document.getElementById("ovName").innerHTML = escHtml(name)
+      + ' <span class="verified-badge" title="Đã xác thực">✔️</span>'
+      + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
+    renderAccountProfile();
     okBox.textContent = "Đã cập nhật thông tin."; okBox.classList.add("show");
   } catch(err){
     errBox.textContent = "Không thể kết nối Supabase."; errBox.classList.add("show");
@@ -863,3 +994,158 @@ async function handlePushAction(){
     showLogin();
   }
 })();
+
+/* ============================================================
+   TỔNG QUAN — danh sách đơn gần đây
+============================================================ */
+function renderRecentOrdersOverview(orders){
+  const box = document.getElementById('ovRecentOrders');
+  if(!box) return;
+  if(!orders.length){
+    box.innerHTML = `<div class="orders-empty">Chưa có đơn hàng nào.<br><a href="/#services" style="color:var(--coral-deep);font-weight:600;">Đặt đơn đầu tiên →</a></div>`;
+    return;
+  }
+  box.innerHTML = orders.map(o => {
+    const st = o["Trạng thái"] || "Chờ xác nhận";
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px dashed var(--line); font-size:13px;">
+      <div>
+        <div class="order-code">${esc(o["Mã đơn"])}</div>
+        <div style="color:var(--ink-soft); font-size:11.5px;">${esc(o["Loại dịch vụ"]||"")}</div>
+      </div>
+      <span class="status-pill ${STATUS_MAP[st]||'s-pending'}">${esc(st)}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   VÍ PHATDATAGENCY
+============================================================ */
+let accWalletBalance = 0;
+
+async function refreshWalletBalance(){
+  if(!currentUser) return;
+  try{
+    const { data, error } = await sb.rpc('get_my_wallet');
+    if(error || !data?.ok) return;
+    accWalletBalance = Number(data.balance) || 0;
+    const a = document.getElementById('ovWalletBalance');
+    const b = document.getElementById('walletHeroBalance');
+    const c = document.getElementById('profileWalletBalance');
+    if(a) a.textContent = accWalletBalance.toLocaleString('vi-VN') + 'đ';
+    if(b) b.textContent = accWalletBalance.toLocaleString('vi-VN') + 'đ';
+    if(c) c.textContent = accWalletBalance.toLocaleString('vi-VN') + 'đ';
+  } catch(e){ /* bỏ qua lỗi mạng tạm thời */ }
+}
+
+async function loadWalletHistoryAcc(){
+  const box = document.getElementById('walletHistoryBody');
+  if(!box || !currentUser) return;
+  box.innerHTML = `<div class="orders-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb
+      .from('wallet_transactions')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending:false })
+      .limit(20);
+    if(error) throw error;
+    if(!data || !data.length){
+      box.innerHTML = `<div class="orders-empty">Chưa có giao dịch nào.</div>`;
+      return;
+    }
+    box.innerHTML = data.map(t => `
+      <div class="wallet-history-row">
+        <div>
+          <span style="color:${t.type==='nap'?'var(--sage)':'var(--coral-deep)'}; font-weight:600;">
+            ${t.type === 'nap' ? '+' : '−'}${Number(t.amount).toLocaleString('vi-VN')}đ
+          </span>
+          <div style="color:var(--ink-soft); font-size:11.5px; margin-top:2px;">${esc(t.note||'')}</div>
+        </div>
+        <div style="color:var(--ink-soft); font-size:11px; white-space:nowrap;">${new Date(t.created_at).toLocaleString('vi-VN')}</div>
+      </div>`).join('');
+  } catch(e){
+    box.innerHTML = `<div class="orders-empty">Không tải được: ${esc(e.message)}</div>`;
+  }
+}
+
+function toggleAccTopupPanel(){
+  const panel = document.getElementById('accTopupPanel');
+  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+async function startAccTopup(){
+  const amount = Number(document.getElementById('acc_topup_amount').value);
+  const method = document.getElementById('acc_topup_method').value;
+  const msg = document.getElementById('accTopupMsg');
+  msg.className = '';
+
+  if(!amount || amount < 10000){
+    msg.textContent = 'Số tiền nạp tối thiểu là 10.000đ.';
+    msg.className = 'err-msg show';
+    return;
+  }
+  if(!currentUser) return;
+
+  const now = new Date();
+  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+  const randPart = Math.floor(1000 + Math.random()*9000);
+  const topupCode = `NAP-${datePart}-${randPart}`;
+
+  try{
+    const { error: insertErr } = await sb.from('wallet_topup_requests').insert({
+      code: topupCode, user_id: currentUser.id, amount
+    });
+    if(insertErr) throw insertErr;
+
+    const resultBox = document.getElementById('accTopupResult');
+    resultBox.style.display = 'block';
+
+    if(method === 'PayOS'){
+      resultBox.innerHTML = `<div style="text-align:center; padding:16px 0;">Đang tạo mã thanh toán...</div>`;
+      const { data, error } = await sb.functions.invoke('create-payos-link', {
+        body: {
+          orderCode: topupCode, amount, description: topupCode,
+          returnUrl: CONFIG.PAYOS_RETURN_URL, cancelUrl: CONFIG.PAYOS_CANCEL_URL,
+          buyerName: currentUser.name || '', buyerPhone: '',
+        }
+      });
+      if(!error && data?.ok && data.checkoutUrl){
+        const qrImgUrl = data.qrCode ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrCode)}` : null;
+        resultBox.innerHTML = `
+          ${qrImgUrl ? `<img src="${qrImgUrl}" alt="QR nạp tiền" width="200" height="200" style="border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px;">` : ''}
+          <div style="margin-top:12px;"><a href="${data.checkoutUrl}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">⚡ Mở trang thanh toán →</a></div>`;
+        startAccTopupPolling();
+      } else {
+        resultBox.innerHTML = `<div class="ok-msg show err-msg">Không tạo được link, thử lại hoặc chọn VietQR.</div>`;
+      }
+    } else {
+      const qrUrl = `https://img.vietqr.io/image/${CONFIG.BANK_ID}-${CONFIG.ACCOUNT_NUMBER}-compact2.png`
+        + `?amount=${amount}&addInfo=${encodeURIComponent(topupCode)}&accountName=${encodeURIComponent(CONFIG.ACCOUNT_NAME)}`;
+      resultBox.innerHTML = `
+        <img src="${qrUrl}" alt="QR nạp tiền VietQR" width="200" height="200" style="border-radius:12px; border:1px solid var(--line); background:#fff; padding:8px;">
+        <div style="margin-top:10px; font-size:12.5px; color:var(--ink-soft);">Chuyển khoản đúng nội dung <b>${topupCode}</b> để hệ thống tự nhận ra.</div>`;
+      startAccTopupPolling();
+    }
+  } catch(err){
+    msg.textContent = 'Lỗi: ' + err.message;
+    msg.className = 'err-msg show';
+  }
+}
+
+let _accTopupPollTimer = null;
+function startAccTopupPolling(){
+  if(_accTopupPollTimer) clearInterval(_accTopupPollTimer);
+  let tries = 0;
+  const before = accWalletBalance;
+  _accTopupPollTimer = setInterval(async () => {
+    tries++;
+    if(tries > 225){ clearInterval(_accTopupPollTimer); return; }
+    await refreshWalletBalance();
+    if(accWalletBalance > before){
+      clearInterval(_accTopupPollTimer);
+      document.getElementById('accTopupResult').innerHTML =
+        `<div style="font-size:14px; color:var(--sage); font-weight:600;">✅ Nạp tiền thành công! Số dư mới: ${accWalletBalance.toLocaleString('vi-VN')}đ</div>`;
+      loadWalletHistoryAcc();
+    }
+  }, 4000);
+}
