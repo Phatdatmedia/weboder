@@ -60,6 +60,7 @@
     <button id="mobileTabAdsorders" onclick="switchTab('adsorders')">Đơn tương tác</button>
     <button id="mobileTabBoost" onclick="switchTab('boost')">Follow & Tương tác</button>
     <button id="mobileTabUsers"    onclick="switchTab('users')">Người dùng</button>
+    <button id="mobileTabAppeals" onclick="switchTab('appeals')">Kháng nghị <span class="nav-count-badge" id="appealMobileBadge" hidden>0</span></button>
     <button id="mobileTabLivechat" onclick="switchTab('livechat')">Live Chat</button>
     <button id="mobileTabSocial" onclick="switchTab('social')">Chăm sóc MXH</button>
     <button id="mobileTabMarketing" onclick="switchTab('marketing')">Marketing</button>
@@ -108,6 +109,11 @@
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabUsers" onclick="switchTab('users')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
         Người dùng
+      </a>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabAppeals" onclick="switchTab('appeals')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 10h6M9 14h4"/></svg>
+        Kháng nghị tài khoản
+        <span class="nav-count-badge" id="appealNavBadge" hidden>0</span>
       </a>
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabLivechat" onclick="switchTab('livechat')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -401,6 +407,65 @@
           </div>
         </div>
         <div id="usersTableBody"><div class="dash-loading">Đang tải...</div></div>
+      </div>
+    </div>
+
+    <!-- TAB: KHÁNG NGHỊ TÀI KHOẢN -->
+    <div class="tab-panel" id="tabAppeals">
+      <div class="dash-top">
+        <div>
+          <h1>Kháng nghị tài khoản</h1>
+          <p>Tiếp nhận và xử lý yêu cầu mở lại tài khoản đang bị khóa.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadAppealsTable()">↻ Làm mới</button>
+      </div>
+
+      <div class="dash-stats appeal-stats">
+        <div class="dash-stat-card appeal-stat-pending">
+          <div class="ds-label">Chờ duyệt</div>
+          <div class="ds-val" id="aStatPending">—</div>
+        </div>
+        <div class="dash-stat-card appeal-stat-reviewing">
+          <div class="ds-label">Đang xem xét</div>
+          <div class="ds-val" id="aStatReviewing">—</div>
+        </div>
+        <div class="dash-stat-card appeal-stat-needs-info">
+          <div class="ds-label">Chờ khách bổ sung</div>
+          <div class="ds-val" id="aStatNeedsInfo">—</div>
+        </div>
+        <div class="dash-stat-card appeal-stat-approved">
+          <div class="ds-label">Đã phê duyệt</div>
+          <div class="ds-val" id="aStatApproved">—</div>
+        </div>
+        <div class="dash-stat-card appeal-stat-rejected">
+          <div class="ds-label">Khóa vĩnh viễn</div>
+          <div class="ds-val" id="aStatRejected">—</div>
+        </div>
+      </div>
+
+      <div class="appeal-toolbar">
+        <div class="appeal-filter-group">
+          <button class="filter-pill-btn active" type="button" data-appeal-filter="all" onclick="setAppealFilter('all',this)">Tất cả</button>
+          <button class="filter-pill-btn" type="button" data-appeal-filter="pending" onclick="setAppealFilter('pending',this)">Chờ duyệt</button>
+          <button class="filter-pill-btn" type="button" data-appeal-filter="reviewing" onclick="setAppealFilter('reviewing',this)">Đang xem xét</button>
+          <button class="filter-pill-btn" type="button" data-appeal-filter="needs_info" onclick="setAppealFilter('needs_info',this)">Chờ khách bổ sung</button>
+          <button class="filter-pill-btn" type="button" data-appeal-filter="approved" onclick="setAppealFilter('approved',this)">Đã duyệt</button>
+          <button class="filter-pill-btn" type="button" data-appeal-filter="rejected" onclick="setAppealFilter('rejected',this)">Khóa vĩnh viễn</button>
+        </div>
+        <div class="dash-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="appealSearchInput" placeholder="Tìm email, tên, nội dung...">
+        </div>
+      </div>
+
+      <div class="dash-table-wrap">
+        <div class="dash-table-head">
+          <div>
+            <h3>Danh sách kháng nghị</h3>
+            <p class="appeal-table-sub" id="appealResultCount">Đang tải dữ liệu...</p>
+          </div>
+        </div>
+        <div id="appealsTableBody"><div class="dash-loading">Đang tải...</div></div>
       </div>
     </div>
 
@@ -1765,6 +1830,58 @@
         <button class="btn btn-ghost btn-sm" onclick="closeServiceModal()">Huỷ</button>
         <button class="btn btn-primary btn-sm" id="serviceSaveBtn" onclick="handleSaveService()">Lưu dịch vụ</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= ACCOUNT APPEAL REVIEW MODAL ======================= -->
+<div class="modal-overlay" id="appealReviewOverlay">
+  <div class="modal appeal-review-modal">
+    <div class="modal-head">
+      <div>
+        <h3>Xử lý kháng nghị</h3>
+        <p id="appealModalCode">—</p>
+      </div>
+      <button class="modal-close" onclick="closeAppealModal()" aria-label="Đóng">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="appeal-account-box">
+        <span class="appeal-avatar" id="appealModalAvatar">A</span>
+        <div>
+          <strong id="appealModalName">Người dùng</strong>
+          <span id="appealModalEmail">—</span>
+        </div>
+        <span id="appealModalStatus" class="appeal-status appeal-status-pending">Chờ duyệt</span>
+      </div>
+
+      <div class="appeal-detail-grid">
+        <div><span>Thời gian gửi</span><strong id="appealModalSubmitted">—</strong></div>
+        <div><span>Liên hệ bổ sung</span><strong id="appealModalContact">—</strong></div>
+        <div><span>Trạng thái tài khoản</span><strong id="appealModalAccountState">—</strong></div>
+        <div><span>Thời gian xử lý</span><strong id="appealModalReviewed">Chưa xử lý</strong></div>
+      </div>
+
+      <div class="appeal-reason-box">
+        <span>Nội dung khách gửi</span>
+        <p id="appealModalReason">—</p>
+      </div>
+
+      <div class="form-group">
+        <label for="appealAdminNote">Phản hồi cho khách</label>
+        <textarea class="field" id="appealAdminNote" rows="4" maxlength="1000" placeholder="Nhập lý do phê duyệt, từ chối hoặc thông tin khách cần bổ sung..."></textarea>
+        <small class="appeal-note-hint">Bắt buộc khi yêu cầu bổ sung hoặc từ chối và khóa vĩnh viễn.</small>
+      </div>
+      <div class="modal-error" id="appealModalError"></div>
+
+      <div class="appeal-review-actions" id="appealReviewActions">
+        <button class="btn btn-ghost btn-sm" id="appealReviewingBtn" onclick="handleAppealAction('reviewing')">Đánh dấu đang xem xét</button>
+        <button class="btn btn-sm appeal-needs-info-btn" id="appealNeedsInfoBtn" onclick="handleAppealAction('needs_info')">Cần khách bổ sung thông tin</button>
+        <button class="btn btn-sm appeal-reject-btn" id="appealRejectBtn" onclick="handleAppealAction('rejected')">Từ chối &amp; khóa vĩnh viễn</button>
+        <button class="btn btn-sm appeal-approve-btn" id="appealApproveBtn" onclick="handleAppealAction('approved')">Phê duyệt & mở khóa</button>
+      </div>
+      <div class="appeal-closed-note" id="appealClosedNote" hidden>Kháng nghị này đã được xử lý.</div>
     </div>
   </div>
 </div>

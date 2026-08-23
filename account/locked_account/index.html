@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0f1c31">
+  <title>Kháng nghị tài khoản — Phatdatagency</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Phatdatagency - Trang chủ">
+      <span class="brand-mark">P</span>
+      <span>Phatdatagency</span>
+    </a>
+    <div class="top-actions">
+      <span class="secure-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+        Trung tâm tài khoản
+      </span>
+      <button class="btn btn-light btn-small" type="button" onclick="handleLogout()">Đăng xuất</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="lock-hero">
+      <div class="lock-illustration" aria-hidden="true">
+        <span class="lock-ring"></span>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1"/></svg>
+      </div>
+      <div class="hero-copy">
+        <span class="eyebrow">Bảo vệ tài khoản</span>
+        <h1>Tài khoản đang tạm khóa</h1>
+        <p>Hệ thống đã tạm giới hạn quyền truy cập. Gửi kháng nghị một lần, chúng tôi sẽ kiểm tra và cập nhật kết quả ngay tại trang này.</p>
+      </div>
+      <div class="account-summary">
+        <span class="avatar" id="accountAvatar">A</span>
+        <div>
+          <small>Tài khoản đang đăng nhập</small>
+          <strong id="accountName">Đang kiểm tra...</strong>
+          <span id="accountEmail">—</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <div class="main-column">
+        <article class="card status-card">
+          <div class="card-heading">
+            <div>
+              <span class="section-label">Trạng thái xử lý</span>
+              <h2 id="statusTitle">Đang kiểm tra tài khoản</h2>
+            </div>
+            <span class="status-pill status-loading" id="statusPill"><i></i> Đang tải</span>
+          </div>
+          <p class="status-message" id="statusMessage">Vui lòng chờ trong giây lát để hệ thống tải trạng thái mới nhất.</p>
+
+          <div class="notice notice-admin" id="adminNoteBox" hidden>
+            <strong>Phản hồi từ bộ phận kiểm duyệt</strong>
+            <p id="adminNote">—</p>
+          </div>
+
+          <ol class="appeal-steps" aria-label="Tiến trình kháng nghị">
+            <li class="active" id="stepLocked">
+              <span>1</span>
+              <div><strong>Tạm khóa</strong><small>Đã ghi nhận</small></div>
+            </li>
+            <li id="stepSubmitted">
+              <span>2</span>
+              <div><strong>Đã gửi</strong><small>Tiếp nhận kháng nghị</small></div>
+            </li>
+            <li id="stepReviewing">
+              <span>3</span>
+              <div><strong>Đang duyệt</strong><small>Kiểm tra thông tin</small></div>
+            </li>
+            <li id="stepApproved">
+              <span>4</span>
+              <div><strong>Hoàn tất</strong><small>Mở lại tài khoản</small></div>
+            </li>
+          </ol>
+
+          <div class="status-actions">
+            <button class="btn btn-outline" id="checkStatusBtn" type="button" onclick="checkStatusNow()">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 11a8.1 8.1 0 1 0 .4 3"/><path d="M20 4v7h-7"/></svg>
+              <span id="checkStatusBtnText">Kiểm tra trạng thái</span>
+            </button>
+            <span class="auto-check"><i></i> Tự động kiểm tra mỗi 7 giây</span>
+          </div>
+        </article>
+
+        <article class="card appeal-card" id="appealFormCard">
+          <div class="card-heading form-heading">
+            <div>
+              <span class="section-label">Gửi kháng nghị</span>
+              <h2 id="formTitle">Yêu cầu xem xét tài khoản</h2>
+            </div>
+            <span class="required-note"><i>*</i> Bắt buộc</span>
+          </div>
+
+          <div class="message error-message" id="formError" role="alert"></div>
+          <div class="message success-message" id="formSuccess" role="status"></div>
+
+          <div class="honeypot" aria-hidden="true">
+            <label for="appealWebsite">Website</label>
+            <input id="appealWebsite" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label for="appealReason">Nội dung kháng nghị <span>*</span></label>
+            <textarea id="appealReason" maxlength="1200" rows="7" placeholder="Trình bày rõ lý do bạn cho rằng tài khoản nên được mở lại và thông tin cần bộ phận kiểm duyệt xác minh."></textarea>
+            <div class="field-meta"><small>Tối thiểu 30 ký tự. Chỉ gửi thông tin chính xác.</small><small><b id="reasonCount">0</b>/1200</small></div>
+          </div>
+
+          <div class="form-group">
+            <label for="appealContact">Thông tin liên hệ bổ sung <em>Không bắt buộc</em></label>
+            <input id="appealContact" type="text" maxlength="150" placeholder="Số điện thoại hoặc Telegram để hỗ trợ xác minh">
+          </div>
+
+          <label class="confirm-row">
+            <input id="appealConfirm" type="checkbox">
+            <span>Tôi xác nhận nội dung trên là đúng và đồng ý để Phatdatagency kiểm tra thông tin liên quan đến tài khoản này.</span>
+          </label>
+
+          <button class="btn btn-primary submit-button" id="submitAppealBtn" type="button" onclick="submitAppeal()">
+            <span id="submitAppealBtnText">Gửi kháng nghị</span>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 14-7-4 14-3-6-7-1Z"/><path d="m12 13 7-8"/></svg>
+          </button>
+          <p class="submit-help">Mỗi tài khoản chỉ có một kháng nghị đang chờ duyệt. Bạn không cần gửi lại nhiều lần.</p>
+        </article>
+      </div>
+
+      <aside class="side-column">
+        <article class="card info-card">
+          <span class="side-icon blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          </span>
+          <h3>Bạn cần làm gì?</h3>
+          <ul>
+            <li>Gửi nội dung rõ ràng, đúng sự thật.</li>
+            <li>Theo dõi trạng thái ngay trên trang này.</li>
+            <li>Không tạo thêm tài khoản để gửi trùng yêu cầu.</li>
+          </ul>
+        </article>
+
+        <article class="card info-card">
+          <span class="side-icon green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <h3>Phiên đăng nhập được giữ an toàn</h3>
+          <p>Hệ thống giữ phiên đăng nhập để gắn kháng nghị đúng tài khoản. Bạn vẫn không thể truy cập ví, đơn hàng hoặc hồ sơ cho tới khi được mở khóa.</p>
+        </article>
+
+        <article class="support-card">
+          <span>Hỗ trợ thêm</span>
+          <h3>Cần bổ sung thông tin?</h3>
+          <p>Hãy dùng kênh hỗ trợ chính thức và cung cấp đúng email đang hiển thị trên trang.</p>
+          <a href="/#contact">Liên hệ hỗ trợ <span>→</span></a>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <div class="approved-overlay" id="approvedOverlay" aria-live="polite">
+    <div>
+      <span class="approved-check">✓</span>
+      <h2>Kháng nghị đã được phê duyệt</h2>
+      <p>Tài khoản đã hoạt động trở lại. Hệ thống đang chuyển bạn về trang tài khoản.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"><span id="toastMessage"></span></div>
+  <script src="script.js"></script>
+</body>
+</html>

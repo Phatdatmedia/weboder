@@ -1,3 +1,6 @@
+
+
+
 /* ============================================================
    KIỂM TRA CHẾ ĐỘ BẢO TRÌ — chạy NGAY LẬP TỨC, TRƯỚC mọi lệnh gọi
    dữ liệu khác trên trang. Nếu đang bảo trì: hiện màn hình bảo trì,
@@ -48,6 +51,11 @@ const CONFIG = {
   PAYOS_CANCEL_URL: "https://phatdatagency.id.vn/payment-cancel",
 };
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+/* Luồng tài khoản bị khoá.
+   Giữ nguyên session để trang kháng nghị xác định đúng người đang đăng nhập. */
+const ACCOUNT_HOME_URL = '/account/index.html';
+const LOCKED_ACCOUNT_URL = '/account/locked_account/';
 
 /* Nạp cấu hình thanh toán thật từ site_config (đồng bộ với admin tab "Thanh toán") */
 (async () => {
@@ -455,18 +463,24 @@ async function enterDashboard(){
   if(!session?.user){ exitDashboard(); return; }
 
   // Lấy thông tin hiển thị từ bảng profiles
-  const { data: profile } = await sb
+  const { data: profile, error: profileError } = await sb
     .from('profiles')
     .select('full_name, email, is_locked, is_priority')
     .eq('id', session.user.id)
     .single();
 
-  // Tài khoản bị admin khoá -> đăng xuất ngay, không cho vào dashboard
+  // Không mở dashboard khi chưa kiểm tra được trạng thái tài khoản.
+  if(profileError){
+    exitDashboard();
+    const errBox = document.getElementById('loginErr');
+    errBox.textContent = 'Chưa thể kiểm tra trạng thái tài khoản. Vui lòng thử lại.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  // Tài khoản bị khoá -> giữ session và chuyển tới trang kháng nghị.
   if(profile?.is_locked){
-    await sb.auth.signOut();
-    showLogin();
-    document.getElementById("loginErr").textContent = "Tài khoản của bạn đã bị khoá. Liên hệ admin để được hỗ trợ.";
-    document.getElementById("loginErr").classList.add("show");
+    window.location.replace(LOCKED_ACCOUNT_URL);
     return;
   }
 

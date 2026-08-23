@@ -24,6 +24,7 @@ function showDashShell(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('dashShell').style.display = 'flex';
   loadDashboard();
+  startAppealWatcher();
   startForceLogoutWatcher();
 }
 
@@ -185,6 +186,7 @@ document.getElementById('mfaCode').addEventListener('keydown', (e)=>{
 
 async function handleAdminLogout(){
   stopForceLogoutWatcher();
+  stopAppealWatcher();
   if(isBackendConfigured()){
     try{ await sb.auth.signOut(); } catch{}
   }
@@ -687,7 +689,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices'];
+const ALL_TABS = ['overview','services','projects','users','appeals','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices','contracts'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -701,6 +703,7 @@ function switchTab(tab){
   if(tab === 'services' && allServices.length === 0) loadServicesTable();
   if(tab === 'projects' && allProjects.length === 0) loadProjectsTable();
   if(tab === 'users'    && allUsers.length    === 0) loadUsersTable();
+  if(tab === 'appeals') loadAppealsTable();
   if(tab === 'announce') loadAnnounceConfig();
   if(tab === 'payment')  loadPaymentConfig();
   if(tab === 'contact')  loadContactConfig();
@@ -716,6 +719,7 @@ function switchTab(tab){
   if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
   if(tab === 'partners') loadPartners();
   if(tab === 'invoices'){ loadOrdersForInvoice(); loadInvoicesHistory(); }
+  if(tab === 'contracts'){ loadContractsHistory(); initSignaturePad('ctSignCanvasA'); }
   if(tab === 'pages') initPagesTab();
 }
 
@@ -1143,7 +1147,9 @@ async function loadUsersTable(){
     allUsers = (data||[]).map(u => ({
       id: u.id, name: u.full_name, email: u.email,
       registeredAt: new Date(u.created_at).toLocaleDateString('vi-VN'),
-      status: u.is_locked ? 'Đã khoá' : 'Hoạt động',
+      status: u.is_locked ? (u.is_permanently_locked ? 'Khoá vĩnh viễn' : 'Đã khoá') : 'Hoạt động',
+      isLocked: !!u.is_locked,
+      isPermanent: !!u.is_permanently_locked,
       isPriority: !!u.is_priority,
       walletBalance: Number(u.wallet_balance) || 0
     }));
@@ -1154,7 +1160,7 @@ async function loadUsersTable(){
 function renderUsersTable(users){
   document.getElementById('uStatAll').textContent      = users.length;
   document.getElementById('uStatActive').textContent   = users.filter(u => u.status === 'Hoạt động').length;
-  document.getElementById('uStatLocked').textContent   = users.filter(u => u.status === 'Đã khoá').length;
+  document.getElementById('uStatLocked').textContent   = users.filter(u => u.isLocked).length;
   document.getElementById('uStatPriority').textContent = users.filter(u => u.isPriority).length;
 
   const body = document.getElementById('usersTableBody');
@@ -1164,12 +1170,12 @@ function renderUsersTable(users){
     <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Số dư ví</th><th>Thao tác</th>
   </tr></thead><tbody>`;
   users.forEach(u => {
-    const locked = u.status === 'Đã khoá';
+    const locked = u.isLocked;
     html += `<tr>
       <td>${escapeHtml(u.name||'')}</td>
       <td style="font-family:var(--font-mono);font-size:12.5px;">${escapeHtml(u.email||'')}</td>
       <td style="font-size:12px;color:var(--ink-soft);">${escapeHtml(u.registeredAt||'')}</td>
-      <td><span class="svc-status-pill ${locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
+      <td><span class="svc-status-pill ${u.isPermanent?'appeal-status-permanent':locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
       <td>${u.isPriority
           ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:var(--ink-deep);color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
           : `<span style="font-size:11.5px;color:var(--ink-soft);">Thường</span>`}
@@ -1211,11 +1217,17 @@ async function handleTogglePriority(id){
 
 async function handleToggleUser(id){
   const user  = allUsers.find(u => u.id === id);
-  const willLock = user && user.status !== 'Đã khoá';
+  const willLock = user && !user.isLocked;
   const actionLabel = willLock ? 'khoá' : 'mở khoá';
-  if(!confirm(`Bạn muốn ${actionLabel} tài khoản "${user?.email || id}"?`)) return;
+  const permanentWarning = !willLock && user?.isPermanent
+    ? '\n\nTài khoản này đang khóa vĩnh viễn. Thao tác này sẽ xóa trạng thái khóa vĩnh viễn và mở lại toàn bộ quyền truy cập.'
+    : '';
+  if(!confirm(`Bạn muốn ${actionLabel} tài khoản "${user?.email || id}"?${permanentWarning}`)) return;
   try{
-    const { error } = await sb.from('profiles').update({ is_locked: willLock }).eq('id', id);
+    const payload = willLock
+      ? { is_locked:true, is_permanently_locked:false }
+      : { is_locked:false, is_permanently_locked:false };
+    const { error } = await sb.from('profiles').update(payload).eq('id', id);
     if(!error){
       showToast(`Đã ${actionLabel} tài khoản.`);
       logAdminAction(`${willLock ? 'Khoá' : 'Mở khoá'} tài khoản khách`, user?.email || id);
@@ -1231,6 +1243,335 @@ document.getElementById('userSearchInput').addEventListener('input', e => {
   renderUsersTable(allUsers.filter(u =>
     (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)
   ));
+});
+
+/* =====================================================================
+   ACCOUNT APPEALS — tiếp nhận và duyệt kháng nghị tài khoản bị khóa
+===================================================================== */
+const APPEAL_STATUS_META = {
+  pending:   { label:'Chờ duyệt',     cls:'appeal-status-pending' },
+  reviewing: { label:'Đang xem xét',  cls:'appeal-status-reviewing' },
+  needs_info:{ label:'Chờ khách bổ sung', cls:'appeal-status-needs-info' },
+  approved:  { label:'Đã phê duyệt',  cls:'appeal-status-approved' },
+  rejected:  { label:'Khóa vĩnh viễn', cls:'appeal-status-rejected' },
+};
+
+let allAccountAppeals = [];
+let activeAppealFilter = 'all';
+let currentAppealId = null;
+let appealBadgeTimer = null;
+let appealRealtimeChannel = null;
+
+function formatAppealDate(value){
+  if(!value) return '—';
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('vi-VN', {
+    hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit', year:'numeric'
+  });
+}
+
+function renderAppealStatus(status){
+  const meta = APPEAL_STATUS_META[status] || APPEAL_STATUS_META.pending;
+  return `<span class="appeal-status ${meta.cls}">${meta.label}</span>`;
+}
+
+function updateAppealBadges(count){
+  ['appealNavBadge','appealMobileBadge'].forEach(id => {
+    const badge = document.getElementById(id);
+    if(!badge) return;
+    badge.hidden = count < 1;
+    badge.textContent = count > 99 ? '99+' : String(count);
+  });
+}
+
+async function loadAppealBadge(){
+  if(!isBackendConfigured() || !currentAdmin) return;
+  try{
+    const { count, error } = await sb
+      .from('account_appeals')
+      .select('id', { count:'exact', head:true })
+      .in('status', ['pending','reviewing']);
+    if(error) throw error;
+    updateAppealBadges(Number(count) || 0);
+  } catch(error){
+    updateAppealBadges(0);
+  }
+}
+
+function startAppealWatcher(){
+  stopAppealWatcher();
+  loadAppealBadge();
+  appealBadgeTimer = setInterval(loadAppealBadge, 30000);
+
+  try{
+    appealRealtimeChannel = sb
+      .channel('admin-account-appeals')
+      .on('postgres_changes', {
+        event:'*', schema:'public', table:'account_appeals'
+      }, () => {
+        loadAppealBadge();
+        if(document.getElementById('tabAppeals')?.classList.contains('active')){
+          loadAppealsTable({ silent:true });
+        }
+      })
+      .subscribe();
+  } catch(error){ /* Bộ đếm 30 giây vẫn hoạt động nếu Realtime chưa bật. */ }
+}
+
+function stopAppealWatcher(){
+  if(appealBadgeTimer){ clearInterval(appealBadgeTimer); appealBadgeTimer = null; }
+  if(appealRealtimeChannel){
+    sb.removeChannel(appealRealtimeChannel);
+    appealRealtimeChannel = null;
+  }
+}
+
+async function loadAppealsTable({ silent = false } = {}){
+  const body = document.getElementById('appealsTableBody');
+  if(!body) return;
+  if(!isBackendConfigured()){
+    body.innerHTML = `<div class="dash-empty">Chưa cấu hình Supabase.</div>`;
+    return;
+  }
+  if(!currentAdmin){ showLoginScreen(); return; }
+  if(!silent) body.innerHTML = `<div class="dash-loading">Đang tải kháng nghị...</div>`;
+
+  try{
+    const { data, error } = await sb
+      .from('account_appeals')
+      .select('id, user_id, email, reason, contact, status, admin_note, submitted_at, reviewed_at')
+      .order('submitted_at', { ascending:false });
+
+    if(error) throw error;
+
+    const userIds = [...new Set((data || []).map(row => row.user_id).filter(Boolean))];
+    const profileMap = new Map();
+    if(userIds.length){
+      const { data: profiles, error: profileError } = await sb
+      .from('profiles')
+        .select('id, full_name, email, is_locked, is_permanently_locked')
+        .in('id', userIds);
+      if(!profileError){
+        (profiles || []).forEach(profile => profileMap.set(profile.id, profile));
+      }
+    }
+
+    allAccountAppeals = (data || []).map(row => {
+      const profile = profileMap.get(row.user_id) || {};
+      return {
+        ...row,
+        name: profile.full_name || 'Người dùng',
+        email: row.email || profile.email || '',
+        isLocked: profile.is_locked !== false,
+        isPermanent: !!profile.is_permanently_locked,
+      };
+    });
+
+    updateAppealStats();
+    applyAppealFilters();
+    updateAppealBadges(allAccountAppeals.filter(row => ['pending','reviewing'].includes(row.status)).length);
+  } catch(error){
+    body.innerHTML = `<div class="dash-empty">Không tải được kháng nghị: ${escapeHtml(error.message)}<br><small>Kiểm tra bảng <code>account_appeals</code> và quyền RLS dành cho admin.</small></div>`;
+  }
+}
+
+function updateAppealStats(){
+  document.getElementById('aStatPending').textContent = allAccountAppeals.filter(row => row.status === 'pending').length;
+  document.getElementById('aStatReviewing').textContent = allAccountAppeals.filter(row => row.status === 'reviewing').length;
+  document.getElementById('aStatNeedsInfo').textContent = allAccountAppeals.filter(row => row.status === 'needs_info').length;
+  document.getElementById('aStatApproved').textContent = allAccountAppeals.filter(row => row.status === 'approved').length;
+  document.getElementById('aStatRejected').textContent = allAccountAppeals.filter(row => row.status === 'rejected').length;
+}
+
+function setAppealFilter(status, button){
+  activeAppealFilter = status;
+  document.querySelectorAll('[data-appeal-filter]').forEach(item => item.classList.toggle('active', item === button));
+  applyAppealFilters();
+}
+
+function applyAppealFilters(){
+  const query = (document.getElementById('appealSearchInput')?.value || '').trim().toLowerCase();
+  const filtered = allAccountAppeals.filter(row => {
+    const statusMatch = activeAppealFilter === 'all' || row.status === activeAppealFilter;
+    const searchMatch = !query || [row.name,row.email,row.reason,row.contact,row.admin_note]
+      .some(value => String(value || '').toLowerCase().includes(query));
+    return statusMatch && searchMatch;
+  });
+  renderAppealsTable(filtered);
+}
+
+function renderAppealsTable(appeals){
+  const body = document.getElementById('appealsTableBody');
+  const resultCount = document.getElementById('appealResultCount');
+  if(resultCount) resultCount.textContent = `${appeals.length} kháng nghị được hiển thị`;
+
+  if(!appeals.length){
+    body.innerHTML = `<div class="dash-empty">Không có kháng nghị phù hợp.</div>`;
+    return;
+  }
+
+  let html = `<table class="dash-table"><thead><tr>
+    <th>Khách hàng</th><th>Nội dung</th><th>Liên hệ</th><th>Thời gian gửi</th><th>Trạng thái</th><th>Thao tác</th>
+  </tr></thead><tbody>`;
+
+  appeals.forEach(appeal => {
+    const reason = appeal.reason || '';
+    const preview = reason.length > 105 ? reason.slice(0,105) + '…' : reason;
+    const initial = (appeal.name || appeal.email || 'A').trim().charAt(0).toUpperCase();
+    html += `<tr>
+      <td><div class="appeal-user-cell"><span class="appeal-user-avatar">${escapeHtml(initial)}</span><div><strong>${escapeHtml(appeal.name)}</strong><span>${escapeHtml(appeal.email)}</span>${appeal.isPermanent?'<span class="appeal-permanent-label">Khóa vĩnh viễn</span>':''}</div></div></td>
+      <td><div class="appeal-reason-preview" title="${escapeHtml(reason)}">${escapeHtml(preview)}</div></td>
+      <td style="font-size:11.5px;color:var(--ink-soft);">${escapeHtml(appeal.contact || '—')}</td>
+      <td style="font-size:11px;color:var(--ink-soft);white-space:nowrap;">${formatAppealDate(appeal.submitted_at)}</td>
+      <td>${renderAppealStatus(appeal.status)}</td>
+      <td><button class="appeal-open-btn" onclick="openAppealModal('${appeal.id}')">Xem & xử lý</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  body.innerHTML = html;
+}
+
+function openAppealModal(id){
+  const appeal = allAccountAppeals.find(row => row.id === id);
+  if(!appeal) return;
+  currentAppealId = id;
+
+  const meta = APPEAL_STATUS_META[appeal.status] || APPEAL_STATUS_META.pending;
+  const statusEl = document.getElementById('appealModalStatus');
+  statusEl.className = `appeal-status ${meta.cls}`;
+  statusEl.textContent = meta.label;
+
+  document.getElementById('appealModalCode').textContent = `Mã yêu cầu: ${appeal.id}`;
+  document.getElementById('appealModalAvatar').textContent = (appeal.name || appeal.email || 'A').trim().charAt(0).toUpperCase();
+  document.getElementById('appealModalName').textContent = appeal.name || 'Người dùng';
+  document.getElementById('appealModalEmail').textContent = appeal.email || '—';
+  document.getElementById('appealModalSubmitted').textContent = formatAppealDate(appeal.submitted_at);
+  document.getElementById('appealModalContact').textContent = appeal.contact || 'Không cung cấp';
+  document.getElementById('appealModalAccountState').textContent = appeal.isPermanent
+    ? 'Khóa vĩnh viễn'
+    : appeal.isLocked ? 'Đang bị khóa' : 'Đang hoạt động';
+  document.getElementById('appealModalReviewed').textContent = appeal.reviewed_at ? formatAppealDate(appeal.reviewed_at) : 'Chưa xử lý';
+  document.getElementById('appealModalReason').textContent = appeal.reason || '—';
+  document.getElementById('appealAdminNote').value = appeal.admin_note || '';
+  document.getElementById('appealModalError').classList.remove('show');
+
+  const isWaitingForCustomer = appeal.status === 'needs_info';
+  const isClosed = appeal.isPermanent || isWaitingForCustomer || ['approved','rejected'].includes(appeal.status);
+  document.getElementById('appealReviewActions').hidden = isClosed;
+  document.getElementById('appealClosedNote').hidden = !isClosed;
+  document.getElementById('appealClosedNote').textContent = appeal.isPermanent
+    ? 'Tài khoản đang bị khóa vĩnh viễn. Chỉ có thể mở tại danh sách Người dùng hoặc thao tác thủ công trong Supabase.'
+    : isWaitingForCustomer
+      ? 'Đã gửi yêu cầu bổ sung. Hệ thống đang chờ khách cập nhật và gửi lại kháng nghị.'
+      : 'Kháng nghị này đã được xử lý.';
+  document.getElementById('appealReviewingBtn').style.display = appeal.status === 'pending' ? 'inline-flex' : 'none';
+  document.getElementById('appealNeedsInfoBtn').style.display = appeal.status === 'reviewing' ? 'inline-flex' : 'none';
+  document.getElementById('appealReviewOverlay').classList.add('show');
+}
+
+function closeAppealModal(){
+  currentAppealId = null;
+  document.getElementById('appealReviewOverlay').classList.remove('show');
+  document.getElementById('appealModalError').classList.remove('show');
+}
+
+function setAppealActionLoading(loading){
+  ['appealReviewingBtn','appealNeedsInfoBtn','appealRejectBtn','appealApproveBtn'].forEach(id => {
+    const button = document.getElementById(id);
+    if(button) button.disabled = loading;
+  });
+}
+
+async function handleAppealAction(nextStatus){
+  const appeal = allAccountAppeals.find(row => row.id === currentAppealId);
+  if(!appeal || !currentAdmin) return;
+
+  const note = document.getElementById('appealAdminNote').value.trim();
+  const errorBox = document.getElementById('appealModalError');
+  errorBox.classList.remove('show');
+
+  if(['needs_info','rejected'].includes(nextStatus) && note.length < 5){
+    errorBox.textContent = nextStatus === 'needs_info'
+      ? 'Vui lòng ghi rõ thông tin khách cần bổ sung.'
+      : 'Vui lòng nhập lý do từ chối và khóa vĩnh viễn tài khoản.';
+    errorBox.classList.add('show');
+    return;
+  }
+
+  if(nextStatus === 'approved' && appeal.isPermanent){
+    errorBox.textContent = 'Tài khoản đang khóa vĩnh viễn. Chỉ được mở tại danh sách Người dùng hoặc trực tiếp trong Supabase.';
+    errorBox.classList.add('show');
+    return;
+  }
+
+  const confirmMessage = nextStatus === 'approved'
+    ? `Phê duyệt kháng nghị và mở khóa tài khoản “${appeal.email}”?`
+    : nextStatus === 'rejected'
+      ? `Từ chối kháng nghị và khóa vĩnh viễn tài khoản “${appeal.email}”?\n\nTài khoản chỉ có thể được mở lại thủ công trong danh sách Người dùng hoặc Supabase.`
+      : nextStatus === 'needs_info'
+        ? `Gửi yêu cầu bổ sung thông tin cho “${appeal.email}”?`
+        : `Chuyển kháng nghị của “${appeal.email}” sang trạng thái đang xem xét?`;
+  if(!confirm(confirmMessage)) return;
+
+  setAppealActionLoading(true);
+  try{
+    const payload = { status:nextStatus };
+    if(note) payload.admin_note = note;
+    if(['needs_info','approved','rejected'].includes(nextStatus)) payload.reviewed_at = new Date().toISOString();
+
+    const { error } = await sb
+      .from('account_appeals')
+      .update(payload)
+      .eq('id', appeal.id);
+    if(error) throw error;
+
+    const actionLabel = nextStatus === 'approved' ? 'Phê duyệt kháng nghị'
+      : nextStatus === 'rejected' ? 'Từ chối và khóa vĩnh viễn tài khoản'
+      : nextStatus === 'needs_info' ? 'Yêu cầu khách bổ sung thông tin'
+      : 'Tiếp nhận kháng nghị';
+    logAdminAction(actionLabel, `${appeal.email} — ${note || 'Không có ghi chú'}`);
+
+    if(nextStatus === 'approved'){
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('is_locked, is_permanently_locked')
+        .eq('id', appeal.user_id)
+        .single();
+      showToast(profile?.is_locked === false && profile?.is_permanently_locked !== true
+        ? 'Đã phê duyệt và mở khóa tài khoản.'
+        : 'Đã duyệt kháng nghị. Hãy kiểm tra trigger mở khóa trong SQL.');
+    } else if(nextStatus === 'rejected'){
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('is_locked, is_permanently_locked')
+        .eq('id', appeal.user_id)
+        .single();
+      showToast(profile?.is_locked === true && profile?.is_permanently_locked === true
+        ? 'Đã từ chối kháng nghị và khóa vĩnh viễn tài khoản.'
+        : 'Đã từ chối kháng nghị. Hãy kiểm tra lại trigger khóa vĩnh viễn trong SQL.');
+    } else if(nextStatus === 'needs_info'){
+      showToast('Đã yêu cầu khách bổ sung thông tin.');
+    } else {
+      showToast('Đã chuyển sang đang xem xét.');
+    }
+
+    closeAppealModal();
+    allUsers = [];
+    await loadAppealsTable({ silent:true });
+  } catch(error){
+    errorBox.textContent = error?.message?.includes('ACCOUNT_PERMANENTLY_LOCKED')
+      ? 'Tài khoản đã bị khóa vĩnh viễn. Chỉ có thể mở tại danh sách Người dùng hoặc trực tiếp trong Supabase.'
+      : `Không thể cập nhật: ${error.message}`;
+    errorBox.classList.add('show');
+  } finally {
+    setAppealActionLoading(false);
+  }
+}
+
+document.getElementById('appealSearchInput').addEventListener('input', applyAppealFilters);
+document.getElementById('appealReviewOverlay').addEventListener('click', event => {
+  if(event.target.id === 'appealReviewOverlay') closeAppealModal();
 });
 
 /* =====================================================================
@@ -2988,12 +3329,13 @@ function renderAdsOrdersTable(){
   }
 
   box.innerHTML = `<table class="dash-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th><th>Thao tác</th>
+    <th>Mã đơn</th><th>Khách hàng</th><th>Nền tảng</th><th>Server</th><th>Loại</th><th>Link</th><th>Số lượng</th><th>Ngày BĐ</th><th>Tạm tính</th><th>Trạng thái</th><th>Thao tác</th>
   </tr></thead><tbody>${allAdsOrders.map(o => `
     <tr>
       <td class="dt-code">${escapeHtml(o.order_code)}</td>
       <td>${escapeHtml(o.customer_name||'')}<br><span style="color:var(--ink-soft); font-size:11.5px;">${escapeHtml(o.phone||o.email||'')}</span></td>
       <td>${escapeHtml(o.platform||'—')}</td>
+      <td style="font-size:12px;">${escapeHtml(o.server_name||'Mặc định')}</td>
       <td>${escapeHtml(o.interaction_type||'—')}</td>
       <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
         ${o.post_link ? `<a href="${escapeHtml(o.post_link)}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:underline;">${escapeHtml(o.post_link)}</a>` : '—'}
@@ -3051,9 +3393,13 @@ function renderAdsPricingTable(){
   }
 
   box.innerHTML = `<table class="dash-table"><thead><tr>
-    <th>Nền tảng</th><th>Loại</th><th>Tên hiển thị</th><th>Đơn giá / lượt</th><th></th>
+    <th>Server</th><th>Nền tảng</th><th>Loại</th><th>Tên hiển thị</th><th>Đơn giá / lượt</th><th></th>
   </tr></thead><tbody>${allAdsPricing.map(p => `
     <tr>
+      <td>
+        <div style="font-weight:600;">${escapeHtml(p.server_name||'Mặc định')}</div>
+        ${p.server_note ? `<div style="font-size:11px; color:var(--ink-soft); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(p.server_note)}">${escapeHtml(p.server_note)}</div>` : ''}
+      </td>
       <td>${escapeHtml(p.platform)}</td>
       <td style="font-family:var(--font-mono); font-size:12px;">${escapeHtml(p.interaction_type)}</td>
       <td>${escapeHtml(p.interaction_label||'')}</td>
@@ -3062,6 +3408,7 @@ function renderAdsPricingTable(){
           style="width:100px; padding:6px 8px; border:1.5px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink); font-family:var(--font-mono); font-size:12px;">
       </td>
       <td class="svc-actions">
+        <button onclick="openPriceForm(${p.id})">Sửa</button>
         <button onclick="handleDeletePrice(${p.id})" class="danger">Xoá</button>
       </td>
     </tr>`).join('')}</tbody></table>`;
@@ -3092,14 +3439,17 @@ async function handlePriceInlineChange(id, rawValue, inputEl){
   }
 }
 
-function openPriceForm(){
-  editingPriceId = null;
-  document.getElementById('priceModalTitle').textContent = 'Thêm dòng giá';
+function openPriceForm(id){
+  editingPriceId = id || null;
+  const p = id ? allAdsPricing.find(x => x.id === id) : null;
+  document.getElementById('priceModalTitle').textContent = p ? 'Sửa dòng giá' : 'Thêm dòng giá';
   document.getElementById('priceModalError').classList.remove('show');
-  document.getElementById('pr_platform').value = 'Facebook';
-  document.getElementById('pr_type').value = 'Like';
-  document.getElementById('pr_label').value = 'Tăng like';
-  document.getElementById('pr_price').value = '';
+  document.getElementById('pr_server').value = p?.server_name || '';
+  document.getElementById('pr_platform').value = p?.platform || 'Facebook';
+  document.getElementById('pr_type').value = p?.interaction_type || 'Like';
+  document.getElementById('pr_label').value = p?.interaction_label || 'Tăng like';
+  document.getElementById('pr_price').value = p?.unit_price ?? '';
+  document.getElementById('pr_server_note').value = p?.server_note || '';
   document.getElementById('priceModalOverlay').classList.add('show');
 }
 
@@ -3109,23 +3459,27 @@ function closePriceForm(){
 
 async function handleSavePrice(){
   const errBox = document.getElementById('priceModalError');
+  const serverName = document.getElementById('pr_server').value.trim() || 'Mặc định';
   const row = {
+    server_name: serverName,
+    server_note: document.getElementById('pr_server_note').value.trim() || null,
     platform: document.getElementById('pr_platform').value,
     interaction_type: document.getElementById('pr_type').value,
     interaction_label: document.getElementById('pr_label').value.trim() || document.getElementById('pr_type').value,
     unit_price: Number(document.getElementById('pr_price').value) || 0,
     updated_at: new Date().toISOString(),
   };
+  if(editingPriceId) row.id = editingPriceId;
 
   const btn = document.getElementById('priceSaveBtn');
   const orig = btn.textContent;
   btn.disabled = true; btn.textContent = 'Đang lưu...';
 
   try{
-    const { error } = await sb.from('social_ads_pricing').upsert(row, { onConflict: 'platform,interaction_type' });
+    const { error } = await sb.from('social_ads_pricing').upsert(row, { onConflict: 'platform,server_name,interaction_type' });
     if(error) throw error;
     showToast('✅ Đã lưu dòng giá.');
-    logAdminAction('Thêm/sửa giá tương tác', `${row.platform} - ${row.interaction_type} → ${row.unit_price}đ`);
+    logAdminAction('Thêm/sửa giá tương tác', `${serverName} — ${row.platform} - ${row.interaction_type} → ${row.unit_price}đ`);
     closePriceForm();
     await loadAdsPricing();
   } catch(e){
@@ -3197,7 +3551,7 @@ CREATE POLICY "Admin full access" ON site_config
   showLoginScreen();
 
   sb.auth.onAuthStateChange((event) => {
-    if(event === 'SIGNED_OUT'){ currentAdmin = null; showLoginScreen(); }
+    if(event === 'SIGNED_OUT'){ stopAppealWatcher(); currentAdmin = null; showLoginScreen(); }
   });
 })();
 
@@ -3985,4 +4339,252 @@ function generateInvoicePDF(inv){
   } catch(e){
     alert('Không tạo được PDF: ' + e.message);
   }
+}
+
+/* =====================================================================
+   TẠO HỢP ĐỒNG — soạn theo bố cục hợp đồng dân sự chuẩn (căn cứ pháp lý,
+   các Điều khoản, chữ ký hai bên). Điều 1 (nội dung dịch vụ) viết riêng
+   cho từng loại dịch vụ, các Điều còn lại dùng chung.
+===================================================================== */
+function onContractTypeChange(){
+  const type = document.getElementById('ct_serviceType').value;
+  const label = document.getElementById('ct_detailLabel');
+  const detail = document.getElementById('ct_detail');
+  if(type === 'unlock'){
+    label.textContent = 'Mô tả tài khoản cần hỗ trợ mở khoá';
+    detail.placeholder = "Vd: Hỗ trợ khôi phục quyền truy cập tài khoản Facebook tên 'Nguyễn Văn A' (link: fb.com/...), đang bị khoá xác minh 2 lớp.";
+  } else if(type === 'icloud'){
+    label.textContent = 'Mô tả thiết bị cần hỗ trợ mở khoá iCloud';
+    detail.placeholder = "Vd: Hỗ trợ khôi phục quyền truy cập iCloud cho iPhone 13, IMEI: ..., khách bị đối tượng lừa đảo chiếm quyền/khoá máy từ xa qua Find My.";
+  } else if(type === 'ads'){
+    label.textContent = 'Mô tả nội dung cần tăng tương tác';
+    detail.placeholder = "Vd: Tăng 5.000 lượt Like cho bài viết Facebook tại đường dẫn https://facebook.com/..., nền tảng Facebook, server Việt Nam ổn định.";
+  } else {
+    label.textContent = 'Mô tả hạng mục thiết kế';
+    detail.placeholder = "Vd: Thiết kế website bán hàng gồm 10 trang, tích hợp giỏ hàng, thanh toán online, giao diện responsive trên di động.";
+  }
+}
+
+/* CONTRACT_TYPE_LABEL, numberToVietnameseWords, getArticle1Content, buildContractArticles
+   giờ nằm ở file dùng chung /contract-template.js (nạp qua <script> trong index.html)
+   để đồng bộ tuyệt đối với trang ký hợp đồng của khách — không định nghĩa lại ở đây. */
+
+/* ── Xuất PDF hợp đồng đầy đủ, tự xuống trang khi hết chỗ ── */
+function generateContractPDF(c){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  registerVietnameseFont(doc);
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 20, maxW = pageW - marginX*2;
+  let y = 20;
+
+  function checkPageBreak(needed){
+    if(y + needed > pageH - 18){ doc.addPage(); y = 20; }
+  }
+  function writeCentered(text, size, style){
+    doc.setFont('DejaVuSans', style||'normal'); doc.setFontSize(size);
+    doc.text(text, pageW/2, y, { align:'center' }); y += size*0.5 + 2;
+  }
+  function writeParagraph(text, opts={}){
+    doc.setFont('DejaVuSans', opts.bold ? 'bold':'normal'); doc.setFontSize(opts.size||10.5);
+    const lines = doc.splitTextToSize(text, maxW);
+    checkPageBreak(lines.length * 5.2 + 2);
+    doc.text(lines, marginX, y);
+    y += lines.length * 5.2 + (opts.gap ?? 3);
+  }
+
+  writeCentered('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', 12, 'bold');
+  writeCentered('Độc lập - Tự do - Hạnh phúc', 11, 'normal');
+  y += 4;
+  writeCentered('———o0o———', 10, 'normal');
+  y += 6;
+  writeCentered('HỢP ĐỒNG DỊCH VỤ', 15, 'bold');
+  writeCentered(CONTRACT_TYPE_LABEL[c.service_type] || '', 12, 'bold');
+  y += 3;
+  writeCentered(`Số: ${c.contract_no}`, 10, 'normal');
+  y += 6;
+
+  writeParagraph('Căn cứ Bộ luật Dân sự nước Cộng hoà xã hội chủ nghĩa Việt Nam năm 2015;', { size:10 });
+  writeParagraph('Căn cứ nhu cầu và sự thoả thuận thống nhất giữa hai bên;', { size:10, gap:5 });
+  writeParagraph(`Hôm nay, ngày ${new Date(c.created_at).toLocaleDateString('vi-VN')}, hai bên chúng tôi gồm:`, { size:10, gap:5 });
+
+  writeParagraph('BÊN A (BÊN CUNG CẤP DỊCH VỤ):', { bold:true, size:11, gap:2 });
+  writeParagraph(`- Đại diện: ${c.party_a_name || ''}`, { size:10, gap:1.5 });
+  if(c.party_a_id) writeParagraph(`- CCCD/CMND: ${c.party_a_id}`, { size:10, gap:1.5 });
+  if(c.party_a_address) writeParagraph(`- Địa chỉ liên hệ: ${c.party_a_address}`, { size:10, gap:1.5 });
+  if(c.party_a_phone) writeParagraph(`- Điện thoại: ${c.party_a_phone}`, { size:10, gap:1.5 });
+  writeParagraph(`- Email: ${c.party_a_email || ''}`, { size:10, gap:5 });
+
+  writeParagraph('BÊN B (BÊN SỬ DỤNG DỊCH VỤ):', { bold:true, size:11, gap:2 });
+  writeParagraph(`- Họ và tên/Đơn vị: ${c.party_b_name || ''}`, { size:10, gap:1.5 });
+  if(c.party_b_id) writeParagraph(`- CCCD/CMND/MST: ${c.party_b_id}`, { size:10, gap:1.5 });
+  if(c.party_b_address) writeParagraph(`- Địa chỉ: ${c.party_b_address}`, { size:10, gap:1.5 });
+  if(c.party_b_phone) writeParagraph(`- Điện thoại: ${c.party_b_phone}`, { size:10, gap:1.5 });
+  if(c.party_b_email) writeParagraph(`- Email: ${c.party_b_email}`, { size:10, gap:1.5 });
+  writeParagraph('Hai bên thống nhất ký kết hợp đồng với các điều khoản sau:', { size:10, gap:6 });
+
+  const articles = buildContractArticles(c.service_type, {
+    detail: c.service_detail, value: c.contract_value, deposit: c.deposit_amount || 0,
+    duration: c.duration_text, note: c.extra_note
+  });
+  articles.forEach(art => {
+    checkPageBreak(10);
+    writeParagraph(art.title, { bold:true, size:11.5, gap:3 });
+    art.body.forEach(p => writeParagraph(p, { size:10.2, gap:3 }));
+    y += 2;
+  });
+
+  checkPageBreak(55);
+  y += 6;
+  const halfW = pageW/2;
+  const colACenter = marginX + (halfW-marginX)/2;
+  const colBCenter = halfW + (halfW-marginX)/2;
+
+  doc.setFont('DejaVuSans','bold'); doc.setFontSize(11);
+  doc.text('ĐẠI DIỆN BÊN A', colACenter, y, { align:'center' });
+  doc.text('ĐẠI DIỆN BÊN B', colBCenter, y, { align:'center' });
+  y += 5;
+  doc.setFont('DejaVuSans','normal'); doc.setFontSize(9);
+  doc.text('(Ký, ghi rõ họ tên)', colACenter, y, { align:'center' });
+  doc.text('(Ký, ghi rõ họ tên)', colBCenter, y, { align:'center' });
+
+  const sigY = y + 3;
+  const sigW = 45, sigH = 22;
+  if(c.party_a_signature){
+    try{ doc.addImage(c.party_a_signature, 'PNG', colACenter - sigW/2, sigY, sigW, sigH); }catch(e){}
+  }
+  if(c.party_b_signature){
+    try{ doc.addImage(c.party_b_signature, 'PNG', colBCenter - sigW/2, sigY, sigW, sigH); }catch(e){}
+  }
+
+  y = sigY + sigH + 4;
+  doc.setFontSize(8); doc.setTextColor(120);
+  if(c.party_a_signed_at) doc.text(`Đã ký lúc: ${new Date(c.party_a_signed_at).toLocaleString('vi-VN')}`, colACenter, y, { align:'center' });
+  if(c.party_b_signed_at) doc.text(`Đã ký lúc: ${new Date(c.party_b_signed_at).toLocaleString('vi-VN')}`, colBCenter, y, { align:'center' });
+  doc.setTextColor(0);
+
+  doc.save(`HopDong-${c.contract_no}.pdf`);
+}
+
+async function submitContract(){
+  const errBox = document.getElementById('contractError');
+  errBox.classList.remove('show');
+
+  const serviceType = document.getElementById('ct_serviceType').value;
+  const bName = document.getElementById('ct_bName').value.trim();
+  const detail = document.getElementById('ct_detail').value.trim();
+  const value = Number(document.getElementById('ct_value').value);
+
+  if(!bName || !detail || !value || value <= 0){
+    errBox.textContent = 'Vui lòng nhập đủ Tên khách hàng (Bên B), Mô tả dịch vụ và Giá trị hợp đồng hợp lệ.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  const now = new Date();
+  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+  const randPart = Math.floor(1000 + Math.random()*9000);
+  const contractNo = `HD-${datePart}-${randPart}`;
+  const signToken = randomToken();
+
+  const record = {
+    contract_no: contractNo,
+    sign_token: signToken,
+    service_type: serviceType,
+    party_a_name: document.getElementById('ct_aName').value.trim(),
+    party_a_id: document.getElementById('ct_aId').value.trim() || null,
+    party_a_address: document.getElementById('ct_aAddress').value.trim() || null,
+    party_a_phone: document.getElementById('ct_aPhone').value.trim() || null,
+    party_a_email: document.getElementById('ct_aEmail').value.trim() || null,
+    party_b_name: bName,
+    party_b_id: document.getElementById('ct_bId').value.trim() || null,
+    party_b_address: document.getElementById('ct_bAddress').value.trim() || null,
+    party_b_phone: document.getElementById('ct_bPhone').value.trim() || null,
+    party_b_email: document.getElementById('ct_bEmail').value.trim() || null,
+    service_detail: detail,
+    contract_value: value,
+    deposit_amount: Number(document.getElementById('ct_deposit').value) || null,
+    duration_text: document.getElementById('ct_duration').value.trim() || null,
+    extra_note: document.getElementById('ct_note').value.trim() || null,
+    created_by_admin_email: currentAdmin?.email || null,
+  };
+  if(!isSignatureEmpty('ctSignCanvasA')){
+    record.party_a_signature = getSignatureDataURL('ctSignCanvasA');
+    record.party_a_signed_at = now.toISOString();
+  }
+
+  const btn = document.getElementById('contractSubmitBtn');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang tạo...';
+
+  try{
+    const { error } = await sb.from('contracts').insert(record);
+    if(error) throw error;
+
+    generateContractPDF({ ...record, created_at: now.toISOString() });
+    showToast(`✅ Đã tạo hợp đồng ${contractNo}.`);
+    logAdminAction('Tạo hợp đồng', `${contractNo} — ${bName} — ${value.toLocaleString('vi-VN')}đ`);
+
+    const signUrl = `${window.location.origin}/ky-hop-dong/?token=${signToken}`;
+    document.getElementById('contractSignLinkInput').value = signUrl;
+    document.getElementById('contractSignLinkBox').style.display = 'block';
+
+    clearSignCanvas('ctSignCanvasA');
+    await loadContractsHistory();
+  } catch(e){
+    errBox.textContent = 'Lỗi: ' + e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+}
+
+function copyContractSignLink(){
+  const input = document.getElementById('contractSignLinkInput');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(()=> showToast('Đã sao chép link ký hợp đồng.'));
+}
+
+let allContractsHistory = [];
+
+async function loadContractsHistory(){
+  const box = document.getElementById('contractsHistoryBody');
+  if(!box) return;
+  box.innerHTML = `<div class="dash-loading">Đang tải...</div>`;
+  try{
+    const { data, error } = await sb.from('contracts').select('*').order('created_at', { ascending:false }).limit(20);
+    if(error) throw error;
+    allContractsHistory = data || [];
+    if(!allContractsHistory.length){
+      box.innerHTML = `<div class="dash-empty">Chưa có hợp đồng nào.</div>`;
+      return;
+    }
+    box.innerHTML = `<table class="dash-table"><thead><tr>
+      <th>Số hợp đồng</th><th>Loại dịch vụ</th><th>Khách hàng</th><th>Giá trị</th><th>Trạng thái ký</th><th>Ngày tạo</th><th></th>
+    </tr></thead><tbody>${allContractsHistory.map(c => `
+      <tr>
+        <td class="dt-code">${escapeHtml(c.contract_no)}</td>
+        <td style="font-size:12px;">${escapeHtml(CONTRACT_TYPE_LABEL[c.service_type]||c.service_type)}</td>
+        <td>${escapeHtml(c.party_b_name)}</td>
+        <td style="font-family:var(--font-mono); font-weight:600;">${Number(c.contract_value).toLocaleString('vi-VN')}đ</td>
+        <td style="font-size:11.5px;">
+          ${c.party_a_signed_at ? '✅ A' : '⬜ A'} &nbsp;
+          ${c.party_b_signed_at ? '✅ B' : '⬜ B'}
+        </td>
+        <td style="font-size:12px; color:var(--ink-soft);">${new Date(c.created_at).toLocaleString('vi-VN')}</td>
+        <td class="svc-actions">
+          <button onclick="generateContractPDF(allContractsHistory.find(x=>x.id===${c.id}))">🖨️ PDF</button>
+          <button onclick="copySignLinkFor('${c.sign_token||''}')">🔗 Link ký</button>
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+  } catch(e){
+    box.innerHTML = `<div class="dash-empty" style="color:var(--danger);">Không tải được: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function copySignLinkFor(token){
+  if(!token){ showToast('Hợp đồng này chưa có link ký (tạo trước khi có tính năng ký điện tử).'); return; }
+  const url = `${window.location.origin}/ky-hop-dong/?token=${token}`;
+  navigator.clipboard.writeText(url).then(()=> showToast('Đã sao chép link ký hợp đồng.'));
 }
