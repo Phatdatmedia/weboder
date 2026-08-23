@@ -358,6 +358,100 @@ textarea.field{ resize:vertical; min-height:70px; }
 .toast.show{ opacity:1; transform: translateX(-50%) translateY(0); pointer-events:auto; }
 .toast .t-dot{ width:7px; height:7px; border-radius:50%; background: var(--coral); }
 
+/* ====================== ACCOUNT APPEALS ====================== */
+.nav-count-badge{
+  min-width:20px; height:20px; padding:0 6px; margin-left:auto;
+  display:inline-grid; place-items:center; border-radius:999px;
+  background:var(--coral); color:var(--white); font-family:var(--font-mono);
+  font-size:10px; font-weight:700; line-height:1;
+}
+.nav-count-badge[hidden]{ display:none !important; }
+.mobile-tabbar .nav-count-badge{ margin-left:5px; vertical-align:middle; }
+.appeal-stats{ grid-template-columns:repeat(5,minmax(0,1fr)); }
+.appeal-stat-pending{ border-color:rgba(224,181,104,.5); }
+.appeal-stat-reviewing{ border-color:rgba(127,168,224,.5); }
+.appeal-stat-needs-info{ border-color:rgba(174,139,224,.5); }
+.appeal-stat-approved{ border-color:rgba(127,192,137,.5); }
+.appeal-stat-rejected{ border-color:rgba(224,139,122,.5); }
+.appeal-toolbar{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin-bottom:16px; flex-wrap:wrap;
+}
+.appeal-filter-group{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.appeal-table-sub{ margin-top:3px; color:var(--ink-soft); font-size:11.5px; }
+.appeal-user-cell{ display:flex; align-items:center; gap:10px; min-width:190px; }
+.appeal-user-avatar{
+  width:34px; height:34px; flex:0 0 34px; display:grid; place-items:center;
+  border-radius:50%; background:var(--coral-tint); color:var(--coral-deep); font-weight:700;
+}
+.appeal-user-cell div{ min-width:0; display:flex; flex-direction:column; gap:2px; }
+.appeal-user-cell strong,.appeal-user-cell span{ max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.appeal-user-cell strong{ font-size:12.5px; }
+.appeal-user-cell span{ color:var(--ink-soft); font-family:var(--font-mono); font-size:10.5px; }
+.appeal-reason-preview{ max-width:300px; color:var(--ink-soft); font-size:12px; line-height:1.5; white-space:normal; }
+.appeal-status{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
+  font-family:var(--font-mono); font-size:10.5px; font-weight:700; white-space:nowrap;
+}
+.appeal-status::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.appeal-status-pending{ color:#E7C083; background:rgba(224,181,104,.14); }
+.appeal-status-reviewing{ color:#93B8ED; background:rgba(127,168,224,.14); }
+.appeal-status-needs-info{ color:#C3A2F4; background:rgba(174,139,224,.14); }
+.appeal-status-approved{ color:#8FD09E; background:rgba(127,192,137,.14); }
+.appeal-status-rejected{ color:#F0A290; background:rgba(224,139,122,.14); }
+.appeal-status-permanent{ color:#FF8B7F; background:rgba(255,71,62,.18); border:1px solid rgba(255,107,92,.35); }
+.appeal-permanent-label{ color:#FF8B7F !important; font-family:var(--font-body) !important; font-size:9.5px !important; font-weight:700; }
+.appeal-open-btn{
+  padding:7px 11px; border:1px solid var(--line); border-radius:8px;
+  background:var(--surface-2); color:var(--ink); font-size:11.5px;
+}
+.appeal-open-btn:hover{ border-color:var(--coral); color:var(--coral-deep); }
+.appeal-review-modal{ max-width:680px; }
+.appeal-review-modal .modal-head p{ margin-top:4px; color:var(--ink-soft); font-family:var(--font-mono); font-size:10.5px; }
+.appeal-account-box{
+  display:flex; align-items:center; gap:12px; padding:14px 16px;
+  border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-bottom:17px;
+}
+.appeal-avatar{
+  width:42px; height:42px; flex:0 0 42px; display:grid; place-items:center;
+  border-radius:50%; background:var(--coral); color:var(--white); font-weight:700;
+}
+.appeal-account-box>div{ min-width:0; display:flex; flex-direction:column; gap:3px; }
+.appeal-account-box>div strong,.appeal-account-box>div span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.appeal-account-box>div strong{ font-size:13.5px; }
+.appeal-account-box>div span{ color:var(--ink-soft); font-family:var(--font-mono); font-size:11px; }
+.appeal-account-box>.appeal-status{ margin-left:auto; }
+.appeal-detail-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:17px; }
+.appeal-detail-grid>div{ padding:11px 13px; border:1px solid var(--line); border-radius:10px; background:var(--paper); }
+.appeal-detail-grid span{ display:block; color:var(--ink-soft); font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+.appeal-detail-grid strong{ display:block; font-size:11.5px; overflow-wrap:anywhere; }
+.appeal-reason-box{ padding:15px 16px; margin-bottom:17px; border-left:3px solid var(--coral); background:var(--coral-tint); border-radius:0 10px 10px 0; }
+.appeal-reason-box>span{ display:block; color:var(--coral-deep); font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.appeal-reason-box p{ color:var(--ink); font-size:12.5px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.appeal-note-hint{ color:var(--ink-soft); font-size:10.5px; }
+.appeal-review-actions{ display:flex; justify-content:flex-end; align-items:center; gap:9px; flex-wrap:wrap; margin-top:8px; }
+.appeal-review-actions[hidden]{ display:none !important; }
+.appeal-review-actions .btn{ border-radius:9px; }
+.appeal-reject-btn{ border:1px solid rgba(255,107,92,.55); background:rgba(255,107,92,.08); color:#F0A290; }
+.appeal-reject-btn:hover{ background:var(--danger); color:var(--white); }
+.appeal-needs-info-btn{ border:1px solid rgba(174,139,224,.55); background:rgba(174,139,224,.1); color:#C3A2F4; }
+.appeal-needs-info-btn:hover{ background:#674B93; color:var(--white); }
+.appeal-approve-btn{ border:1px solid rgba(127,192,137,.55); background:rgba(127,192,137,.13); color:#8FD09E; }
+.appeal-approve-btn:hover{ background:#5E8E67; color:var(--white); }
+.appeal-closed-note{ padding:12px 14px; border-radius:9px; text-align:center; color:var(--ink-soft); background:var(--paper); font-size:11.5px; }
+.appeal-closed-note[hidden]{ display:none !important; }
+
+@media(max-width:760px){
+  .appeal-stats{ grid-template-columns:1fr 1fr; }
+  .appeal-toolbar{ align-items:stretch; }
+  .appeal-toolbar .dash-search,.appeal-toolbar .dash-search input{ width:100%; }
+  .appeal-detail-grid{ grid-template-columns:1fr; }
+  .appeal-account-box{ align-items:flex-start; }
+  .appeal-account-box>.appeal-status{ margin-left:0; }
+  .appeal-review-actions{ align-items:stretch; flex-direction:column; }
+  .appeal-review-actions .btn{ width:100%; }
+}
+
 /* ====================== ANNOUNCE & PAYMENT CONFIG ====================== */
 .cfg-section{
   background: var(--surface);
