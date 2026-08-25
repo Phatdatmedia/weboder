@@ -689,7 +689,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','appeals','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','maintenance','boost','adsorders','partners','invoices','contracts'];
+const ALL_TABS = ['overview','services','projects','users','appeals','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','system','maintenance','boost','adsorders','partners','invoices','contracts'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -714,6 +714,7 @@ function switchTab(tab){
   if(tab === 'livechat') loadLiveChatTab();
   if(tab === 'social')   loadSocialCareTable();
   if(tab === 'app')      refreshPushStatus();
+  if(tab === 'system')   loadAccountTierConfig();
   if(tab === 'maintenance') loadMaintenanceConfig();
   if(tab === 'boost') loadBoostTable();
   if(tab === 'adsorders'){ loadAdsOrders(); loadAdsPricing(); }
@@ -1144,15 +1145,22 @@ async function loadUsersTable(){
       body.innerHTML = `<div class="dash-empty">Lỗi: ${escapeHtml(error.message)}</div>`;
       return;
     }
-    allUsers = (data||[]).map(u => ({
+    allUsers = (data||[]).map(u => {
+      const accountTier = ['standard','priority','private'].includes(u.account_tier)
+        ? u.account_tier
+        : (u.is_priority ? 'priority' : 'standard');
+      return {
       id: u.id, name: u.full_name, email: u.email,
       registeredAt: new Date(u.created_at).toLocaleDateString('vi-VN'),
       status: u.is_locked ? (u.is_permanently_locked ? 'Khoá vĩnh viễn' : 'Đã khoá') : 'Hoạt động',
       isLocked: !!u.is_locked,
       isPermanent: !!u.is_permanently_locked,
-      isPriority: !!u.is_priority,
+      accountTier,
+      isPriority: accountTier === 'priority' || accountTier === 'private',
+      isPrivate: accountTier === 'private',
+      totalSpent: Number(u.total_spent) || 0,
       walletBalance: Number(u.wallet_balance) || 0
-    }));
+    }});
     renderUsersTable(allUsers);
   } catch{ body.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`; }
 }
@@ -1161,13 +1169,14 @@ function renderUsersTable(users){
   document.getElementById('uStatAll').textContent      = users.length;
   document.getElementById('uStatActive').textContent   = users.filter(u => u.status === 'Hoạt động').length;
   document.getElementById('uStatLocked').textContent   = users.filter(u => u.isLocked).length;
-  document.getElementById('uStatPriority').textContent = users.filter(u => u.isPriority).length;
+  document.getElementById('uStatPriority').textContent = users.filter(u => u.accountTier === 'priority').length;
+  document.getElementById('uStatPrivate').textContent  = users.filter(u => u.accountTier === 'private').length;
 
   const body = document.getElementById('usersTableBody');
   if(!users.length){ body.innerHTML = `<div class="dash-empty">Chưa có tài khoản nào.</div>`; return; }
 
   let html = `<table class="dash-table"><thead><tr>
-    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Số dư ví</th><th>Thao tác</th>
+    <th>Họ tên</th><th>Email</th><th>Ngày đăng ký</th><th>Trạng thái</th><th>Hạng KH</th><th>Tổng chi tiêu</th><th>Số dư ví</th><th>Thao tác</th>
   </tr></thead><tbody>`;
   users.forEach(u => {
     const locked = u.isLocked;
@@ -1176,19 +1185,20 @@ function renderUsersTable(users){
       <td style="font-family:var(--font-mono);font-size:12.5px;">${escapeHtml(u.email||'')}</td>
       <td style="font-size:12px;color:var(--ink-soft);">${escapeHtml(u.registeredAt||'')}</td>
       <td><span class="svc-status-pill ${u.isPermanent?'appeal-status-permanent':locked?'svc-status-inactive':'svc-status-active'}">${escapeHtml(u.status||'')}</span></td>
-      <td>${u.isPriority
-          ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;background:var(--ink-deep);color:#E8C87E;font-size:11.5px;font-weight:600;">✨ Ưu tiên</span>`
-          : `<span style="font-size:11.5px;color:var(--ink-soft);">Thường</span>`}
+      <td><span class="account-tier-badge tier-${u.accountTier}">${u.accountTier === 'private' ? '◆ Private' : u.accountTier === 'priority' ? '✦ Priority' : 'Tiêu chuẩn'}</span>
       </td>
+      <td style="font-family:var(--font-mono); font-size:13px; font-weight:600;">${(u.totalSpent||0).toLocaleString('vi-VN')}đ</td>
       <td style="font-family:var(--font-mono); font-size:13px; font-weight:600;">${(u.walletBalance||0).toLocaleString('vi-VN')}đ</td>
       <td>
         <div class="svc-actions">
           <button onclick="handleToggleUser('${u.id}')" style="${locked?'color:var(--sage);':'color:#A8311A;'}">
             ${locked ? 'Mở khoá' : 'Khoá'}
           </button>
-          <button onclick="handleTogglePriority('${u.id}')" style="color:${u.isPriority ? 'var(--ink-soft)' : '#B8860B'};">
-            ${u.isPriority ? 'Hạ hạng' : '✨ Thăng hạng'}
-          </button>
+          <select class="tier-select tier-select-${u.accountTier}" aria-label="Chọn hạng khách hàng" onchange="handleSetUserTier('${u.id}', this.value, this)">
+            <option value="standard" ${u.accountTier === 'standard' ? 'selected' : ''}>Tiêu chuẩn</option>
+            <option value="priority" ${u.accountTier === 'priority' ? 'selected' : ''}>Priority</option>
+            <option value="private" ${u.accountTier === 'private' ? 'selected' : ''}>Private</option>
+          </select>
           <button onclick="openWalletAdjustModal('${u.id}')" style="color:var(--coral-deep);">
             💰 Điều chỉnh ví
           </button>
@@ -1200,19 +1210,39 @@ function renderUsersTable(users){
   body.innerHTML = html;
 }
 
-async function handleTogglePriority(id){
+async function handleSetUserTier(id, nextTier, selectEl){
   const user = allUsers.find(u => u.id === id);
-  const willPromote = user && !user.isPriority;
-  const actionLabel = willPromote ? 'thăng hạng lên Ưu tiên' : 'chuyển về hạng Thường';
-  if(!confirm(`Bạn muốn ${actionLabel} tài khoản "${user?.email || id}"?`)) return;
+  const previousTier = user?.accountTier || 'standard';
+  const tierLabel = { standard:'Tiêu chuẩn', priority:'Priority', private:'Private' };
+  if(!tierLabel[nextTier] || nextTier === previousTier) return;
+  if(!confirm(`Chuyển tài khoản "${user?.email || id}" sang hạng ${tierLabel[nextTier]}?`)){
+    if(selectEl) selectEl.value = previousTier;
+    return;
+  }
+  if(selectEl) selectEl.disabled = true;
   try{
-    const { error } = await sb.from('profiles').update({ is_priority: willPromote }).eq('id', id);
+    const { error } = await sb.rpc('admin_set_account_tier', { p_user_id:id, p_tier:nextTier });
     if(!error){
-      showToast(`Đã ${actionLabel}.`);
+      showToast(`Đã chuyển sang hạng ${tierLabel[nextTier]}.`);
+      logAdminAction('Đổi hạng khách hàng', `${user?.email || id}: ${tierLabel[previousTier]} → ${tierLabel[nextTier]}`);
       allUsers = [];
       loadUsersTable();
-    } else showToast('Lỗi: ' + error.message);
-  } catch{ showToast('Không thể kết nối.'); }
+    } else {
+      if(selectEl) selectEl.value = previousTier;
+      showToast('Lỗi: ' + error.message);
+    }
+  } catch{
+    if(selectEl) selectEl.value = previousTier;
+    showToast('Không thể kết nối.');
+  } finally {
+    if(selectEl) selectEl.disabled = false;
+  }
+}
+
+// Giữ tương thích cho nơi cũ nếu vẫn còn gọi hàm này.
+async function handleTogglePriority(id){
+  const user = allUsers.find(u => u.id === id);
+  return handleSetUserTier(id, user?.accountTier === 'standard' ? 'priority' : 'standard');
 }
 
 async function handleToggleUser(id){
@@ -3040,6 +3070,112 @@ async function handlePushAction(){
     showToast('Lỗi: ' + e.message);
   }
 }
+
+/* =====================================================================
+   CẤU HÌNH HẠNG TÀI KHOẢN — Standard → Priority → Private
+===================================================================== */
+const ACCOUNT_TIER_CONFIG_KEY = 'account_tier_config';
+const DEFAULT_ACCOUNT_TIER_CONFIG = {
+  auto_upgrade: true,
+  priority_threshold: 5000000,
+  private_threshold: 10000000
+};
+let accountTierConfigLoaded = false;
+
+function formatTierMoney(value){
+  return Math.max(0, Number(value) || 0).toLocaleString('vi-VN') + 'đ';
+}
+
+function updateAccountTierPreview(){
+  const priority = Number(document.getElementById('tier_priority_threshold')?.value) || 0;
+  const privateValue = Number(document.getElementById('tier_private_threshold')?.value) || 0;
+  ['tierPriorityPreview','tierPriorityLadder'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = formatTierMoney(priority);
+  });
+  ['tierPrivatePreview','tierPrivateLadder'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = formatTierMoney(privateValue);
+  });
+}
+
+async function loadAccountTierConfig(force = false){
+  if(accountTierConfigLoaded && !force) return;
+  const errorBox = document.getElementById('tierConfigError');
+  if(errorBox) errorBox.classList.remove('show');
+  try{
+    const { data, error } = await sb.from('site_config').select('value').eq('key', ACCOUNT_TIER_CONFIG_KEY).maybeSingle();
+    if(error) throw error;
+    const cfg = { ...DEFAULT_ACCOUNT_TIER_CONFIG, ...(data?.value || {}) };
+    document.getElementById('tier_auto_enabled').checked = cfg.auto_upgrade !== false;
+    document.getElementById('tier_priority_threshold').value = Number(cfg.priority_threshold) || DEFAULT_ACCOUNT_TIER_CONFIG.priority_threshold;
+    document.getElementById('tier_private_threshold').value = Number(cfg.private_threshold) || DEFAULT_ACCOUNT_TIER_CONFIG.private_threshold;
+    accountTierConfigLoaded = true;
+    updateAccountTierPreview();
+  } catch(error){
+    if(errorBox){
+      errorBox.textContent = 'Không thể tải cấu hình: ' + (error.message || 'Lỗi kết nối');
+      errorBox.classList.add('show');
+    }
+  }
+}
+
+function readAccountTierConfigForm(){
+  const priority = Number(document.getElementById('tier_priority_threshold').value);
+  const privateValue = Number(document.getElementById('tier_private_threshold').value);
+  if(!Number.isFinite(priority) || priority <= 0) throw new Error('Mốc Priority phải lớn hơn 0.');
+  if(!Number.isFinite(privateValue) || privateValue <= priority) throw new Error('Mốc Private phải lớn hơn mốc Priority.');
+  return {
+    auto_upgrade: document.getElementById('tier_auto_enabled').checked,
+    priority_threshold: Math.round(priority),
+    private_threshold: Math.round(privateValue)
+  };
+}
+
+async function saveAccountTierConfig(){
+  const btn = document.getElementById('tierConfigSaveBtn');
+  const errorBox = document.getElementById('tierConfigError');
+  errorBox.classList.remove('show');
+  try{
+    const value = readAccountTierConfigForm();
+    btn.disabled = true; btn.textContent = 'Đang lưu...';
+    const { error } = await sb.from('site_config').upsert({
+      key: ACCOUNT_TIER_CONFIG_KEY,
+      value,
+      updated_at: new Date().toISOString()
+    }, { onConflict:'key' });
+    if(error) throw error;
+    accountTierConfigLoaded = true;
+    updateAccountTierPreview();
+    showToast('Đã lưu cấu hình nâng hạng.');
+    logAdminAction('Cập nhật cấu hình hạng tài khoản', `Priority ${formatTierMoney(value.priority_threshold)} · Private ${formatTierMoney(value.private_threshold)} · Tự động ${value.auto_upgrade ? 'bật' : 'tắt'}`);
+    if(value.auto_upgrade) await recalculateAccountTiers(false);
+  } catch(error){
+    errorBox.textContent = error.message || 'Không thể lưu cấu hình.';
+    errorBox.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Lưu cấu hình';
+  }
+}
+
+async function recalculateAccountTiers(askConfirm = true){
+  if(askConfirm && !confirm('Tính lại tổng chi tiêu và hạng cho toàn bộ tài khoản ngay bây giờ?')) return;
+  const btn = document.getElementById('tierRecalculateBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Đang tính lại...'; }
+  try{
+    const { data, error } = await sb.rpc('admin_recalculate_account_tiers');
+    if(error) throw error;
+    allUsers = [];
+    showToast(`Đã tính lại hạng cho ${Number(data) || 0} tài khoản.`);
+  } catch(error){
+    const errorBox = document.getElementById('tierConfigError');
+    if(errorBox){ errorBox.textContent = 'Không thể tính lại hạng: ' + (error.message || 'Lỗi kết nối'); errorBox.classList.add('show'); }
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = 'Tính lại toàn bộ hạng'; }
+  }
+}
+
+['tier_priority_threshold','tier_private_threshold'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', updateAccountTierPreview);
+});
 
 /* =====================================================================
    CHẾ ĐỘ BẢO TRÌ — lưu vào `site_config`, key 'maintenance_mode'

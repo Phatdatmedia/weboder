@@ -71,6 +71,7 @@
     <button id="mobileTabPartners" onclick="switchTab('partners')">Đối tác & CTV</button>
     <button id="mobileTabInvoices" onclick="switchTab('invoices')">Xuất hoá đơn</button>
     <button id="mobileTabContracts" onclick="switchTab('contracts')">Tạo hợp đồng</button>
+    <button id="mobileTabSystem" onclick="switchTab('system')">Cấu hình hệ thống</button>
     <button id="mobileTabTraffic"  onclick="switchTab('traffic')">Truy cập</button>
     <button id="mobileTabContact"  onclick="switchTab('contact')">Liên hệ</button>
     <button id="mobileTabSecurity" onclick="switchTab('security')">Bảo mật</button>
@@ -161,6 +162,10 @@
       </a>
 
       <div class="dash-nav-section">Hệ thống</div>
+      <a href="javascript:void(0)" class="dash-nav-item" id="navTabSystem" onclick="switchTab('system')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21H9.6v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3V9.6h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.18.38.48.7.86.9.34.18.72.28 1.11.28H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+        Cấu hình hệ thống
+      </a>
       <a href="javascript:void(0)" class="dash-nav-item" id="navTabTraffic" onclick="switchTab('traffic')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M18.7 8 12 14.7l-3-3-4 4"/></svg>
         Lượt truy cập
@@ -380,7 +385,7 @@
         <button class="btn btn-ghost btn-sm" onclick="loadUsersTable()">↻ Làm mới</button>
       </div>
 
-      <div class="dash-stats" style="grid-template-columns:repeat(4,1fr);">
+      <div class="dash-stats user-tier-stats">
         <div class="dash-stat-card">
           <div class="ds-label">Tổng tài khoản</div>
           <div class="ds-val" id="uStatAll">—</div>
@@ -396,6 +401,10 @@
         <div class="dash-stat-card">
           <div class="ds-label">✨ Khách ưu tiên</div>
           <div class="ds-val" id="uStatPriority">—</div>
+        </div>
+        <div class="dash-stat-card tier-stat-private">
+          <div class="ds-label">◆ Khách Private</div>
+          <div class="ds-val" id="uStatPrivate">—</div>
         </div>
       </div>
 
@@ -1150,6 +1159,85 @@
           <div id="pushStatusBox" style="margin-bottom:14px; font-size:13.5px;">Đang kiểm tra...</div>
           <button class="btn btn-primary btn-sm" id="pushActionBtn" onclick="handlePushAction()">Bật thông báo</button>
         </div>
+      </div>
+    </div>
+
+    <!-- TAB: CẤU HÌNH HỆ THỐNG -->
+    <div class="tab-panel" id="tabSystem">
+      <div class="dash-top">
+        <div>
+          <h1>Cấu hình hệ thống</h1>
+          <p>Quản lý quy tắc vận hành tập trung. Thay đổi được áp dụng trực tiếp cho toàn bộ tài khoản khách hàng.</p>
+        </div>
+      </div>
+
+      <div class="system-config-grid">
+        <section class="cfg-section system-config-main">
+          <div class="cfg-section-head">
+            <div>
+              <span class="system-eyebrow">ACCOUNT MEMBERSHIP</span>
+              <h3>Tự động nâng hạng tài khoản</h3>
+              <p>Xếp hạng theo tổng giá trị các đơn đã hoàn thành. Hệ thống chỉ tự nâng hạng, không tự hạ hạng.</p>
+            </div>
+            <label class="system-switch" title="Bật hoặc tắt tự động nâng hạng">
+              <input type="checkbox" id="tier_auto_enabled" checked>
+              <span></span>
+            </label>
+          </div>
+          <div class="cfg-body">
+            <div class="tier-threshold-grid">
+              <label class="tier-threshold-card tier-threshold-priority">
+                <span class="tier-threshold-icon">✦</span>
+                <span class="tier-threshold-copy">
+                  <strong>Mốc Priority</strong>
+                  <small>Tổng chi tiêu tối thiểu</small>
+                </span>
+                <input class="field" type="number" min="0" step="100000" id="tier_priority_threshold" value="5000000">
+                <span class="tier-threshold-preview" id="tierPriorityPreview">5.000.000đ</span>
+              </label>
+
+              <label class="tier-threshold-card tier-threshold-private">
+                <span class="tier-threshold-icon">◆</span>
+                <span class="tier-threshold-copy">
+                  <strong>Mốc Private</strong>
+                  <small>Tổng chi tiêu tối thiểu</small>
+                </span>
+                <input class="field" type="number" min="0" step="100000" id="tier_private_threshold" value="10000000">
+                <span class="tier-threshold-preview" id="tierPrivatePreview">10.000.000đ</span>
+              </label>
+            </div>
+
+            <div class="tier-config-note">
+              <b>Cách tính:</b> cộng <code>total_price</code> (hoặc <code>amount</code> nếu chưa có) của các đơn có trạng thái <b>Hoàn thành</b>. Admin vẫn có thể chọn hạng trực tiếp trong tab Tài khoản.
+            </div>
+            <div class="modal-error" id="tierConfigError"></div>
+            <div class="system-config-actions">
+              <button class="btn btn-ghost" id="tierRecalculateBtn" onclick="recalculateAccountTiers()">Tính lại toàn bộ hạng</button>
+              <button class="btn btn-primary" id="tierConfigSaveBtn" onclick="saveAccountTierConfig()">Lưu cấu hình</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="cfg-section tier-ladder-card">
+          <div class="cfg-section-head">
+            <div>
+              <span class="system-eyebrow">MEMBERSHIP LADDER</span>
+              <h3>Thứ tự đặc quyền</h3>
+            </div>
+          </div>
+          <div class="cfg-body">
+            <div class="tier-ladder">
+              <div class="tier-ladder-item is-standard"><span>01</span><div><strong>Tiêu chuẩn</strong><small>Dưới mốc Priority</small></div></div>
+              <div class="tier-ladder-item is-priority"><span>02</span><div><strong>Priority</strong><small>Từ <b id="tierPriorityLadder">5.000.000đ</b></small></div></div>
+              <div class="tier-ladder-item is-private"><span>03</span><div><strong>Private</strong><small>Từ <b id="tierPrivateLadder">10.000.000đ</b></small></div></div>
+            </div>
+            <ul class="system-policy-list">
+              <li>Private là hạng cao nhất.</li>
+              <li>Priority và Private vẫn tương thích với cột <code>is_priority</code> cũ.</li>
+              <li>Admin có thể đổi hạng thủ công ngay tại danh sách tài khoản.</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
 

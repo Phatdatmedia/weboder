@@ -1,6 +1,3 @@
-
-
-
 /* ============================================================
    KIỂM TRA CHẾ ĐỘ BẢO TRÌ — chạy NGAY LẬP TỨC, TRƯỚC mọi lệnh gọi
    dữ liệu khác trên trang. Nếu đang bảo trì: hiện màn hình bảo trì,
@@ -218,6 +215,7 @@ async function handleRegister(){
   const email = document.getElementById("reg_email").value.trim();
   const pass  = document.getElementById("reg_pass").value;
   const pass2 = document.getElementById("reg_pass2").value;
+  const gender = document.querySelector('input[name="reg_gender"]:checked')?.value || '';
   const errBox = document.getElementById("registerErr");
   const okBox  = document.getElementById("registerOk");
 
@@ -230,7 +228,7 @@ async function handleRegister(){
     return;
   }
 
-  if(!name || !email || !pass || !pass2){
+  if(!name || !email || !pass || !pass2 || !gender){
     errBox.textContent = "Vui lòng điền đầy đủ tất cả các trường.";
     errBox.classList.add("show"); return;
   }
@@ -251,7 +249,7 @@ async function handleRegister(){
   try{
     const { data, error } = await sb.auth.signUp({
       email, password: pass,
-      options: { data: { full_name: name } }
+      options: { data: { full_name: name, gender, theme_preference:'auto' } }
     });
 
     if(error){
@@ -273,6 +271,7 @@ async function handleRegister(){
       document.getElementById("reg_email").value = "";
       document.getElementById("reg_pass").value  = "";
       document.getElementById("reg_pass2").value = "";
+      document.querySelectorAll('input[name="reg_gender"]').forEach(input => { input.checked = false; });
       setTimeout(() => {
         showLogin();
         document.getElementById("login_email").value = email;
@@ -465,7 +464,7 @@ async function enterDashboard(){
   // Lấy thông tin hiển thị từ bảng profiles
   const { data: profile, error: profileError } = await sb
     .from('profiles')
-    .select('full_name, email, is_locked, is_priority')
+    .select('full_name, email, is_locked, is_permanently_locked, is_priority, account_tier, total_spent, gender, theme_preference')
     .eq('id', session.user.id)
     .single();
 
@@ -479,38 +478,56 @@ async function enterDashboard(){
   }
 
   // Tài khoản bị khoá -> giữ session và chuyển tới trang kháng nghị.
-  if(profile?.is_locked){
+  if(profile?.is_locked || profile?.is_permanently_locked){
     window.location.replace(LOCKED_ACCOUNT_URL);
     return;
   }
 
+  const accountTier = ['standard','priority','private'].includes(profile?.account_tier)
+    ? profile.account_tier
+    : (profile?.is_priority ? 'priority' : 'standard');
+  const metadataGender = ['male','female'].includes(session.user.user_metadata?.gender)
+    ? session.user.user_metadata.gender
+    : null;
+  const profileGender = ['male','female'].includes(profile?.gender) ? profile.gender : metadataGender;
+  const themePreference = ['auto','default','cute'].includes(profile?.theme_preference)
+    ? profile.theme_preference
+    : 'auto';
+
+  // Tài khoản mới có thể được tạo trước khi xác nhận email; đồng bộ giới tính
+  // từ Auth metadata vào profiles ngay lần đăng nhập đầu tiên.
+  if(!profile?.gender && metadataGender){
+    try{
+      await sb.from('profiles').update({ gender:metadataGender, theme_preference:'auto' }).eq('id',session.user.id);
+    } catch{}
+  }
   currentUser = {
     id: session.user.id,
     name: profile?.full_name || session.user.email,
     email: profile?.email || session.user.email,
-    isPriority: !!profile?.is_priority,
+    accountTier,
+    isPriority: accountTier === 'priority' || accountTier === 'private',
+    isPrivate: accountTier === 'private',
+    totalSpent: Number(profile?.total_spent) || 0,
+    gender: profileGender,
+    themePreference,
     createdAt: session.user.created_at || null,
     emailVerified: !!session.user.email_confirmed_at
   };
 
   document.getElementById("authWrap").style.display = "none";
   document.getElementById("dashWrap").classList.add("show");
-  document.getElementById("dashWrap").classList.toggle("vip-mode", currentUser.isPriority);
   document.body.classList.add("dashboard-active");
 
   const initial = (currentUser.name || "U")[0].toUpperCase();
   document.getElementById("sideAvatar").textContent = initial;
-  document.getElementById("sideName").innerHTML = escHtml(currentUser.name || "Người dùng")
-    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
   document.getElementById("sideEmail").textContent  = currentUser.email || "";
   document.getElementById("p_name").value  = currentUser.name  || "";
   document.getElementById("p_email").value = currentUser.email || "";
 
   document.getElementById("ovAvatar").textContent = initial;
-  document.getElementById("ovName").innerHTML = escHtml(currentUser.name || "Người dùng")
-    + ' <span class="verified-badge" title="Đã xác thực">✔️</span>'
-    + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
   document.getElementById("ovEmail").textContent = currentUser.email || "";
+  applyAccountTierUi();
   renderAccountProfile();
 
   switchDashTab("profile");
@@ -520,9 +537,9 @@ async function enterDashboard(){
   document.getElementById("notifBell").style.display = "flex";
   loadNotifications();
 
-  // Khách hàng ưu tiên -> hiện hiệu ứng chào mừng, tự reset lại sau mỗi 3 tiếng
+  // Hội viên Priority/Private -> hiện chào mừng, tự reset lại sau mỗi 3 tiếng.
   if(currentUser.isPriority){
-    const vipKey = 'vipWelcomeLastShown_' + currentUser.id;
+    const vipKey = 'tierWelcomeLastShown_' + currentUser.id + '_' + currentUser.accountTier;
     const lastShown = Number(localStorage.getItem(vipKey) || 0);
     const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
     if(Date.now() - lastShown > THREE_HOURS_MS){
@@ -534,6 +551,13 @@ async function enterDashboard(){
 
 function showVipWelcome(name){
   const overlay = document.getElementById('vipWelcomeOverlay');
+  const isPrivate = currentUser?.accountTier === 'private';
+  document.getElementById('vipWelcomeCrest').textContent = isPrivate ? '◆' : '✦';
+  document.getElementById('vipWelcomeTag').textContent = isPrivate ? 'Hội viên Private' : 'Khách hàng Priority';
+  document.getElementById('vipWelcomeSub').textContent = isPrivate
+    ? 'Đặc quyền Private và trải nghiệm chăm sóc riêng của bạn đã sẵn sàng.'
+    : 'Cảm ơn bạn đã đồng hành. Đặc quyền Priority của bạn đã sẵn sàng.';
+  overlay.classList.toggle('private-welcome', isPrivate);
   document.getElementById('vipWelcomeName').textContent = 'Chào mừng trở lại, ' + (name || '');
   overlay.classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -548,6 +572,71 @@ function escHtml(str){
   const d = document.createElement('div');
   d.textContent = str ?? '';
   return d.innerHTML;
+}
+
+function renderAccountTierBadge(){
+  if(currentUser?.accountTier === 'private') return '<span class="private-badge-pill">◆ Private</span>';
+  if(currentUser?.accountTier === 'priority') return '<span class="vip-badge-pill">✦ Priority</span>';
+  return '';
+}
+
+function resolveAccountTheme(gender = currentUser?.gender, preference = currentUser?.themePreference){
+  if(preference === 'cute') return 'cute';
+  if(preference === 'default') return 'default';
+  return gender === 'female' ? 'cute' : 'default';
+}
+
+function applyResolvedAccountTheme(gender = currentUser?.gender, preference = currentUser?.themePreference){
+  const dash = document.getElementById('dashWrap');
+  if(!dash) return;
+  dash.classList.toggle('cute-mode', resolveAccountTheme(gender,preference) === 'cute');
+}
+
+function previewAccountThemeSettings(){
+  const gender = document.getElementById('p_gender')?.value || null;
+  const preference = document.getElementById('p_theme')?.value || 'auto';
+  applyResolvedAccountTheme(gender,preference);
+}
+
+function applyAccountTierUi(){
+  if(!currentUser) return;
+  const dash = document.getElementById('dashWrap');
+  dash.classList.toggle('vip-mode', currentUser.accountTier === 'priority');
+  dash.classList.toggle('private-mode', currentUser.accountTier === 'private');
+  applyResolvedAccountTheme();
+  const badge = renderAccountTierBadge();
+  document.getElementById('sideName').innerHTML = escHtml(currentUser.name || 'Người dùng') + badge;
+  document.getElementById('ovName').innerHTML = escHtml(currentUser.name || 'Người dùng')
+    + ' <span class="verified-badge" title="Đã xác thực">✔️</span>' + badge;
+  const totalSpentText = (Number(currentUser.totalSpent) || 0).toLocaleString('vi-VN') + 'đ';
+  ['ovTotalSpent','uStatSpent','profileTotalSpent'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = totalSpentText;
+  });
+}
+
+async function refreshAccountTierState(){
+  if(!currentUser) return;
+  try{
+    const { data, error } = await sb.from('profiles')
+      .select('account_tier, total_spent, is_priority, gender, theme_preference')
+      .eq('id', currentUser.id)
+      .single();
+    if(error || !data) return;
+    const nextTier = ['standard','priority','private'].includes(data.account_tier)
+      ? data.account_tier
+      : (data.is_priority ? 'priority' : 'standard');
+    const tierChanged = nextTier !== currentUser.accountTier;
+    currentUser.accountTier = nextTier;
+    currentUser.isPriority = nextTier !== 'standard';
+    currentUser.isPrivate = nextTier === 'private';
+    currentUser.totalSpent = Number(data.total_spent) || 0;
+    currentUser.gender = ['male','female'].includes(data.gender) ? data.gender : currentUser.gender;
+    currentUser.themePreference = ['auto','default','cute'].includes(data.theme_preference) ? data.theme_preference : 'auto';
+    applyAccountTierUi();
+    renderAccountProfile();
+    if(tierChanged && currentUser.isPriority) showVipWelcome(currentUser.name);
+  } catch{}
 }
 
 /* Đồng bộ dữ liệu tài khoản hiện có vào giao diện hồ sơ mới.
@@ -572,13 +661,17 @@ function renderAccountProfile(){
   setText('profileAvatar', initial);
   setText('profileDisplayName', name);
   setText('profileEmailText', email);
-  setText('profileRoleText', currentUser.isPriority ? 'Khách hàng ưu tiên' : 'Thành viên');
-  setText('profileTierText', currentUser.isPriority ? 'Ưu tiên' : 'Khách hàng');
+  setText('profileRoleText', currentUser.isPrivate ? 'Hội viên Private' : currentUser.accountTier === 'priority' ? 'Khách hàng Priority' : 'Thành viên');
+  setText('profileTierText', currentUser.isPrivate ? 'Private' : currentUser.accountTier === 'priority' ? 'Priority' : 'Tiêu chuẩn');
   setText('topAvatar', initial);
   setText('topUserName', name);
 
   const usernameInput = document.getElementById('p_username');
   if(usernameInput) usernameInput.value = username || 'tai-khoan';
+  const genderInput = document.getElementById('p_gender');
+  if(genderInput) genderInput.value = currentUser.gender || '';
+  const themeInput = document.getElementById('p_theme');
+  if(themeInput) themeInput.value = currentUser.themePreference || 'auto';
 
   const created = currentUser.createdAt ? new Date(currentUser.createdAt) : null;
   setText('profileMemberSince', created && !Number.isNaN(created.getTime())
@@ -606,7 +699,7 @@ function renderAccountProfile(){
 
 function exitDashboard(){
   document.getElementById("dashWrap").classList.remove("show");
-  document.getElementById("dashWrap").classList.remove("vip-mode");
+  document.getElementById("dashWrap").classList.remove("vip-mode", "private-mode", "cute-mode");
   document.body.classList.remove("dashboard-active");
   document.getElementById("authWrap").style.display = "block";
   document.getElementById("notifBell").style.display = "none";
@@ -655,7 +748,7 @@ async function loadUserOrders(){
   try{
     const { data, error } = await sb
       .from('orders')
-      .select('order_code, service_type, budget, description, amount, payment_type, total_price, payment_method, created_at, status')
+      .select('order_code, service_type, description, created_at, status')
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false });
 
@@ -667,16 +760,12 @@ async function loadUserOrders(){
     const mapped = (data||[]).map(o => ({
       "Mã đơn": o.order_code,
       "Loại dịch vụ": o.service_type,
-      "Ngân sách": o.budget,
       "Mô tả yêu cầu": o.description,
-      "Số tiền": o.amount,
-      "Loại TT": o.payment_type,
-      "Giá trị đơn": o.total_price,
-      "Phương thức TT": o.payment_method,
       "Thời gian đặt": new Date(o.created_at).toLocaleString('vi-VN'),
       "Trạng thái": o.status
     }));
     renderUserOrders(mapped);
+    await refreshAccountTierState();
   } catch(err){
     body.innerHTML = `<div class="orders-empty">Không thể kết nối Supabase.</div>`;
   }
@@ -707,22 +796,17 @@ function renderUserOrders(orders){
   }
 
   let html = `<table class="orders-table"><thead><tr>
-    <th>Mã đơn</th><th>Dịch vụ</th><th>Ngân sách</th><th>Mô tả yêu cầu</th><th>Số tiền</th><th>Phương thức TT</th><th>Thời gian</th><th>Trạng thái</th>
+    <th>Mã đơn</th><th>Dịch vụ</th><th>Mô tả yêu cầu</th><th>Thời gian</th><th>Trạng thái</th>
   </tr></thead><tbody>`;
 
   orders.forEach(o => {
     const st = o["Trạng thái"] || "Chờ xác nhận";
     const descFull = o["Mô tả yêu cầu"] || '';
     const descShort = descFull.length > 60 ? descFull.slice(0,60) + '…' : descFull;
-    const amountVal = o["Số tiền"] != null ? Number(o["Số tiền"]).toLocaleString('vi-VN') + 'đ' : '—';
-    const totalVal = o["Giá trị đơn"] != null ? ` / ${Number(o["Giá trị đơn"]).toLocaleString('vi-VN')}đ` : '';
     html += `<tr>
       <td class="order-code">${esc(o["Mã đơn"])}</td>
       <td>${esc(o["Loại dịch vụ"]||"")}</td>
-      <td style="font-size:12.5px;font-family:var(--font-mono);color:var(--ink-soft);white-space:nowrap;">${esc(o["Ngân sách"]||"—")}</td>
       <td style="font-size:12.5px;color:var(--ink-soft);max-width:220px;" title="${esc(descFull)}">${esc(descShort||"—")}</td>
-      <td style="font-size:12.5px;font-family:var(--font-mono);white-space:nowrap;">${amountVal}${totalVal}<br><span style="color:var(--ink-soft);font-size:10.5px;">${esc(o["Loại TT"]||"")}</span></td>
-      <td style="font-size:12.5px;color:var(--ink-soft);">${esc(o["Phương thức TT"]||"—")}</td>
       <td style="font-size:12px;color:var(--ink-soft);">${esc(o["Thời gian đặt"]||"")}</td>
       <td><span class="status-pill ${STATUS_MAP[st]||'s-pending'}">${esc(st)}</span></td>
     </tr>`;
@@ -736,17 +820,21 @@ function renderUserOrders(orders){
 ============================================================ */
 async function handleUpdateProfile(){
   const name   = document.getElementById("p_name").value.trim();
+  const gender = document.getElementById("p_gender").value;
+  const themePreference = document.getElementById("p_theme").value;
   const errBox = document.getElementById("profileErr");
   const okBox  = document.getElementById("profileOk");
   errBox.classList.remove("show"); okBox.classList.remove("show");
 
   if(!name){ errBox.textContent = "Tên không được để trống."; errBox.classList.add("show"); return; }
+  if(!['male','female'].includes(gender)){ errBox.textContent = "Vui lòng chọn giới tính."; errBox.classList.add("show"); return; }
+  if(!['auto','default','cute'].includes(themePreference)){ errBox.textContent = "Giao diện đã chọn không hợp lệ."; errBox.classList.add("show"); return; }
   if(!isConfigured()){ errBox.textContent = "Chưa cấu hình Supabase."; errBox.classList.add("show"); return; }
 
   try{
     const { error } = await sb
       .from('profiles')
-      .update({ full_name: name })
+      .update({ full_name:name, gender, theme_preference:themePreference })
       .eq('id', currentUser.id);
 
     if(error){
@@ -754,13 +842,11 @@ async function handleUpdateProfile(){
       return;
     }
     currentUser.name = name;
-    document.getElementById("sideName").innerHTML = escHtml(name)
-      + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
+    currentUser.gender = gender;
+    currentUser.themePreference = themePreference;
     document.getElementById("sideAvatar").textContent = name[0].toUpperCase();
     document.getElementById("ovAvatar").textContent = name[0].toUpperCase();
-    document.getElementById("ovName").innerHTML = escHtml(name)
-      + ' <span class="verified-badge" title="Đã xác thực">✔️</span>'
-      + (currentUser.isPriority ? '<span class="vip-badge-pill">✨ Ưu tiên</span>' : '');
+    applyAccountTierUi();
     renderAccountProfile();
     okBox.textContent = "Đã cập nhật thông tin."; okBox.classList.add("show");
   } catch(err){

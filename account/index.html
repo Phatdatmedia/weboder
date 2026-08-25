@@ -37,11 +37,11 @@
 <!-- OVERLAY CHÀO MỪNG KHÁCH HÀNG ƯU TIÊN -->
 <div class="vip-welcome-overlay" id="vipWelcomeOverlay">
   <div class="vip-welcome-inner">
-    <div class="vip-welcome-crest">✨</div>
-    <div class="vip-welcome-tag">Khách hàng ưu tiên</div>
+    <div class="vip-welcome-crest" id="vipWelcomeCrest">✨</div>
+    <div class="vip-welcome-tag" id="vipWelcomeTag">Khách hàng Priority</div>
     <div class="vip-welcome-name" id="vipWelcomeName">Chào mừng trở lại</div>
     <div class="vip-welcome-line"></div>
-    <div class="vip-welcome-sub">Cảm ơn bạn đã đồng hành cùng Phatdatagency. Trải nghiệm dịch vụ ưu tiên của bạn đang được chuẩn bị.</div>
+    <div class="vip-welcome-sub" id="vipWelcomeSub">Cảm ơn bạn đã đồng hành cùng Phatdatagency. Đặc quyền Priority của bạn đã sẵn sàng.</div>
   </div>
 </div>
 
@@ -151,6 +151,20 @@
       <div class="form-group">
         <label>Email <span class="req">*</span></label>
         <input type="email" class="field" id="reg_email" placeholder="ban@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Giới tính <span class="req">*</span></label>
+        <div class="gender-choice-grid" role="radiogroup" aria-label="Chọn giới tính">
+          <label class="gender-choice">
+            <input type="radio" name="reg_gender" value="male">
+            <span><b>Nam</b><small>Giao diện chung</small></span>
+          </label>
+          <label class="gender-choice gender-choice-cute">
+            <input type="radio" name="reg_gender" value="female">
+            <span><b>Nữ</b><small>Vàng kem cute</small></span>
+          </label>
+        </div>
+        <p class="field-hint">Chỉ dùng để chọn giao diện mặc định. Bạn có thể đổi giao diện bất cứ lúc nào.</p>
       </div>
       <div class="form-group">
         <label>Mật khẩu <span class="req">*</span></label>
@@ -333,6 +347,10 @@
             <div class="is-icon c-ink">✅</div>
             <div><div class="is-label">Hoàn thành</div><div class="is-val" id="ovStatDone">—</div></div>
           </div>
+          <div class="icon-stat account-spent-stat">
+            <div class="is-icon c-gold">◆</div>
+            <div><div class="is-label">Tổng chi tiêu</div><div class="is-val" id="ovTotalSpent">0đ</div></div>
+          </div>
         </div>
       </div>
 
@@ -417,7 +435,7 @@
         <p>Tất cả đơn hàng bạn đã đặt qua tài khoản này.</p>
       </div>
 
-      <div class="stat-row">
+      <div class="stat-row account-orders-stats">
         <div class="stat-card">
           <div class="s-label">Tổng đơn</div>
           <div class="s-val" id="uStatTotal">—</div>
@@ -429,6 +447,11 @@
         <div class="stat-card">
           <div class="s-label">Hoàn thành</div>
           <div class="s-val" id="uStatDone">—</div>
+        </div>
+        <div class="stat-card total-spent-card">
+          <div class="s-label">Tổng chi tiêu</div>
+          <div class="s-val" id="uStatSpent">0đ</div>
+          <div class="s-note">Tính từ doanh thu thực của đơn hoàn thành</div>
         </div>
       </div>
 
@@ -470,6 +493,11 @@
             <div class="profile-balance-box">
               <div><span>Số dư tài khoản</span><strong id="profileWalletBalance">0đ</strong></div>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+            </div>
+
+            <div class="profile-balance-box profile-spent-box">
+              <div><span>Tổng chi tiêu</span><strong id="profileTotalSpent">0đ</strong></div>
+              <span class="profile-spent-mark">◆</span>
             </div>
 
             <div class="profile-facts">
@@ -552,6 +580,23 @@
               <div class="form-group">
                 <label>Trạng thái</label>
                 <input type="text" class="field" value="Tài khoản đang hoạt động" disabled>
+              </div>
+              <div class="form-group">
+                <label>Giới tính</label>
+                <select class="field" id="p_gender" onchange="previewAccountThemeSettings()">
+                  <option value="">-- Chọn giới tính --</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Giao diện tài khoản</label>
+                <select class="field" id="p_theme" onchange="previewAccountThemeSettings()">
+                  <option value="auto">Theo giới tính</option>
+                  <option value="default">Giao diện chung</option>
+                  <option value="cute">Vàng kem cute</option>
+                </select>
+                <p class="field-hint">Có thể xem trước ngay và đổi lại bất cứ lúc nào.</p>
               </div>
             </div>
             <div class="account-form-actions">

@@ -192,6 +192,7 @@ a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid va
 
 /* stat cards (kiểu cũ, vẫn dùng cho tab Đơn hàng) */
 .stat-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:28px; }
+.stat-row.account-orders-stats{ grid-template-columns:repeat(4,minmax(0,1fr)); }
 .stat-card{ background:var(--white); border:1px solid var(--line); border-radius:var(--r-md); padding:18px; }
 .stat-card .s-label{ font-family:var(--font-mono); font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); }
 .stat-card .s-val{ font-family:var(--font-display); font-size:28px; margin-top:6px; }
@@ -219,6 +220,7 @@ a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid va
 .icon-stat .is-icon.c-coral{ background:var(--coral-tint); }
 .icon-stat .is-icon.c-sage{ background:#E3EBDD; }
 .icon-stat .is-icon.c-ink{ background:var(--paper-deep); }
+.icon-stat .is-icon.c-gold{ background:#F7ECCE; color:#8B6824; }
 .icon-stat .is-label{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
 .icon-stat .is-val{ font-family:var(--font-display); font-size:19px; margin-top:1px; }
 
@@ -607,6 +609,12 @@ body.dashboard-active .nav-right{ gap:10px; }
 .profile-balance-box span{ color:#7A8799; font-size:10.5px; }
 .profile-balance-box strong{ color:var(--blue); font-size:18px; }
 .profile-balance-box svg{ color:#5F8FF0; }
+.profile-spent-box{ margin-top:-4px; background:#FFF9EC; border-color:#E2C98F; }
+.profile-spent-box strong{ color:#8A6726; }
+.profile-spent-mark{ display:grid; place-items:center; width:27px; height:27px; border-radius:50%; background:#EAD6A5; color:#71531B; font-size:11px; }
+.total-spent-card{ border-color:#DDC486; background:linear-gradient(135deg,#FFFCF4,#F8EED7); }
+.total-spent-card .s-val{ color:#8B6724; }
+.total-spent-card .s-note{ margin-top:4px; color:var(--ink-soft); font-size:10px; line-height:1.4; }
 .profile-facts{ text-align:left; }
 .profile-fact{
   position:relative; display:flex; align-items:center; gap:9px; min-height:48px; padding:8px 0;
@@ -737,4 +745,269 @@ body.dashboard-active .nav-right{ gap:10px; }
   .profile-status-grid{ grid-template-columns:1fr; }
   .stat-row{ grid-template-columns:1fr; }
   .nav-right .notif-dropdown{ right:-48px; }
+}
+
+/* ===================== PRIVATE MEMBERSHIP — ẤM, SÁNG VÀ RIÊNG BIỆT ===================== */
+.private-badge-pill{
+  display:inline-flex; align-items:center; gap:5px; margin-left:7px; padding:4px 9px;
+  border:1px solid #A98B51; border-radius:999px;
+  background:linear-gradient(120deg,#3A3228,#1F1B17 68%,#5B4A2C);
+  color:#F9EBC9; font:700 9px var(--font-mono); letter-spacing:.055em; text-transform:uppercase;
+  box-shadow:0 5px 15px rgba(64,49,26,.15);
+}
+.vip-welcome-overlay.private-welcome{
+  background:
+    radial-gradient(circle at 17% 18%,rgba(200,169,110,.19),transparent 28%),
+    radial-gradient(circle at 82% 78%,rgba(125,101,61,.18),transparent 30%),
+    linear-gradient(145deg,#F5EFE3,#D7C8AC);
+}
+.vip-welcome-overlay.private-welcome::before{
+  content:"◆"; position:absolute; font-size:min(46vw,620px); line-height:1; color:rgba(112,87,47,.035); transform:rotate(12deg);
+}
+.vip-welcome-overlay.private-welcome .vip-welcome-crest{ color:#8D6D31; filter:drop-shadow(0 7px 16px rgba(102,77,34,.22)); }
+.vip-welcome-overlay.private-welcome .vip-welcome-tag{ color:#755923; border-color:#B99A5E; background:rgba(255,252,244,.62); }
+.vip-welcome-overlay.private-welcome .vip-welcome-name{ color:#2C271F; }
+.vip-welcome-overlay.private-welcome .vip-welcome-line{ background:linear-gradient(90deg,transparent,#9C7940,transparent); }
+.vip-welcome-overlay.private-welcome .vip-welcome-sub{ color:#746A5C; }
+
+#dashWrap.private-mode{
+  background:
+    radial-gradient(circle at 78% 7%,rgba(187,151,84,.11),transparent 28%),
+    linear-gradient(180deg,#F5F0E7,#EEE7DB);
+  color:#302B24;
+}
+#dashWrap.private-mode .dash-side{ background:linear-gradient(180deg,#211E1A,#171512); border-right:1px solid #564A38; }
+#dashWrap.private-mode .dash-brand{ color:#F3E6C7; }
+#dashWrap.private-mode .dash-brand span{ color:#C29A50; }
+#dashWrap.private-mode .dash-nav-section{ color:#756A58; }
+#dashWrap.private-mode .dash-nav-item{ color:#C8BDAA; }
+#dashWrap.private-mode .dash-nav-item:hover{ color:#FFF2D7; background:rgba(202,166,96,.08); }
+#dashWrap.private-mode .dash-nav-item.active{ color:#211B12; background:linear-gradient(120deg,#E4C98F,#B58D46); box-shadow:0 8px 22px rgba(0,0,0,.18); }
+#dashWrap.private-mode .dash-side-account{ border-color:#4B4031; background:rgba(255,255,255,.025); }
+#dashWrap.private-mode .dash-avatar{ color:#211A10; background:linear-gradient(145deg,#F0DBAC,#B89049); }
+#dashWrap.private-mode .dash-user-name{ color:#F6EBD4; }
+#dashWrap.private-mode .dash-user-email{ color:#8F8370; }
+#dashWrap.private-mode .dash-main{ background:transparent; position:relative; }
+#dashWrap.private-mode .dash-main::before{
+  content:""; position:fixed; right:3.5vw; top:118px; width:280px; height:280px; pointer-events:none; opacity:.16;
+  background:
+    radial-gradient(circle at center,transparent 31%,#B6965B 32% 33%,transparent 34%),
+    repeating-conic-gradient(from 15deg,transparent 0 12deg,rgba(151,116,55,.22) 13deg 14deg,transparent 15deg 30deg);
+  border-radius:50%;
+}
+#dashWrap.private-mode .section-head h2,
+#dashWrap.private-mode .orders-table-head h3,
+#dashWrap.private-mode .profile-card h3,
+#dashWrap.private-mode .completion-heading h2,
+#dashWrap.private-mode .account-card-title h3,
+#dashWrap.private-mode .profile-name-row h2{ color:#332C22; }
+#dashWrap.private-mode .section-head p,
+#dashWrap.private-mode .profile-fact div span,
+#dashWrap.private-mode .account-form-actions p{ color:#897C68; }
+#dashWrap.private-mode .overview-profile-card,
+#dashWrap.private-mode .quick-tile,
+#dashWrap.private-mode .stat-card,
+#dashWrap.private-mode .orders-table-wrap,
+#dashWrap.private-mode .profile-card,
+#dashWrap.private-mode .topup-panel-acc,
+#dashWrap.private-mode .account-identity-card,
+#dashWrap.private-mode .account-quick-card,
+#dashWrap.private-mode .profile-completion-card,
+#dashWrap.private-mode .account-form-card{
+  background:rgba(255,253,248,.9); border-color:#DCD0BC; box-shadow:0 13px 34px rgba(79,62,37,.07);
+  backdrop-filter:blur(6px);
+}
+#dashWrap.private-mode .account-identity-card{
+  background:
+    radial-gradient(circle at 15% 7%,rgba(255,255,255,.45),transparent 25%),
+    linear-gradient(180deg,#E9D9BA 0,#D8BE8C 38%,rgba(255,253,248,.96) 38%,rgba(255,253,248,.96) 100%);
+}
+#dashWrap.private-mode .profile-avatar{ background:linear-gradient(145deg,#514331,#241F19); color:#F2DCA9; border-color:#FFF9E8; }
+#dashWrap.private-mode .profile-camera{ background:#9B783A; }
+#dashWrap.private-mode .profile-rank{ color:#6E5424; border-color:#B99A60; background:#FFF9EC; }
+#dashWrap.private-mode .profile-balance-box,
+#dashWrap.private-mode .profile-status-item{ background:#F8F2E7; border-color:#E2D4BD; }
+#dashWrap.private-mode .profile-spent-box,#dashWrap.private-mode .total-spent-card{ background:#F2E4CC; border-color:#C9AA70; }
+#dashWrap.private-mode .profile-balance-box strong,
+#dashWrap.private-mode .stat-card .s-val,
+#dashWrap.private-mode .order-code{ color:#896728; }
+#dashWrap.private-mode .profile-fact div strong,
+#dashWrap.private-mode .profile-status-item strong{ color:#3B3328; }
+#dashWrap.private-mode .account-quick-card button{ color:#695E4E; }
+#dashWrap.private-mode .account-quick-card button:hover,
+#dashWrap.private-mode .account-quick-card button.active{ color:#70531E; background:#F2E5CD; }
+#dashWrap.private-mode .account-quick-card button i{ background:#A27C37; }
+#dashWrap.private-mode .field{ color:#3B3328; background:#FFFEFB; border-color:#D8CCB8; }
+#dashWrap.private-mode .field:focus{ border-color:#A78548; box-shadow:0 0 0 3px rgba(167,133,72,.11); }
+#dashWrap.private-mode label{ color:#5D5243; }
+#dashWrap.private-mode table.orders-table th{ color:#776A57; background:#F4ECDE; border-color:#E2D6C3; }
+#dashWrap.private-mode table.orders-table td{ color:#4A4135; border-color:#E9E0D1; }
+#dashWrap.private-mode table.orders-table tr:hover td{ background:#FBF6EC; }
+#dashWrap.private-mode .btn-primary{ color:#FFF8E8; background:linear-gradient(120deg,#9B7838,#6F5427); box-shadow:0 8px 20px rgba(99,74,34,.16); }
+#dashWrap.private-mode .btn-ghost{ color:#625747; border-color:#D2C4AF; background:rgba(255,253,248,.65); }
+#dashWrap.private-mode .wallet-hero{ background:linear-gradient(125deg,#40372C,#211D18 65%,#806433); border:1px solid #8E7445; }
+#dashWrap.private-mode .cta-order{ background:linear-gradient(130deg,#EEE1CA,#D7BF92); border:1px solid #C4A66D; }
+#dashWrap.private-mode .cta-order h3{ color:#3A3023; }
+#dashWrap.private-mode .cta-order p{ color:#796B56; }
+#dashWrap.private-mode .mobile-tabbar{ background:#211E1A; }
+#dashWrap.private-mode .mobile-tabbar button.active{ color:#EDCF91; border-color:#B58D46; }
+
+@media(max-width:960px){
+  #dashWrap.private-mode .dash-main::before{ width:190px; height:190px; right:-30px; top:150px; }
+}
+@media(max-width:1180px){ .stat-row.account-orders-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:520px){ .stat-row.account-orders-stats{ grid-template-columns:1fr; } }
+
+/* ===================== ĐĂNG KÝ — CHỌN GIỚI TÍNH ===================== */
+.gender-choice-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.gender-choice{
+  position:relative; display:flex; align-items:center; gap:10px; min-height:58px; padding:11px 13px;
+  border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; transition:.18s ease;
+}
+.gender-choice:hover{ transform:translateY(-1px); border-color:#B8C8DF; box-shadow:0 7px 18px rgba(36,54,82,.07); }
+.gender-choice input{ width:16px; height:16px; margin:0; accent-color:var(--blue); }
+.gender-choice span{ display:flex; flex-direction:column; gap:2px; }
+.gender-choice b{ color:var(--ink); font-size:12.5px; }
+.gender-choice small{ color:var(--ink-soft); font-size:9.5px; }
+.gender-choice:has(input:checked){ border-color:#72A2F6; background:#F2F7FF; box-shadow:0 0 0 3px rgba(60,119,232,.1); }
+.gender-choice-cute{ background:#FFFDF5; border-color:#EAD9A8; }
+.gender-choice-cute input{ accent-color:#C89631; }
+.gender-choice-cute:has(input:checked){ border-color:#D6AD54; background:linear-gradient(135deg,#FFFBEA,#F8E8B8); box-shadow:0 0 0 3px rgba(211,166,69,.12); }
+
+/* ===================== CUTE THEME — TIÊU CHUẨN ===================== */
+#dashWrap.cute-mode{
+  background:
+    radial-gradient(circle at 12% 9%,rgba(255,214,105,.22),transparent 25%),
+    radial-gradient(circle at 87% 76%,rgba(247,185,110,.16),transparent 28%),
+    linear-gradient(180deg,#FFFCEF,#FFF7DF);
+  color:#493A25;
+}
+#dashWrap.cute-mode .dash-main{ position:relative; background:transparent; }
+#dashWrap.cute-mode .dash-main::after{
+  content:"✿  ·  ✦  ·  ♡"; position:fixed; z-index:0; right:34px; top:92px; pointer-events:none;
+  color:rgba(193,139,40,.12); font-size:25px; letter-spacing:10px; transform:rotate(-7deg);
+}
+#dashWrap.cute-mode .dash-section{ position:relative; z-index:1; }
+#dashWrap.cute-mode .dash-side{
+  color:#5A4527; background:
+    radial-gradient(circle at 22px 34px,rgba(221,171,65,.13) 0 2px,transparent 3px),
+    linear-gradient(180deg,#FFF9E7,#FFF3CF);
+  background-size:42px 42px,auto; border-right:1px solid #E8D29C;
+}
+#dashWrap.cute-mode .dash-brand{ color:#5B4320; }
+#dashWrap.cute-mode .dash-brand span{ color:#D39B2D; }
+#dashWrap.cute-mode .dash-nav-section{ color:#AD9060; }
+#dashWrap.cute-mode .dash-nav-item{ color:#6C5737; }
+#dashWrap.cute-mode .dash-nav-item:hover{ color:#5A421E; background:rgba(224,177,76,.14); }
+#dashWrap.cute-mode .dash-nav-item.active{ color:#4D3818; background:linear-gradient(120deg,#F5D982,#EAB34B); box-shadow:0 8px 18px rgba(181,130,37,.16); }
+#dashWrap.cute-mode .dash-side-account{ border-color:#E4CB91; background:rgba(255,255,255,.47); }
+#dashWrap.cute-mode .dash-avatar{ color:#62481A; background:linear-gradient(145deg,#FFE9A9,#E6B74E); }
+#dashWrap.cute-mode .dash-user-name{ color:#4E3A1E; }
+#dashWrap.cute-mode .dash-user-email{ color:#9A8159; }
+#dashWrap.cute-mode .overview-profile-card,
+#dashWrap.cute-mode .quick-tile,
+#dashWrap.cute-mode .stat-card,
+#dashWrap.cute-mode .orders-table-wrap,
+#dashWrap.cute-mode .profile-card,
+#dashWrap.cute-mode .topup-panel-acc,
+#dashWrap.cute-mode .account-identity-card,
+#dashWrap.cute-mode .account-quick-card,
+#dashWrap.cute-mode .profile-completion-card,
+#dashWrap.cute-mode .account-form-card{
+  color:#493A25; background:rgba(255,254,248,.94); border-color:#EAD9AF;
+  box-shadow:0 13px 30px rgba(132,94,30,.07); backdrop-filter:blur(7px);
+}
+#dashWrap.cute-mode .account-identity-card{
+  background:
+    radial-gradient(circle at 18% 11%,rgba(255,255,255,.58),transparent 24%),
+    linear-gradient(180deg,#FFE9A8 0,#F4CE72 38%,rgba(255,254,248,.97) 38%,rgba(255,254,248,.97) 100%);
+}
+#dashWrap.cute-mode .profile-avatar{ color:#694C18; background:linear-gradient(145deg,#FFF5C7,#E7B84D); border-color:#FFFDF4; box-shadow:0 0 0 2px #E5C267,0 9px 22px rgba(165,116,29,.16); }
+#dashWrap.cute-mode .profile-camera{ background:#CF972B; }
+#dashWrap.cute-mode .profile-rank{ color:#78591D; border-color:#DDBB67; background:#FFF9E7; }
+#dashWrap.cute-mode .profile-balance-box,
+#dashWrap.cute-mode .profile-status-item{ background:#FFF9EA; border-color:#ECD8A8; }
+#dashWrap.cute-mode .profile-spent-box,#dashWrap.cute-mode .total-spent-card{ background:#FFF0C2; border-color:#DCB856; }
+#dashWrap.cute-mode .profile-balance-box strong,
+#dashWrap.cute-mode .stat-card .s-val,
+#dashWrap.cute-mode .order-code{ color:#9A6D17; }
+#dashWrap.cute-mode .profile-name-row h2,
+#dashWrap.cute-mode .completion-heading h2,
+#dashWrap.cute-mode .account-card-title h3,
+#dashWrap.cute-mode .profile-fact div strong,
+#dashWrap.cute-mode .profile-status-item strong{ color:#4B3A22; }
+#dashWrap.cute-mode .account-quick-card button{ color:#695334; }
+#dashWrap.cute-mode .account-quick-card button:hover,
+#dashWrap.cute-mode .account-quick-card button.active{ color:#7E5912; background:#FFF1C5; }
+#dashWrap.cute-mode .account-quick-card button i{ background:#D49C2C; }
+#dashWrap.cute-mode .field{ color:#4A3B26; background:#FFFEFA; border-color:#E3D3AF; }
+#dashWrap.cute-mode .field:focus{ border-color:#D0A441; box-shadow:0 0 0 3px rgba(208,164,65,.12); }
+#dashWrap.cute-mode label{ color:#665237; }
+#dashWrap.cute-mode table.orders-table th{ color:#826B46; background:#FFF5D9; border-color:#E8D6AE; }
+#dashWrap.cute-mode table.orders-table td{ color:#50412D; border-color:#EEE1C7; }
+#dashWrap.cute-mode table.orders-table tr:hover td{ background:#FFFAEB; }
+#dashWrap.cute-mode .btn-primary{ color:#4D3511; background:linear-gradient(120deg,#F0D270,#E1A83D); box-shadow:0 8px 18px rgba(173,121,28,.15); }
+#dashWrap.cute-mode .btn-ghost{ color:#705A38; border-color:#DDCAA0; background:#FFFCF4; }
+#dashWrap.cute-mode .wallet-hero{ color:#FFF9E9; background:linear-gradient(125deg,#A57628,#D7A848 62%,#8E641F); border:1px solid #D9B461; }
+#dashWrap.cute-mode .cta-order{ background:linear-gradient(130deg,#FFF1BE,#F0CC72); border:1px solid #DCB554; }
+#dashWrap.cute-mode .cta-order h3{ color:#553D17; }
+#dashWrap.cute-mode .cta-order p{ color:#846736; }
+#dashWrap.cute-mode .mobile-tabbar{ background:#FFF3D2; border-color:#E6CC8E; }
+#dashWrap.cute-mode .mobile-tabbar button{ color:#765D33; }
+#dashWrap.cute-mode .mobile-tabbar button.active{ color:#7F590F; border-color:#D8A438; }
+
+/* Priority cute: vàng champagne sáng, vẫn khác hạng Tiêu chuẩn. */
+#dashWrap.vip-mode.cute-mode{ background:linear-gradient(180deg,#FFF8DF,#F7E8BB); }
+#dashWrap.vip-mode.cute-mode .dash-side{ background:linear-gradient(180deg,#4F3B24,#342719); border-color:#8E6C37; }
+#dashWrap.vip-mode.cute-mode .dash-brand,#dashWrap.vip-mode.cute-mode .dash-user-name{ color:#FFF0C7; }
+#dashWrap.vip-mode.cute-mode .dash-nav-item{ color:#DCC89E; }
+#dashWrap.vip-mode.cute-mode .dash-nav-item.active{ color:#3E2B10; background:linear-gradient(120deg,#FFE59B,#DDA73E); }
+#dashWrap.vip-mode.cute-mode .overview-profile-card,
+#dashWrap.vip-mode.cute-mode .stat-card,
+#dashWrap.vip-mode.cute-mode .orders-table-wrap,
+#dashWrap.vip-mode.cute-mode .profile-card,
+#dashWrap.vip-mode.cute-mode .account-identity-card,
+#dashWrap.vip-mode.cute-mode .account-quick-card,
+#dashWrap.vip-mode.cute-mode .profile-completion-card,
+#dashWrap.vip-mode.cute-mode .account-form-card{ background:rgba(255,252,240,.95); border-color:#D9B968; }
+#dashWrap.vip-mode.cute-mode .account-identity-card{ background:linear-gradient(180deg,#E9C66C 0,#C99A3D 38%,#FFF9E9 38%,#FFF9E9 100%); }
+#dashWrap.vip-mode.cute-mode .completion-ring::after{ background:#FFFDF5; }
+#dashWrap.vip-mode.cute-mode .profile-name-row h2,
+#dashWrap.vip-mode.cute-mode .completion-heading h2,
+#dashWrap.vip-mode.cute-mode .account-card-title h3,
+#dashWrap.vip-mode.cute-mode .profile-fact div strong,
+#dashWrap.vip-mode.cute-mode .profile-status-item strong{ color:#49351A; }
+
+/* Private cute: ivory + rose-gold nhẹ, vẫn giữ cảm giác riêng tư cao cấp. */
+#dashWrap.private-mode.cute-mode{
+  background:
+    radial-gradient(circle at 82% 10%,rgba(201,153,106,.18),transparent 27%),
+    linear-gradient(180deg,#FFF8EB,#F4E4D5);
+}
+#dashWrap.private-mode.cute-mode .dash-side{ background:linear-gradient(180deg,#3C3028,#261F1B); border-color:#866B4D; }
+#dashWrap.private-mode.cute-mode .dash-brand,#dashWrap.private-mode.cute-mode .dash-user-name{ color:#F8E6C7; }
+#dashWrap.private-mode.cute-mode .dash-nav-item{ color:#D7C1A8; }
+#dashWrap.private-mode.cute-mode .dash-nav-item.active{ color:#3B291C; background:linear-gradient(120deg,#F1CE94,#CF9861); }
+#dashWrap.private-mode.cute-mode .overview-profile-card,
+#dashWrap.private-mode.cute-mode .stat-card,
+#dashWrap.private-mode.cute-mode .orders-table-wrap,
+#dashWrap.private-mode.cute-mode .profile-card,
+#dashWrap.private-mode.cute-mode .account-identity-card,
+#dashWrap.private-mode.cute-mode .account-quick-card,
+#dashWrap.private-mode.cute-mode .profile-completion-card,
+#dashWrap.private-mode.cute-mode .account-form-card{ background:rgba(255,251,244,.95); border-color:#D6B796; }
+#dashWrap.private-mode.cute-mode .account-identity-card{ background:linear-gradient(180deg,#E9C49B 0,#CE986E 38%,#FFF9F0 38%,#FFF9F0 100%); }
+#dashWrap.private-mode.cute-mode .completion-ring::after{ background:#FFF9F0; }
+#dashWrap.private-mode.cute-mode .profile-name-row h2,
+#dashWrap.private-mode.cute-mode .completion-heading h2,
+#dashWrap.private-mode.cute-mode .account-card-title h3,
+#dashWrap.private-mode.cute-mode .profile-fact div strong,
+#dashWrap.private-mode.cute-mode .profile-status-item strong{ color:#493328; }
+#dashWrap.private-mode.cute-mode .profile-balance-box,
+#dashWrap.private-mode.cute-mode .profile-status-item{ background:#FBEDDF; border-color:#DFC5AA; }
+#dashWrap.private-mode.cute-mode .btn-primary{ color:#3D271B; background:linear-gradient(120deg,#EDC690,#CB8D5C); }
+
+@media(max-width:620px){
+  .gender-choice-grid{ grid-template-columns:1fr; }
+  #dashWrap.cute-mode .dash-main::after{ right:-12px; top:112px; font-size:18px; }
 }
