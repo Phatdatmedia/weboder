@@ -386,11 +386,6 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       throw new Error('Vui lòng chọn phương thức thanh toán.');
     }
 
-    const now = new Date();
-    const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
-    const randPart = Math.floor(1000 + Math.random()*9000);
-    const orderCode = `DH-${datePart}-${randPart}`;
-
     const serverInfo = (SERVER_LIST[platform] || []).find(s => s.name === server);
     const description =
       `[Chạy QC tăng tương tác]\n` +
@@ -404,9 +399,10 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
 
     const customerName = loggedInProfile ? loggedInProfile.name : document.getElementById('f_name').value.trim();
     const customerEmail = loggedInProfile ? loggedInProfile.email : (document.getElementById('f_email').value.trim() || null);
-    const customerPhone = loggedInProfile ? '' : document.getElementById('f_phone').value.trim();
-    const userId = loggedInProfile ? loggedInProfile.id : null;
-
+    // Khách đã đăng nhập không cần nhập SĐT. Cột phone của bảng orders là
+    // cấu trúc cũ bắt buộc NOT NULL, nên chỉ lưu nhãn nội bộ để không làm
+    // phát sinh yêu cầu nhập phone trên giao diện.
+    const customerPhone = loggedInProfile ? 'Tài khoản đăng nhập' : document.getElementById('f_phone').value.trim();
     // PayOS và VietQR đều là "thanh toán trước", lưu rõ phương thức nào trong DB
     const paymentMethod = selectedPayment === 'PayOS'
       ? 'Thanh toán trước (Thanh toán tự động)'
@@ -420,21 +416,7 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       throw new Error('Số dư ví không đủ, vui lòng nạp thêm hoặc chọn phương thức khác.');
     }
 
-    // Lưu lại để truyền sang bước tạo link PayOS / VietQR và hiện biên lai sau này
-    window._lastAmount     = estimated;
-    window._lastOrderCode  = orderCode;
-    window._lastBuyerName  = customerName;
-    window._lastBuyerEmail = customerEmail || '';
-    window._lastBuyerPhone = customerPhone || '';
-    window._lastOrderDetails = {
-      order_code: orderCode,
-      service_type: 'Chạy quảng cáo tăng tương tác MXH',
-      platform, server_name: server, interaction_type: service,
-      quantity: qty, amount: estimated
-    };
-
-    const { error } = await sb.from('orders').insert({
-      order_code: orderCode,
+    const { data: createdOrder, error } = await sb.rpc('create_order_with_sequential_code', { p_order: {
       customer_name: customerName,
       email: customerEmail,
       phone: customerPhone,
@@ -443,7 +425,6 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       budget: estimated,
       amount: estimated,
       payment_method: paymentMethod,
-      user_id: userId,
       // Các cột dưới đây dùng để tab "Đơn tương tác" trong admin
       // lọc và hiển thị có cấu trúc, thay vì phải đọc description.
       order_group: 'social_ads',
@@ -454,9 +435,25 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       quantity: qty,
       post_link: link,
       start_date: start || null
-    });
+    }});
 
     if(error) throw error;
+    const orderCode = createdOrder?.order_code;
+    if(!orderCode) throw new Error('Supabase chưa trả về mã đơn hàng.');
+
+    // Giữ nguyên luồng thanh toán cũ, chỉ dùng mã do database vừa cấp.
+    window._lastAmount     = estimated;
+    window._lastOrderCode  = orderCode;
+    window._lastBuyerName  = customerName;
+    window._lastBuyerEmail = customerEmail || '';
+    // Không gửi nhãn nội bộ sang PayOS; buyerPhone chỉ dùng cho khách vãng lai.
+    window._lastBuyerPhone = loggedInProfile ? '' : (customerPhone || '');
+    window._lastOrderDetails = {
+      order_code: orderCode,
+      service_type: 'Chạy quảng cáo tăng tương tác MXH',
+      platform, server_name: server, interaction_type: service,
+      quantity: qty, amount: estimated
+    };
 
     // Thanh toán bằng ví: gọi RPC trừ tiền NGAY (an toàn, chống double-spend
     // nhờ khoá dòng trong hàm pay_order_with_wallet ở phía Postgres)

@@ -163,6 +163,7 @@ function openOrderModal(presetService){
   loadServicesIntoModal(presetService);
 }
 function closeOrderModal(){
+  stopPayOSStatusWatcher();
   document.getElementById('orderModalOverlay').classList.remove('show');
   document.body.style.overflow = '';
   resetOrderForm();
@@ -279,7 +280,7 @@ function selectPayment(method){
   });
   const hint = document.getElementById('paymentHint');
   if(method === 'PayOS'){
-    hint.textContent = "⚡ Bạn sẽ nhận link thanh toán PayOS ngay sau khi đặt đơn — hỗ trợ ATM, Visa, ví điện tử.";
+    hint.textContent = "⚡ Thanh toán an toàn qua PayOS. Mã QR sẽ hiển thị ngay sau khi đặt đơn.";
   } else if(method === 'VietQR'){
     hint.textContent = "📱 Quét mã QR bằng app ngân hàng bất kỳ để chuyển khoản đặt cọc.";
   } else if(method === 'Thanh toán sau'){
@@ -415,6 +416,8 @@ function showPaymentView(code, paymentMethod){
   document.getElementById('formView').style.display = 'none';
   document.getElementById('payView').classList.add('show');
   document.getElementById('payOrderCode').textContent = code;
+  const modalTitle = document.querySelector('#payView .modal-head h3');
+  if(modalTitle) modalTitle.textContent = 'Đặt đơn thành công 🎉';
   window._lastOrderCode = code;
 
   const amountBox = document.getElementById('payAmountBox');
@@ -455,6 +458,94 @@ function renderVietQRSection(code){
 }
 
 /* ── PayOS ── */
+let qrCodeLibraryPromise = null;
+let payosStatusPollTimer = null;
+let payosStatusRequestRunning = false;
+
+function stopPayOSStatusWatcher(){
+  if(payosStatusPollTimer){
+    clearInterval(payosStatusPollTimer);
+    payosStatusPollTimer = null;
+  }
+}
+
+function renderPayOSPaymentSuccess(code){
+  stopPayOSStatusWatcher();
+
+  const section = document.getElementById('payosSection');
+  if(!section) return;
+
+  const modalTitle = document.querySelector('#payView .modal-head h3');
+  if(modalTitle) modalTitle.textContent = 'Thanh toán thành công ✅';
+
+  section.style.display = 'block';
+  section.innerHTML = `
+    <div class="payos-payment" role="status" aria-live="polite">
+      <div style="width:72px; height:72px; margin:18px auto; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#E8F7EC; color:#21833A; font-size:38px; font-weight:700;">✓</div>
+      <div class="payos-heading">
+        <h4>Thanh toán thành công!</h4>
+        <p>Đơn hàng <b>${escapeHtml(code)}</b> đã được hệ thống xác nhận. Phatdatagency sẽ tiếp nhận và xử lý yêu cầu của bạn ngay.</p>
+      </div>
+    </div>
+    <div class="pay-note payos-auto-note">Trạng thái đơn hàng đã được cập nhật tự động. Bạn có thể lưu mã đơn để tra cứu tiến trình.</div>`;
+
+  showToast('Thanh toán thành công — đơn hàng đã được xác nhận.');
+}
+
+async function checkPayOSPaymentStatus(code){
+  if(!code || payosStatusRequestRunning) return;
+
+  const overlay = document.getElementById('orderModalOverlay');
+  if(!overlay || !overlay.classList.contains('show')){
+    stopPayOSStatusWatcher();
+    return;
+  }
+
+  payosStatusRequestRunning = true;
+  try{
+    const result = await lookupOrderSupabase(code);
+    const status = result?.ok ? result.order?.['Trạng thái'] : null;
+    if(['Đã xác nhận', 'Đang thực hiện', 'Hoàn thành'].includes(status)){
+      renderPayOSPaymentSuccess(code);
+    }
+  } catch(err){
+    // Mất mạng tạm thời: giữ QR và thử lại ở lượt kế tiếp.
+  } finally {
+    payosStatusRequestRunning = false;
+  }
+}
+
+function startPayOSStatusWatcher(code){
+  stopPayOSStatusWatcher();
+  checkPayOSPaymentStatus(code);
+  payosStatusPollTimer = setInterval(()=> checkPayOSPaymentStatus(code), 1000);
+}
+
+function ensureQrCodeLibrary(){
+  if(window.QRCode) return Promise.resolve(window.QRCode);
+  if(qrCodeLibraryPromise) return qrCodeLibraryPromise;
+
+  qrCodeLibraryPromise = new Promise((resolve, reject)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.async = true;
+    script.dataset.payosQrLibrary = 'true';
+    script.onload = ()=> window.QRCode
+      ? resolve(window.QRCode)
+      : reject(new Error('Thư viện QR không khả dụng'));
+    script.onerror = ()=> reject(new Error('Không tải được thư viện QR'));
+    document.head.appendChild(script);
+  });
+
+  return qrCodeLibraryPromise;
+}
+
+function fallbackToVietQR(code){
+  stopPayOSStatusWatcher();
+  renderVietQRSection(code);
+  showToast('PayOS tạm gián đoạn. Đã chuyển sang VietQR.');
+}
+
 async function renderPayOSSection(code){
   document.getElementById('payQrSection').style.display = 'none';
   document.getElementById('payLaterSection').style.display = 'none';
@@ -462,66 +553,55 @@ async function renderPayOSSection(code){
   const section = document.getElementById('payosSection');
   section.style.display = 'block';
   section.innerHTML = `
-    <div style="text-align:center; padding:28px 0;">
+    <div class="payos-loading">
       <svg class="spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2.2">
         <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
       </svg>
-      <p style="margin-top:12px; font-size:13.5px; color:var(--ink-soft);">Đang tạo link thanh toán PayOS...</p>
+      <p>Đang chuẩn bị mã QR thanh toán an toàn...</p>
     </div>`;
 
   try{
     const result = await createPayOSLink(code);
-    if(result.ok && result.checkoutUrl){
+    if(result.ok && result.checkoutUrl && (result.qrCode || result.checkoutUrl)){
+      await ensureQrCodeLibrary();
+
+      const safeCheckoutUrl = escapeHtml(result.checkoutUrl);
       section.innerHTML = `
-        <div style="text-align:center; padding:10px 0 6px;">
-          <div style="font-size:13px; color:var(--ink-soft); margin-bottom:16px;">
-            Link thanh toán đã sẵn sàng — hỗ trợ ATM, Visa/Master, ví điện tử.
+        <div class="payos-payment">
+          <div class="payos-heading">
+            <h4>Hoàn tất thanh toán đơn hàng</h4>
+            <p>Vui lòng mở ứng dụng ngân hàng, quét mã QR PayOS và thanh toán đúng số tiền để đơn hàng được xác nhận nhanh chóng.</p>
           </div>
-          <a href="${result.checkoutUrl}" target="_blank" rel="noopener"
-             class="btn btn-primary" style="font-size:15px; padding:15px 36px; display:inline-flex;">
-            ⚡ Thanh toán ngay →
+          <div id="payosQrCode" class="payos-qr" role="img" aria-label="Mã QR thanh toán PayOS"></div>
+          <div class="payos-qr-caption">Mã QR thanh toán dành riêng cho đơn <b>${escapeHtml(code)}</b></div>
+          <a href="${safeCheckoutUrl}" target="_blank" rel="noopener" class="btn btn-primary payos-open-link">
+            Mở PayOS trên thiết bị này →
           </a>
-          <div style="margin-top:14px;">
-            <a href="${result.checkoutUrl}" style="font-family:var(--font-mono); font-size:11px;
-               color:var(--ink-soft); word-break:break-all; text-decoration:underline;"
-               target="_blank" rel="noopener">${result.checkoutUrl}</a>
-          </div>
-          <div style="margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <button class="btn btn-ghost btn-sm" onclick="copyPayosLink('${result.checkoutUrl}')">
-              📋 Sao chép link
-            </button>
-            <button class="btn btn-ghost btn-sm" onclick="switchToVietQR()">
-              📱 Dùng VietQR thay thế
-            </button>
-          </div>
         </div>
-        <div class="pay-note" style="margin-top:20px;">
-          Sau khi thanh toán thành công, PayOS sẽ tự động cập nhật trạng thái đơn hàng.
-          Lưu lại mã đơn <b>${code}</b> để tra cứu tiến trình.
-        </div>`;
+        <div class="pay-note payos-auto-note">Thanh toán thành công sẽ được hệ thống tự động xác nhận. Bạn không cần gửi lại biên lai.</div>`;
+
+      const qrContainer = document.getElementById('payosQrCode');
+      const qrPayload = String(result.qrCode || result.checkoutUrl);
+      new QRCode(qrContainer, {
+        text: qrPayload,
+        width: 220,
+        height: 220,
+        colorDark: '#18120d',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      startPayOSStatusWatcher(code);
     } else {
-      // Fallback về VietQR nếu PayOS lỗi
-      section.innerHTML = `
-        <div class="pay-note" style="color:#9A3300; background:#FFF0DC; border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:16px;">
-          ⚠️ Không tạo được link PayOS (${result.error || 'lỗi không xác định'}).
-          Đã tự động chuyển sang VietQR.
-        </div>`;
-      setTimeout(()=> renderVietQRSection(code), 600);
+      fallbackToVietQR(code);
     }
   } catch(err){
-    section.innerHTML = `
-      <div class="pay-note" style="color:#9A3300; background:#FFF0DC; border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:16px;">
-        ⚠️ Lỗi kết nối PayOS. Đã tự động chuyển sang VietQR.
-      </div>`;
-    setTimeout(()=> renderVietQRSection(code), 600);
+    console.warn('Không hiển thị được QR PayOS, chuyển sang VietQR:', err);
+    fallbackToVietQR(code);
   }
 }
 
-function copyPayosLink(url){
-  navigator.clipboard.writeText(url).then(()=> showToast("Đã sao chép link thanh toán!"));
-}
-
 function switchToVietQR(){
+  stopPayOSStatusWatcher();
   const code = window._lastOrderCode;
   if(!code) return;
   renderVietQRSection(code);
@@ -570,22 +650,12 @@ async function fetchActiveServices(){
 }
 
 /**
- * Tạo đơn hàng mới. Tự sinh mã đơn dạng DH-yyMMdd-xxxx.
+ * Tạo đơn hàng mới. Mã đơn do Supabase cấp tuần tự từ mã lớn nhất hiện có.
  */
 async function createOrderSupabase(data){
   if(!isBackendConfigured()) throw new Error("Chưa cấu hình Supabase");
 
-  // Sinh mã đơn ở client (đơn giản, đủ dùng — DB có UNIQUE constraint chặn trùng)
-  const now = new Date();
-  const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
-  const randPart = Math.floor(1000 + Math.random()*9000);
-  const orderCode = `DH-${datePart}-${randPart}`;
-
-  const { data: userData } = await sb.auth.getUser();
-  const userId = userData?.user?.id || null;
-
-  const { error } = await sb.from('orders').insert({
-    order_code: orderCode,
+  const { data: createdOrder, error } = await sb.rpc('create_order_with_sequential_code', { p_order: {
     customer_name: data.name,
     email: data.email,
     phone: data.phone,
@@ -596,11 +666,12 @@ async function createOrderSupabase(data){
     amount: data.amount,
     payment_type: data.paymentType || null,
     total_price: data.totalPrice || null,
-    payment_method: data.paymentMethod,
-    user_id: userId
-  });
+    payment_method: data.paymentMethod
+  }});
 
   if(error) return { ok:false, error: error.message };
+  const orderCode = createdOrder?.order_code;
+  if(!orderCode) return { ok:false, error:'Supabase chưa trả về mã đơn hàng.' };
   return { ok:true, code: orderCode };
 }
 
