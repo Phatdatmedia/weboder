@@ -208,9 +208,24 @@
         </div>
       </section>
 
-      <section class="form-section payment-section">
+      <section class="form-section">
         <div class="section-heading">
           <span class="step-index">04</span>
+          <div><h3>Áp mã giảm giá</h3><p>Nhập mã ưu đãi nếu bạn đang có.</p></div>
+        </div>
+        <div class="field-group">
+          <label for="f_coupon">Mã giảm giá <span class="optional">Không bắt buộc</span></label>
+          <div style="display:flex; gap:10px; align-items:stretch;">
+            <input type="text" id="f_coupon" maxlength="32" autocomplete="off" placeholder="VD: CHAOHE2026" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_-]/g,''); clearSmmCouponIfChanged();">
+            <button type="button" class="btn btn-ghost btn-sm" id="applySmmCouponBtn" onclick="applySmmCoupon()" style="flex:none;">Áp dụng</button>
+          </div>
+          <div id="smmCouponFeedback" class="msg" style="margin-top:10px;"></div>
+        </div>
+      </section>
+
+      <section class="form-section payment-section">
+        <div class="section-heading">
+          <span class="step-index">05</span>
           <div><h3>Chốt phương thức thanh toán</h3><p>Chọn cách thanh toán để hoàn tất đơn.</p></div>
         </div>
 
@@ -311,6 +326,8 @@
       <div class="quote-row"><span>Dịch vụ</span><b id="q_service">Tăng like</b></div>
       <div class="quote-row"><span>Đơn giá / 1 lượt</span><b id="q_unit">—</b></div>
       <div class="quote-row"><span>Số lượng</span><b id="q_qty">1.000</b></div>
+      <div class="quote-row" id="q_subtotalRow" style="display:none;"><span>Tạm tính</span><b id="q_subtotal">—</b></div>
+      <div class="quote-row" id="q_discountRow" style="display:none;"><span>Giảm giá</span><b id="q_discount" style="color:var(--sage);">—</b></div>
     </div>
 
     <div class="quote-note"><span>i</span><p>Đây là giá chốt cho server hiện tại. Nếu server có điều kiện riêng, nội dung sẽ hiển thị ngay dưới mục Server.</p></div>

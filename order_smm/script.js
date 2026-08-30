@@ -60,6 +60,87 @@ let SERVER_LIST = {
 let loggedInProfile = null; // { id, name, email } — null nếu là khách vãng lai
 let walletBalance = 0;
 let selectedPayment = null;
+let appliedSmmCoupon = null;
+
+function setSmmCouponFeedback(message, ok){
+  const box = document.getElementById('smmCouponFeedback');
+  if(!box) return;
+  if(!message){ box.className = 'msg'; box.textContent = ''; return; }
+  box.textContent = message;
+  box.className = `msg ${ok ? 'ok' : 'err'}`;
+}
+
+function clearSmmCouponIfChanged(){
+  const code = document.getElementById('f_coupon')?.value.trim().toUpperCase() || '';
+  if(appliedSmmCoupon && code !== appliedSmmCoupon.code){
+    appliedSmmCoupon = null;
+    setSmmCouponFeedback('Mã đã thay đổi. Bấm “Áp dụng” để kiểm tra lại.', false);
+    updateQuote();
+  }
+}
+
+function resetSmmCoupon(clearInput, message){
+  appliedSmmCoupon = null;
+  if(clearInput && document.getElementById('f_coupon')) document.getElementById('f_coupon').value = '';
+  setSmmCouponFeedback(message || '', false);
+  document.getElementById('q_subtotalRow').style.display = 'none';
+  document.getElementById('q_discountRow').style.display = 'none';
+}
+
+function calculateRawSmmTotal(){
+  const platform = els.platform.value;
+  const server = els.server.value;
+  const service = els.service.value;
+  const qty = Number(els.qty.value) || 0;
+  const entry = (UNIT_PRICE[platform] && UNIT_PRICE[platform][server] && UNIT_PRICE[platform][server][service]) || { price:0 };
+  return Math.round(entry.price * qty);
+}
+
+async function previewSmmCoupon(code, subtotal){
+  const phone = loggedInProfile ? null : document.getElementById('f_phone').value.trim();
+  const { data, error } = await sb.rpc('preview_discount_code', {
+    p_code: code,
+    p_subtotal: subtotal,
+    p_customer_phone: phone || null
+  });
+  if(error) return { ok:false, error:error.message };
+  return data || { ok:false, error:'Không kiểm tra được mã giảm giá.' };
+}
+
+async function applySmmCoupon(){
+  const btn = document.getElementById('applySmmCouponBtn');
+  const code = document.getElementById('f_coupon').value.trim().toUpperCase();
+  const subtotal = calculateRawSmmTotal();
+  if(!code){ setSmmCouponFeedback('Vui lòng nhập mã giảm giá.', false); return; }
+  if(subtotal <= 0){ setSmmCouponFeedback('Vui lòng chọn gói và số lượng hợp lệ trước.', false); return; }
+  if(!loggedInProfile && !document.getElementById('f_phone').value.trim()){
+    setSmmCouponFeedback('Khách vãng lai cần nhập số điện thoại trước khi áp mã.', false); return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Đang kiểm tra...';
+  try{
+    const result = await previewSmmCoupon(code, subtotal);
+    if(!result.ok){
+      appliedSmmCoupon = null;
+      setSmmCouponFeedback(result.error || 'Mã giảm giá không hợp lệ.', false);
+      updateQuote();
+      return;
+    }
+    appliedSmmCoupon = result;
+    setSmmCouponFeedback(
+      `Đã áp dụng ${result.code}: giảm ${Number(result.discount_amount).toLocaleString('vi-VN')}đ. Còn ${Number(result.final_amount).toLocaleString('vi-VN')}đ.`,
+      true
+    );
+    updateQuote();
+  } catch(e){
+    appliedSmmCoupon = null;
+    setSmmCouponFeedback('Không kiểm tra được mã giảm giá: ' + e.message, false);
+    updateQuote();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Áp dụng';
+  }
+}
 
 async function loadPricingFromSupabase(){
   try{
@@ -143,14 +224,25 @@ function updateQuote(){
   const entry = (UNIT_PRICE[platform] && UNIT_PRICE[platform][server] && UNIT_PRICE[platform][server][service]) || { price:0, label:service };
   const total = Math.round(entry.price * qty);
 
+  if(appliedSmmCoupon && Number(appliedSmmCoupon.subtotal) !== total){
+    resetSmmCoupon(false, 'Giá trị đơn đã thay đổi. Vui lòng áp dụng lại mã.');
+  }
+  const payable = appliedSmmCoupon?.ok ? Number(appliedSmmCoupon.final_amount) : total;
+
   document.getElementById('q_platform').textContent = platform;
   document.getElementById('q_server').textContent = server || '—';
   document.getElementById('q_service').textContent = entry.label;
   document.getElementById('q_unit').textContent = entry.price.toLocaleString('vi-VN') + 'đ';
   document.getElementById('q_qty').textContent = qty.toLocaleString('vi-VN');
-  document.getElementById('q_total').textContent = total.toLocaleString('vi-VN') + 'đ';
-  updateWalletPillState(total);
-  return total;
+  document.getElementById('q_total').textContent = payable.toLocaleString('vi-VN') + 'đ';
+  document.getElementById('q_subtotalRow').style.display = appliedSmmCoupon?.ok ? 'flex' : 'none';
+  document.getElementById('q_discountRow').style.display = appliedSmmCoupon?.ok ? 'flex' : 'none';
+  if(appliedSmmCoupon?.ok){
+    document.getElementById('q_subtotal').textContent = total.toLocaleString('vi-VN') + 'đ';
+    document.getElementById('q_discount').textContent = '−' + Number(appliedSmmCoupon.discount_amount).toLocaleString('vi-VN') + 'đ';
+  }
+  updateWalletPillState(payable);
+  return payable;
 }
 els.platform.addEventListener('input', () => populateServerDropdown(false));
 els.server.addEventListener('input', onServerChange);
@@ -374,7 +466,21 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     // khách mở trang từ lâu, admin đổi giá ở nơi khác trong lúc đó, mà
     // trang vẫn dùng giá cũ đã tải từ lúc mở trang (không tự cập nhật).
     await loadPricingFromSupabase();
-    const estimated = updateQuote();
+    const subtotal = calculateRawSmmTotal();
+    let couponPreview = null;
+    const couponCode = document.getElementById('f_coupon').value.trim().toUpperCase();
+    if(couponCode){
+      couponPreview = await previewSmmCoupon(couponCode, subtotal);
+      if(!couponPreview.ok){
+        appliedSmmCoupon = null;
+        setSmmCouponFeedback(couponPreview.error || 'Mã giảm giá không còn hiệu lực.', false);
+        updateQuote();
+        throw new Error(couponPreview.error || 'Mã giảm giá không còn hiệu lực.');
+      }
+      appliedSmmCoupon = couponPreview;
+    }
+    const estimated = couponPreview?.ok ? Number(couponPreview.final_amount) : subtotal;
+    updateQuote();
 
     if(!loggedInProfile && !document.getElementById('f_name').value.trim()){
       throw new Error('Vui lòng nhập họ tên.');
@@ -385,6 +491,11 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
     if(!selectedPayment){
       throw new Error('Vui lòng chọn phương thức thanh toán.');
     }
+
+    const now = new Date();
+    const datePart = now.toISOString().slice(2,10).replace(/-/g,'');
+    const randPart = Math.floor(1000 + Math.random()*9000);
+    const orderCode = `DH-${datePart}-${randPart}`;
 
     const serverInfo = (SERVER_LIST[platform] || []).find(s => s.name === server);
     const description =
@@ -399,10 +510,9 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
 
     const customerName = loggedInProfile ? loggedInProfile.name : document.getElementById('f_name').value.trim();
     const customerEmail = loggedInProfile ? loggedInProfile.email : (document.getElementById('f_email').value.trim() || null);
-    // Khách đã đăng nhập không cần nhập SĐT. Cột phone của bảng orders là
-    // cấu trúc cũ bắt buộc NOT NULL, nên chỉ lưu nhãn nội bộ để không làm
-    // phát sinh yêu cầu nhập phone trên giao diện.
-    const customerPhone = loggedInProfile ? 'Tài khoản đăng nhập' : document.getElementById('f_phone').value.trim();
+    const customerPhone = loggedInProfile ? '' : document.getElementById('f_phone').value.trim();
+    const userId = loggedInProfile ? loggedInProfile.id : null;
+
     // PayOS và VietQR đều là "thanh toán trước", lưu rõ phương thức nào trong DB
     const paymentMethod = selectedPayment === 'PayOS'
       ? 'Thanh toán trước (Thanh toán tự động)'
@@ -416,15 +526,30 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       throw new Error('Số dư ví không đủ, vui lòng nạp thêm hoặc chọn phương thức khác.');
     }
 
-    const { data: createdOrder, error } = await sb.rpc('create_order_with_sequential_code', { p_order: {
+    // Lưu lại để truyền sang bước tạo link PayOS / VietQR và hiện biên lai sau này
+    window._lastAmount     = estimated;
+    window._lastOrderCode  = orderCode;
+    window._lastBuyerName  = customerName;
+    window._lastBuyerEmail = customerEmail || '';
+    window._lastBuyerPhone = customerPhone || '';
+    window._lastOrderDetails = {
+      order_code: orderCode,
+      service_type: 'Chạy quảng cáo tăng tương tác MXH',
+      platform, server_name: server, interaction_type: service,
+      quantity: qty, amount: estimated
+    };
+
+    const insertRow = {
+      order_code: orderCode,
       customer_name: customerName,
       email: customerEmail,
       phone: customerPhone,
       service_type: 'Chạy quảng cáo tăng tương tác MXH',
       description,
       budget: estimated,
-      amount: estimated,
+      amount: subtotal,
       payment_method: paymentMethod,
+      user_id: userId,
       // Các cột dưới đây dùng để tab "Đơn tương tác" trong admin
       // lọc và hiển thị có cấu trúc, thay vì phải đọc description.
       order_group: 'social_ads',
@@ -435,25 +560,12 @@ document.getElementById('boostForm').addEventListener('submit', async (e) => {
       quantity: qty,
       post_link: link,
       start_date: start || null
-    }});
+    };
+    if(couponPreview?.code) insertRow.discount_code = couponPreview.code;
+
+    const { error } = await sb.from('orders').insert(insertRow);
 
     if(error) throw error;
-    const orderCode = createdOrder?.order_code;
-    if(!orderCode) throw new Error('Supabase chưa trả về mã đơn hàng.');
-
-    // Giữ nguyên luồng thanh toán cũ, chỉ dùng mã do database vừa cấp.
-    window._lastAmount     = estimated;
-    window._lastOrderCode  = orderCode;
-    window._lastBuyerName  = customerName;
-    window._lastBuyerEmail = customerEmail || '';
-    // Không gửi nhãn nội bộ sang PayOS; buyerPhone chỉ dùng cho khách vãng lai.
-    window._lastBuyerPhone = loggedInProfile ? '' : (customerPhone || '');
-    window._lastOrderDetails = {
-      order_code: orderCode,
-      service_type: 'Chạy quảng cáo tăng tương tác MXH',
-      platform, server_name: server, interaction_type: service,
-      quantity: qty, amount: estimated
-    };
 
     // Thanh toán bằng ví: gọi RPC trừ tiền NGAY (an toàn, chống double-spend
     // nhờ khoá dòng trong hàm pay_order_with_wallet ở phía Postgres)

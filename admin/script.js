@@ -277,6 +277,7 @@ async function loadDashboard(){
       "Trạng thái": o.status
     }));
     renderDashboard(allOrders);
+    initRevenueDateRange();
   } catch(err){
     tableBody.innerHTML = `<div class="dash-empty">Không thể kết nối Supabase.</div>`;
   }
@@ -510,6 +511,90 @@ function renderRecentOrdersFeed(orders){
   }).join('');
 }
 
+/* ── Tra cứu doanh thu thực theo khoảng ngày (bao gồm trọn hai ngày) ── */
+function formatDateInputLocal(date){
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseRevenueDate(value, endOfDay = false){
+  const parts = String(value || '').split('-').map(Number);
+  if(parts.length !== 3 || parts.some(n => !Number.isInteger(n))) return null;
+  const [year, month, day] = parts;
+  const parsed = endOfDay
+    ? new Date(year, month - 1, day, 23, 59, 59, 999)
+    : new Date(year, month - 1, day, 0, 0, 0, 0);
+  if(parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) return null;
+  return parsed;
+}
+
+function initRevenueDateRange(){
+  const fromInput = document.getElementById('revenueDateFrom');
+  const toInput = document.getElementById('revenueDateTo');
+  if(!fromInput || !toInput) return;
+
+  if(!fromInput.value || !toInput.value){
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    fromInput.value = formatDateInputLocal(firstDay);
+    toInput.value = formatDateInputLocal(today);
+  }
+  lookupRevenueByDate();
+}
+
+function lookupRevenueByDate(){
+  const fromInput = document.getElementById('revenueDateFrom');
+  const toInput = document.getElementById('revenueDateTo');
+  const errorBox = document.getElementById('revenueRangeError');
+  const labelBox = document.getElementById('revenueRangeLabel');
+  const metaBox = document.getElementById('revenueRangeMeta');
+  const totalBox = document.getElementById('revenueRangeTotal');
+  if(!fromInput || !toInput || !errorBox || !labelBox || !metaBox || !totalBox) return;
+
+  errorBox.classList.remove('show');
+  const fromDate = parseRevenueDate(fromInput.value, false);
+  const toDate = parseRevenueDate(toInput.value, true);
+
+  if(!fromDate || !toDate){
+    errorBox.textContent = 'Vui lòng chọn đầy đủ Từ ngày và Đến ngày.';
+    errorBox.classList.add('show');
+    return;
+  }
+  if(fromDate > toDate){
+    errorBox.textContent = 'Từ ngày không được lớn hơn Đến ngày.';
+    errorBox.classList.add('show');
+    return;
+  }
+
+  const matchedOrders = allOrders.filter(order => {
+    if(!order["_createdAtRaw"]) return false;
+    const createdAt = new Date(order["_createdAtRaw"]);
+    return !Number.isNaN(createdAt.getTime()) && createdAt >= fromDate && createdAt <= toDate;
+  });
+  const ordersWithRevenue = matchedOrders.filter(order => Number(order["Doanh thu thực"]) > 0);
+  const totalRevenue = matchedOrders.reduce(
+    (sum, order) => sum + (Number(order["Doanh thu thực"]) || 0),
+    0
+  );
+
+  labelBox.textContent = `Doanh thu từ ${fromDate.toLocaleDateString('vi-VN')} đến ${toDate.toLocaleDateString('vi-VN')}`;
+  metaBox.textContent = `${matchedOrders.length} đơn trong khoảng · ${ordersWithRevenue.length} đơn đã ghi nhận doanh thu thực`;
+  totalBox.textContent = totalRevenue.toLocaleString('vi-VN') + 'đ';
+}
+
+function resetRevenueDateRange(){
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const fromInput = document.getElementById('revenueDateFrom');
+  const toInput = document.getElementById('revenueDateTo');
+  if(!fromInput || !toInput) return;
+  fromInput.value = formatDateInputLocal(firstDay);
+  toInput.value = formatDateInputLocal(today);
+  lookupRevenueByDate();
+}
+
 /* Cập nhật lại các thẻ tổng doanh thu (gọi sau khi sửa Doanh thu thực để không cần tải lại toàn trang) */
 function refreshRevenueStats(){
   const now = new Date();
@@ -530,6 +615,7 @@ function refreshRevenueStats(){
   document.getElementById('statRevenueWeek').textContent  = revWeek.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueMonth').textContent = revMonth.toLocaleString('vi-VN') + 'đ';
   document.getElementById('statRevenueTotal').textContent = revTotal.toLocaleString('vi-VN') + 'đ';
+  lookupRevenueByDate();
 }
 
 async function handleActualRevenueChange(code, rawValue, inputEl){
@@ -689,7 +775,7 @@ document.getElementById('dashSearchInput').addEventListener('input', (e)=>{
 /* =====================================================================
    TAB SWITCHING
 ===================================================================== */
-const ALL_TABS = ['overview','services','projects','users','appeals','announce','payment','contact','traffic','notifs','marketing','security','pages','livechat','social','app','system','maintenance','boost','adsorders','partners','invoices','contracts'];
+const ALL_TABS = ['overview','services','projects','users','appeals','announce','payment','contact','traffic','notifs','marketing','coupons','security','pages','livechat','social','app','system','maintenance','boost','adsorders','partners','invoices','contracts'];
 
 function switchTab(tab){
   ALL_TABS.forEach(t => {
@@ -710,6 +796,7 @@ function switchTab(tab){
   if(tab === 'traffic')  loadTrafficStats();
   if(tab === 'notifs')   loadCustomerNotifs();
   if(tab === 'marketing') loadMarketingConfig();
+  if(tab === 'coupons') loadCoupons();
   if(tab === 'security'){ loadSecurityTab(); loadMoneyPinStatus(); }
   if(tab === 'livechat') loadLiveChatTab();
   if(tab === 'social')   loadSocialCareTable();
@@ -2254,6 +2341,218 @@ async function saveMarketingConfig(){
   } catch(e){
     showToast('Lỗi: ' + e.message);
   }
+}
+
+/* =====================================================================
+   MÃ GIẢM GIÁ — bảng discount_codes, chỉ admin được CRUD qua RLS
+===================================================================== */
+let allCoupons = [];
+let editingCouponId = null;
+
+function updateCouponTypeFields(){
+  const isPercent = document.getElementById('cp_type').value === 'percent';
+  document.getElementById('cp_valueLabel').textContent = isPercent ? 'Mức giảm (%)' : 'Số tiền giảm (VNĐ)';
+  document.getElementById('cp_value').max = isPercent ? '100' : '';
+  document.getElementById('cp_value').step = isPercent ? '1' : '1000';
+  document.getElementById('cp_maxDiscountGroup').style.display = isPercent ? 'flex' : 'none';
+}
+
+function couponDateTimeInput(value){
+  if(!value) return '';
+  const d = new Date(value);
+  if(Number.isNaN(d.getTime())) return '';
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function resetCouponForm(){
+  editingCouponId = null;
+  document.getElementById('couponFormTitle').textContent = 'Tạo mã mới';
+  document.getElementById('couponSaveBtn').textContent = 'Phát hành mã';
+  document.getElementById('couponCancelEditBtn').style.display = 'none';
+  document.getElementById('couponFormError').classList.remove('show');
+  document.getElementById('cp_code').value = '';
+  document.getElementById('cp_name').value = '';
+  document.getElementById('cp_type').value = 'percent';
+  document.getElementById('cp_value').value = '';
+  document.getElementById('cp_minOrder').value = '0';
+  document.getElementById('cp_maxDiscount').value = '';
+  document.getElementById('cp_usageLimit').value = '';
+  document.getElementById('cp_perCustomer').value = '1';
+  document.getElementById('cp_startsAt').value = '';
+  document.getElementById('cp_endsAt').value = '';
+  document.getElementById('cp_active').checked = true;
+  updateCouponTypeFields();
+}
+
+async function loadCoupons(){
+  const body = document.getElementById('couponsTableBody');
+  if(!body || !currentAdmin) return;
+  body.innerHTML = '<div class="dash-loading">Đang tải...</div>';
+  try{
+    const { data, error } = await sb
+      .from('discount_codes')
+      .select('*')
+      .order('created_at', { ascending:false });
+    if(error) throw error;
+    allCoupons = data || [];
+    renderCoupons();
+  } catch(e){
+    body.innerHTML = `<div class="dash-empty">Không tải được mã giảm giá: ${escapeHtml(e.message)}<br><small>Kiểm tra đã chạy file <code>supabase-migration-discount-codes.sql</code>.</small></div>`;
+  }
+}
+
+function couponStatus(coupon){
+  const now = Date.now();
+  if(!coupon.is_active) return { label:'Đã tắt', active:false };
+  if(coupon.starts_at && new Date(coupon.starts_at).getTime() > now) return { label:'Sắp diễn ra', active:false };
+  if(coupon.ends_at && new Date(coupon.ends_at).getTime() <= now) return { label:'Hết hạn', active:false };
+  if(coupon.usage_limit != null && Number(coupon.used_count) >= Number(coupon.usage_limit)) return { label:'Hết lượt', active:false };
+  return { label:'Đang áp dụng', active:true };
+}
+
+function renderCoupons(){
+  const body = document.getElementById('couponsTableBody');
+  if(!body) return;
+  const q = (document.getElementById('couponSearchInput')?.value || '').trim().toLowerCase();
+  const rows = allCoupons.filter(c =>
+    !q || String(c.code || '').toLowerCase().includes(q) || String(c.name || '').toLowerCase().includes(q)
+  );
+  if(!rows.length){
+    body.innerHTML = '<div class="dash-empty">Chưa có mã giảm giá phù hợp.</div>';
+    return;
+  }
+
+  let html = `<table class="dash-table"><thead><tr>
+    <th>Mã</th><th>Ưu đãi</th><th>Điều kiện</th><th>Lượt dùng</th><th>Thời hạn</th><th>Trạng thái</th><th>Thao tác</th>
+  </tr></thead><tbody>`;
+  rows.forEach(c => {
+    const status = couponStatus(c);
+    const benefit = c.discount_type === 'percent'
+      ? `${Number(c.discount_value).toLocaleString('vi-VN')}%${c.max_discount_amount ? ` · tối đa ${Number(c.max_discount_amount).toLocaleString('vi-VN')}đ` : ''}`
+      : `${Number(c.discount_value).toLocaleString('vi-VN')}đ`;
+    const usage = `${Number(c.used_count || 0).toLocaleString('vi-VN')} / ${c.usage_limit == null ? '∞' : Number(c.usage_limit).toLocaleString('vi-VN')}`;
+    const start = c.starts_at ? new Date(c.starts_at).toLocaleString('vi-VN') : 'Ngay khi bật';
+    const end = c.ends_at ? new Date(c.ends_at).toLocaleString('vi-VN') : 'Không giới hạn';
+    html += `<tr>
+      <td><b style="font-family:var(--font-mono);">${escapeHtml(c.code)}</b><br><span style="font-size:11.5px;color:var(--ink-soft);">${escapeHtml(c.name || '—')}</span></td>
+      <td><b>${escapeHtml(benefit)}</b></td>
+      <td style="font-size:12px;">Đơn từ ${Number(c.min_order_amount || 0).toLocaleString('vi-VN')}đ<br><span style="color:var(--ink-soft);">${Number(c.per_customer_limit || 1)} lượt/khách</span></td>
+      <td style="font-family:var(--font-mono);">${usage}</td>
+      <td style="font-size:11.5px;white-space:nowrap;">${escapeHtml(start)}<br>→ ${escapeHtml(end)}</td>
+      <td><span class="svc-status-pill ${status.active ? 'svc-status-active' : 'svc-status-inactive'}">${status.label}</span></td>
+      <td><div class="svc-actions">
+        <button onclick="editCoupon(${Number(c.id)})">Sửa</button>
+        <button onclick="toggleCoupon(${Number(c.id)}, ${c.is_active ? 'false' : 'true'})">${c.is_active ? 'Tắt' : 'Bật'}</button>
+      </div></td>
+    </tr>`;
+  });
+  body.innerHTML = html + '</tbody></table>';
+}
+
+function editCoupon(id){
+  const c = allCoupons.find(row => Number(row.id) === Number(id));
+  if(!c) return;
+  editingCouponId = Number(id);
+  document.getElementById('couponFormTitle').textContent = `Sửa mã ${c.code}`;
+  document.getElementById('couponSaveBtn').textContent = 'Lưu thay đổi';
+  document.getElementById('couponCancelEditBtn').style.display = 'inline-flex';
+  document.getElementById('cp_code').value = c.code || '';
+  document.getElementById('cp_name').value = c.name || '';
+  document.getElementById('cp_type').value = c.discount_type;
+  document.getElementById('cp_value').value = Number(c.discount_value);
+  document.getElementById('cp_minOrder').value = Number(c.min_order_amount || 0);
+  document.getElementById('cp_maxDiscount').value = c.max_discount_amount == null ? '' : Number(c.max_discount_amount);
+  document.getElementById('cp_usageLimit').value = c.usage_limit == null ? '' : Number(c.usage_limit);
+  document.getElementById('cp_perCustomer').value = Number(c.per_customer_limit || 1);
+  document.getElementById('cp_startsAt').value = couponDateTimeInput(c.starts_at);
+  document.getElementById('cp_endsAt').value = couponDateTimeInput(c.ends_at);
+  document.getElementById('cp_active').checked = Boolean(c.is_active);
+  document.getElementById('couponFormError').classList.remove('show');
+  updateCouponTypeFields();
+  document.getElementById('tabCoupons').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+async function saveCoupon(){
+  const errBox = document.getElementById('couponFormError');
+  const btn = document.getElementById('couponSaveBtn');
+  const code = document.getElementById('cp_code').value.trim().toUpperCase();
+  const type = document.getElementById('cp_type').value;
+  const value = Number(document.getElementById('cp_value').value);
+  const minOrder = Number(document.getElementById('cp_minOrder').value || 0);
+  const maxDiscountRaw = document.getElementById('cp_maxDiscount').value;
+  const usageLimitRaw = document.getElementById('cp_usageLimit').value;
+  const perCustomer = Number(document.getElementById('cp_perCustomer').value || 1);
+  const startsRaw = document.getElementById('cp_startsAt').value;
+  const endsRaw = document.getElementById('cp_endsAt').value;
+
+  errBox.classList.remove('show');
+  if(!/^[A-Z0-9_-]{3,32}$/.test(code)){
+    errBox.textContent = 'Mã phải dài 3–32 ký tự và chỉ gồm A–Z, 0–9, gạch ngang hoặc gạch dưới.';
+    errBox.classList.add('show'); return;
+  }
+  if(!value || value <= 0 || (type === 'percent' && value > 100)){
+    errBox.textContent = type === 'percent' ? 'Phần trăm giảm phải từ 1 đến 100.' : 'Số tiền giảm phải lớn hơn 0.';
+    errBox.classList.add('show'); return;
+  }
+  if(minOrder < 0 || perCustomer < 1){
+    errBox.textContent = 'Điều kiện giá trị đơn và lượt dùng không hợp lệ.';
+    errBox.classList.add('show'); return;
+  }
+  if(startsRaw && endsRaw && new Date(endsRaw) <= new Date(startsRaw)){
+    errBox.textContent = 'Thời gian kết thúc phải sau thời gian bắt đầu.';
+    errBox.classList.add('show'); return;
+  }
+
+  const payload = {
+    code,
+    name: document.getElementById('cp_name').value.trim() || null,
+    discount_type: type,
+    discount_value: value,
+    min_order_amount: minOrder,
+    max_discount_amount: type === 'percent' && maxDiscountRaw ? Number(maxDiscountRaw) : null,
+    usage_limit: usageLimitRaw ? Number(usageLimitRaw) : null,
+    per_customer_limit: perCustomer,
+    starts_at: startsRaw ? new Date(startsRaw).toISOString() : null,
+    ends_at: endsRaw ? new Date(endsRaw).toISOString() : null,
+    is_active: document.getElementById('cp_active').checked,
+    updated_at: new Date().toISOString()
+  };
+  if(!editingCouponId) payload.created_by = currentAdmin?.id || null;
+
+  btn.disabled = true;
+  btn.textContent = 'Đang lưu...';
+  try{
+    const query = editingCouponId
+      ? sb.from('discount_codes').update(payload).eq('id', editingCouponId)
+      : sb.from('discount_codes').insert(payload);
+    const { error } = await query;
+    if(error) throw error;
+    showToast(editingCouponId ? '✅ Đã cập nhật mã giảm giá.' : '✅ Đã phát hành mã giảm giá.');
+    logAdminAction(editingCouponId ? 'Sửa mã giảm giá' : 'Phát hành mã giảm giá', code);
+    resetCouponForm();
+    await loadCoupons();
+  } catch(e){
+    errBox.textContent = e.message;
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingCouponId ? 'Lưu thay đổi' : 'Phát hành mã';
+  }
+}
+
+async function toggleCoupon(id, nextActive){
+  const c = allCoupons.find(row => Number(row.id) === Number(id));
+  if(!c) return;
+  try{
+    const { error } = await sb.from('discount_codes').update({
+      is_active: Boolean(nextActive), updated_at: new Date().toISOString()
+    }).eq('id', id);
+    if(error) throw error;
+    showToast(nextActive ? '✅ Đã bật mã giảm giá.' : 'Đã tắt mã giảm giá.');
+    logAdminAction(nextActive ? 'Bật mã giảm giá' : 'Tắt mã giảm giá', c.code);
+    await loadCoupons();
+  } catch(e){ showToast('Lỗi: ' + e.message); }
 }
 
 /* =====================================================================
@@ -4263,14 +4562,60 @@ function printPartnerReceipt(code, partnerName, amount, reason){
 ===================================================================== */
 let allOrdersForInvoice = [];
 let _invoiceSelectedOrderCode = null;
+const INVOICE_PAID_META_PATTERN = /^\[\[PDA_PAID_AMOUNT:(\d+(?:\.\d+)?)\]\]\n?/;
+
+function formatInvoiceMoney(value){
+  return (Number(value) || 0).toLocaleString('vi-VN') + ' đ';
+}
+
+function buildInvoiceStoredNote(note, paidAmount){
+  const cleanNote = String(note || '').replace(INVOICE_PAID_META_PATTERN, '').trim();
+  const meta = `[[PDA_PAID_AMOUNT:${Number(paidAmount) || 0}]]`;
+  return cleanNote ? `${meta}\n${cleanNote}` : meta;
+}
+
+function getInvoicePaidAmount(inv){
+  if(inv && inv.paid_amount !== undefined && inv.paid_amount !== null && inv.paid_amount !== ''){
+    const directValue = Number(inv.paid_amount);
+    if(Number.isFinite(directValue)) return Math.max(0, directValue);
+  }
+  const match = String(inv?.note || '').match(INVOICE_PAID_META_PATTERN);
+  if(match){
+    const storedValue = Number(match[1]);
+    if(Number.isFinite(storedValue)) return Math.max(0, storedValue);
+  }
+  // Hoá đơn cũ không có dữ liệu riêng: giữ cách hiểu cũ là đã thanh toán đủ.
+  return Math.max(0, Number(inv?.amount) || 0);
+}
+
+function getInvoicePaymentStatus(totalAmount, paidAmount){
+  const total = Math.max(0, Number(totalAmount) || 0);
+  const paid = Math.max(0, Math.min(Number(paidAmount) || 0, total));
+  return paid > 0 ? `Đã thanh toán ${formatInvoiceMoney(paid)}` : 'Chưa thanh toán';
+}
+
+function updateInvoicePaymentPreview(){
+  const total = Math.max(0, Number(document.getElementById('inv_amount')?.value) || 0);
+  const rawPaid = Math.max(0, Number(document.getElementById('inv_paidAmount')?.value) || 0);
+  const paid = Math.min(rawPaid, total);
+  const debt = Math.max(0, total - paid);
+  const debtBox = document.getElementById('inv_debtPreview');
+  const statusBox = document.getElementById('inv_statusPreview');
+  if(debtBox) debtBox.textContent = formatInvoiceMoney(debt);
+  if(statusBox) statusBox.textContent = getInvoicePaymentStatus(total, paid);
+}
 
 function setInvoiceSource(src){
   document.querySelectorAll('#invSourcePills .service-pill').forEach(p => p.classList.toggle('active', p.dataset.src === src));
   document.getElementById('invOrderPickBlock').style.display = src === 'order' ? 'block' : 'none';
+  document.getElementById('invManualOrderCodeBlock').style.display = src === 'manual' ? 'block' : 'none';
   if(src === 'manual'){
     _invoiceSelectedOrderCode = null;
     document.getElementById('invSelectedOrderBox').style.display = 'none';
+  } else {
+    document.getElementById('inv_manualOrderCode').value = '';
   }
+  updateInvoicePaymentPreview();
 }
 
 async function loadOrdersForInvoice(){
@@ -4319,6 +4664,9 @@ function selectInvoiceOrder(orderCode){
   document.getElementById('inv_recipientInfo').value = o.phone || o.email || '';
   document.getElementById('inv_content').value = o.service_type || '';
   document.getElementById('inv_amount').value = o.amount || '';
+  document.getElementById('inv_paidAmount').value = o.amount || 0;
+  document.getElementById('inv_manualOrderCode').value = '';
+  updateInvoicePaymentPreview();
 
   document.getElementById('invSelectedOrderBox').style.display = 'block';
   document.getElementById('invSelectedOrderBox').innerHTML =
@@ -4333,10 +4681,18 @@ async function submitInvoice(){
   const recipientInfo = document.getElementById('inv_recipientInfo').value.trim();
   const content = document.getElementById('inv_content').value.trim();
   const amount = Number(document.getElementById('inv_amount').value);
+  const paidAmount = Number(document.getElementById('inv_paidAmount').value || 0);
+  const manualOrderCode = document.getElementById('inv_manualOrderCode').value.trim().toUpperCase();
+  const invoiceOrderCode = _invoiceSelectedOrderCode || manualOrderCode || null;
   const note = document.getElementById('inv_note').value.trim();
 
   if(!recipientName || !content || !amount || amount <= 0){
-    errBox.textContent = 'Vui lòng nhập đủ Tên người nhận, Nội dung và Số tiền hợp lệ.';
+    errBox.textContent = 'Vui lòng nhập đủ Tên người nhận, Nội dung và Thành tiền hợp lệ.';
+    errBox.classList.add('show');
+    return;
+  }
+  if(!Number.isFinite(paidAmount) || paidAmount < 0 || paidAmount > amount){
+    errBox.textContent = 'Số tiền đã thanh toán phải từ 0đ đến đúng Thành tiền.';
     errBox.classList.add('show');
     return;
   }
@@ -4353,17 +4709,26 @@ async function submitInvoice(){
   try{
     const { error } = await sb.from('invoices').insert({
       invoice_no: invoiceNo,
-      order_code: _invoiceSelectedOrderCode,
+      order_code: invoiceOrderCode,
       recipient_name: recipientName,
       recipient_info: recipientInfo || null,
       content,
       amount,
-      note: note || null,
+      note: buildInvoiceStoredNote(note, paidAmount),
       created_by_admin_email: currentAdmin?.email || null,
     });
     if(error) throw error;
 
-    generateInvoicePDF({ invoice_no: invoiceNo, recipient_name: recipientName, recipient_info: recipientInfo, content, amount, created_at: now.toISOString() });
+    generateInvoicePDF({
+      invoice_no: invoiceNo,
+      order_code: invoiceOrderCode,
+      recipient_name: recipientName,
+      recipient_info: recipientInfo,
+      content,
+      amount,
+      paid_amount: paidAmount,
+      created_at: now.toISOString()
+    });
     showToast(`✅ Đã xuất hoá đơn ${invoiceNo}.`);
     logAdminAction('Xuất hoá đơn', `${invoiceNo} — ${recipientName} — ${amount.toLocaleString('vi-VN')}đ`);
 
@@ -4372,9 +4737,12 @@ async function submitInvoice(){
     document.getElementById('inv_recipientInfo').value = '';
     document.getElementById('inv_content').value = '';
     document.getElementById('inv_amount').value = '';
+    document.getElementById('inv_paidAmount').value = '0';
+    document.getElementById('inv_manualOrderCode').value = '';
     document.getElementById('inv_note').value = '';
     document.getElementById('invSelectedOrderBox').style.display = 'none';
     _invoiceSelectedOrderCode = null;
+    updateInvoicePaymentPreview();
 
     await loadInvoicesHistory();
   } catch(e){
@@ -4419,57 +4787,165 @@ function generateInvoicePDF(inv){
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     registerVietnameseFont(doc);
     const pageW = doc.internal.pageSize.getWidth();
-    let y = 22;
+    const margin = 20;
+    const ink = [35, 31, 26];
+    const muted = [116, 105, 92];
+    const line = [221, 212, 198];
+    const sand = [246, 241, 232];
+    const coral = [191, 67, 48];
+    const green = [75, 126, 83];
+    const totalAmount = Math.max(0, Number(inv.amount) || 0);
+    const paidAmount = Math.min(getInvoicePaidAmount(inv), totalAmount);
+    const debtAmount = Math.max(0, totalAmount - paidAmount);
+    const orderCode = String(inv.order_code || '').trim();
+    const issueDate = new Date(inv.created_at || Date.now()).toLocaleDateString('vi-VN');
+    const paymentStatus = getInvoicePaymentStatus(totalAmount, paidAmount);
+    const money = value => (Number(value) || 0).toLocaleString('vi-VN') + ' đ';
+    let y = 25;
 
-    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(18);
-    doc.text('PHATDATAGENCY', 20, y);
-    doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(10);
-    doc.text('HOÁ ĐƠN', pageW-20, y, { align: 'right' });
-    y += 8;
-    doc.setFontSize(10);
-    doc.text('Số: ' + (inv.invoice_no||''), pageW-20, y, { align: 'right' });
-    y += 6;
-    doc.text('Ngày: ' + new Date(inv.created_at).toLocaleDateString('vi-VN'), pageW-20, y, { align: 'right' });
-    y += 14;
-
-    doc.setDrawColor(220); doc.line(20, y, pageW-20, y); y += 12;
-
-    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(11);
-    doc.text('Người nhận:', 20, y);
-    doc.setFont('DejaVuSans', 'normal');
-    doc.text(inv.recipient_name || '', 55, y);
-    y += 7;
-    if(inv.recipient_info){
-      doc.setFont('DejaVuSans', 'bold'); doc.text('Liên hệ:', 20, y);
-      doc.setFont('DejaVuSans', 'normal'); doc.text(inv.recipient_info, 55, y);
-      y += 7;
-    }
-    y += 8;
-
-    // Bảng nội dung
-    doc.setFillColor(245, 240, 230);
-    doc.rect(20, y, pageW-40, 10, 'F');
-    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(10);
-    doc.text('Nội dung', 24, y+7);
-    doc.text('Số tiền', pageW-24, y+7, { align: 'right' });
-    y += 14;
-
-    doc.setFont('DejaVuSans', 'normal');
-    const contentLines = doc.splitTextToSize(inv.content || '', pageW-90);
-    doc.text(contentLines, 24, y);
+    // Thương hiệu và thông tin hoá đơn
+    doc.setTextColor(...ink);
     doc.setFont('DejaVuSans', 'bold');
-    doc.text((Number(inv.amount)||0).toLocaleString('vi-VN') + ' đ', pageW-24, y, { align: 'right' });
-    y += 8 * contentLines.length + 10;
+    doc.setFontSize(24);
+    doc.text('Phatdatagency', margin, y);
 
-    doc.setDrawColor(220); doc.line(20, y, pageW-20, y); y += 10;
+    doc.setFontSize(12);
+    doc.text('HÓA ĐƠN DỊCH VỤ', pageW-margin, y, { align: 'right' });
+    doc.setFont('DejaVuSans', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    doc.text('Số: ' + (inv.invoice_no || ''), pageW-margin, y+8, { align: 'right' });
+    doc.text('Ngày lập: ' + issueDate, pageW-margin, y+14, { align: 'right' });
 
-    doc.setFont('DejaVuSans', 'bold'); doc.setFontSize(12);
-    doc.text('TỔNG CỘNG:', 20, y);
-    doc.text((Number(inv.amount)||0).toLocaleString('vi-VN') + ' đ', pageW-20, y, { align: 'right' });
+    y = 49;
+    doc.setDrawColor(...line);
+    doc.line(margin, y, pageW-margin, y);
 
-    y += 30;
-    doc.setFont('DejaVuSans', 'normal'); doc.setFontSize(9);
-    doc.text('Cảm ơn quý khách / đối tác đã hợp tác cùng Phatdatagency.', 20, y);
+    // Thông tin người nhận và trạng thái đơn hàng
+    const infoTitleY = y + 12;
+    doc.setFont('DejaVuSans', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text('THÔNG TIN NGƯỜI NHẬN', margin, infoTitleY);
+    doc.text('THÔNG TIN ĐƠN HÀNG', 112, infoTitleY);
+
+    let leftY = infoTitleY + 9;
+    doc.setFontSize(9);
+    doc.setTextColor(...ink);
+    doc.setFont('DejaVuSans', 'normal');
+    doc.text('Người nhận', margin, leftY);
+    doc.setFont('DejaVuSans', 'bold');
+    const recipientLines = doc.splitTextToSize(inv.recipient_name || '', 54);
+    doc.text(recipientLines, 48, leftY);
+    leftY += Math.max(7, recipientLines.length * 5);
+    if(inv.recipient_info){
+      doc.setFont('DejaVuSans', 'normal');
+      doc.text('Liên hệ', margin, leftY);
+      const contactLines = doc.splitTextToSize(String(inv.recipient_info), 54);
+      doc.setFont('DejaVuSans', 'bold');
+      doc.text(contactLines, 48, leftY);
+      leftY += Math.max(7, contactLines.length * 5);
+    }
+
+    let rightY = infoTitleY + 9;
+    if(orderCode){
+      doc.setFont('DejaVuSans', 'normal');
+      doc.text('Mã đơn', 112, rightY);
+      doc.setFont('DejaVuSans', 'bold');
+      doc.text(orderCode, 139, rightY);
+      rightY += 7;
+    }
+    doc.setFont('DejaVuSans', 'normal');
+    doc.text('Trạng thái', 112, rightY);
+    doc.setFont('DejaVuSans', 'bold');
+    const statusLines = doc.splitTextToSize(paymentStatus, 50);
+    doc.text(statusLines, 139, rightY);
+    rightY += Math.max(7, statusLines.length * 5);
+
+    y = Math.max(leftY, rightY) + 9;
+
+    // Bảng nội dung dịch vụ
+    doc.setFont('DejaVuSans', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...muted);
+    doc.text('THÔNG TIN DỊCH VỤ', margin, y);
+    y += 6;
+
+    doc.setFillColor(...sand);
+    doc.rect(margin, y, pageW-(margin*2), 10, 'F');
+    doc.setTextColor(...ink);
+    doc.setFont('DejaVuSans', 'bold');
+    doc.setFontSize(9);
+    doc.text('Nội dung', margin+4, y+7);
+    doc.text('Số tiền', pageW-margin-4, y+7, { align: 'right' });
+    y += 16;
+
+    doc.setFont('DejaVuSans', 'normal');
+    const contentLines = doc.splitTextToSize(inv.content || '', pageW-92);
+    doc.text(contentLines, margin+4, y);
+    doc.setFont('DejaVuSans', 'bold');
+    doc.text(money(totalAmount), pageW-margin-4, y, { align: 'right' });
+    y += Math.max(12, contentLines.length * 5 + 5);
+
+    doc.setDrawColor(...line);
+    doc.line(margin, y, pageW-margin, y);
+    y += 15;
+
+    if(y > 225){
+      doc.addPage();
+      y = 24;
+    }
+
+    // Mộc thanh toán
+    const paymentTop = y;
+    const stampColor = paidAmount > 0 ? coral : muted;
+    doc.setDrawColor(...stampColor);
+    doc.setLineWidth(0.7);
+    doc.setLineDashPattern([1.5, 1], 0);
+    doc.roundedRect(margin, paymentTop, 70, 38, 3, 3, 'S');
+    doc.setLineDashPattern([], 0);
+    doc.setTextColor(...stampColor);
+    doc.setFont('DejaVuSans', 'bold');
+    doc.setFontSize(11);
+    doc.text(paidAmount > 0 ? 'ĐÃ THANH TOÁN' : 'CHƯA THANH TOÁN', margin+35, paymentTop+11, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text(money(paidAmount), margin+35, paymentTop+22, { align: 'center' });
+    doc.setFont('DejaVuSans', 'normal');
+    doc.setFontSize(8);
+    doc.text(paidAmount > 0 ? `Xác nhận ngày ${issueDate}` : 'Tại thời điểm phát hành', margin+35, paymentTop+31, { align: 'center' });
+
+    // Tổng kết thanh toán
+    const summaryX = 108;
+    const summaryValueX = pageW-margin;
+    let summaryY = paymentTop + 2;
+    const drawAmountRow = (label, value, options = {}) => {
+      doc.setFont('DejaVuSans', options.bold ? 'bold' : 'normal');
+      doc.setFontSize(options.large ? 11 : 9);
+      doc.setTextColor(...(options.color || ink));
+      doc.text(label, summaryX, summaryY);
+      doc.text(money(value), summaryValueX, summaryY, { align: 'right' });
+      summaryY += options.large ? 8 : 7;
+    };
+
+    drawAmountRow('Tạm tính', totalAmount);
+    drawAmountRow('Giảm giá / điều chỉnh', 0);
+    doc.setDrawColor(...line);
+    doc.line(summaryX, summaryY-3, summaryValueX, summaryY-3);
+    summaryY += 2;
+    drawAmountRow('Thành tiền', totalAmount, { bold: true, large: true });
+    drawAmountRow('Số tiền đã thanh toán', paidAmount, { bold: true, color: green });
+    doc.line(summaryX, summaryY-3, summaryValueX, summaryY-3);
+    summaryY += 2;
+    drawAmountRow('Số tiền còn nợ', debtAmount, { bold: true, large: true, color: coral });
+
+    y = Math.max(paymentTop + 43, summaryY + 2) + 13;
+    doc.setDrawColor(...line);
+    doc.line(margin, y, pageW-margin, y);
+    y += 9;
+    doc.setFont('DejaVuSans', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    doc.text('Cảm ơn quý khách/đối tác đã hợp tác cùng Phatdatagency.', margin, y);
 
     doc.save(`HoaDon-${inv.invoice_no || 'moi'}.pdf`);
   } catch(e){
