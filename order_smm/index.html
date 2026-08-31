@@ -1,344 +1,82 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chạy quảng cáo tăng tương tác MXH — Phatdatagency</title>
-<meta name="description" content="Đặt đơn tăng like, follow, bình luận, chia sẻ và lượt xem cho Facebook, Instagram, TikTok, YouTube. Giá hiển thị trực tiếp theo từng server, tạo đơn và theo dõi bằng mã riêng.">
-<link rel="canonical" href="https://phatdatagency.id.vn/dat-don-quang-cao/">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="/vn-font-data.js"></script>
-
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <link rel="canonical" href="https://smm.phatdatagency.id.vn/">
+  <title>Đang đồng bộ tài khoản</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f6f1e8;color:#211b17;font-family:Arial,sans-serif}
+    main{text-align:center;padding:32px}
+    .loader{width:34px;height:34px;margin:0 auto 18px;border:3px solid #ddd2c2;border-top-color:#e34a30;border-radius:50%;animation:spin .8s linear infinite}
+    p{margin:8px 0;color:#6f675e}
+    a{color:#c63d29}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <main>
+    <div class="loader" aria-hidden="true"></div>
+    <strong>Đang đồng bộ tài khoản và ví…</strong>
+    <p>Bạn sẽ được chuyển sang trang đặt đơn ngay.</p>
+    <noscript><a href="https://smm.phatdatagency.id.vn/">Tiếp tục đến trang đặt đơn</a></noscript>
+  </main>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="/" class="brand" aria-label="Phatdatagency — Trang chủ">
-      <span class="logo">Phatdatagency<span class="dot">.</span></span>
-      <span class="page-tag">Đặt đơn MXH</span>
-    </a>
-    <a href="/" class="back-link"><span aria-hidden="true">←</span> Về trang chủ</a>
-  </div>
-</nav>
+  <script>
+  (() => {
+    'use strict';
 
-<header class="hero">
-  <div class="container hero-grid">
-    <div class="hero-copy">
-      <div class="eyebrow"><span></span>Dịch vụ mạng xã hội</div>
-      <h1>Tăng tương tác đúng mục tiêu, <em>chốt đơn ngay.</em></h1>
-      <p>Chọn nền tảng, server và số lượng cần chạy. Giá hiển thị trực tiếp; hoàn tất thanh toán và nhận mã đơn ngay sau khi gửi.</p>
-      <div class="hero-badges">
-        <span>✓ Giá chốt rõ ràng</span>
-        <span>✓ Tạo đơn tức thì</span>
-        <span>✓ Theo dõi minh bạch</span>
-      </div>
-    </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="social-orbit orbit-one">f</div>
-      <div class="social-orbit orbit-two">♪</div>
-      <div class="social-orbit orbit-three">▶</div>
-      <div class="hero-card-mini">
-        <span class="mini-label">Đơn sẵn sàng</span>
-        <strong>1.000 lượt tương tác</strong>
-        <div class="mini-progress"><span></span></div>
-        <small>Thiết lập trong vài phút</small>
-      </div>
-    </div>
-  </div>
-</header>
+    const SMM_ORIGIN = 'https://smm.phatdatagency.id.vn';
+    const SUPABASE_URL = 'https://npsylbxggliczhtnzzgl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let redirected = false;
 
-<main class="container order-layout">
+    function getSafeDestination(){
+      const requested = new URLSearchParams(location.search).get('return');
+      if(requested){
+        try{
+          const url = new URL(requested);
+          if(url.origin === SMM_ORIGIN){
+            url.hash = '';
+            return url;
+          }
+        } catch(e){ /* dùng URL mặc định */ }
+      }
+      return new URL(SMM_ORIGIN + '/');
+    }
 
-  <!-- FORM -->
-  <div class="card form-card">
-    <div class="card-heading">
-      <div>
-        <span class="card-kicker">Tạo đơn mới</span>
-        <h2>Thông tin chiến dịch</h2>
-        <p>Hoàn tất 4 bước bên dưới. Thành tiền cập nhật ngay theo lựa chọn của bạn.</p>
-      </div>
-      <div class="secure-badge"><span>●</span> Kết nối an toàn</div>
-    </div>
+    function encodeSession(session){
+      return btoa(JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token
+      })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
 
-    <!-- Dùng chung phiên đăng nhập và ví với project mẹ Web3. Script giữ nguyên sẽ
-         tự hiện toàn bộ khu vực này khi Supabase nhận ra khách đã đăng nhập. -->
-    <div class="member-context">
-      <div id="loggedInAs" class="member-bar" style="display:none;">
-        <div class="member-avatar" aria-hidden="true">PĐ</div>
-        <div class="member-copy">
-          <span>Đang đặt đơn bằng tài khoản</span>
-          <strong id="loggedInName"></strong>
-        </div>
-        <a href="/account/" class="member-switch">Không phải bạn?</a>
-      </div>
+    function redirectToSmm(authState, session){
+      if(redirected) return;
+      redirected = true;
+      const destination = getSafeDestination();
+      destination.hash = session
+        ? 'pda_session=' + encodeSession(session)
+        : 'pda_auth=' + authState;
+      location.replace(destination.toString());
+    }
 
-      <div id="walletBox" class="wallet-box" style="display:none;">
-        <div class="wallet-row">
-          <div>
-            <div class="wallet-label">Số dư ví Phatdatagency</div>
-            <div class="wallet-balance" id="walletBalance">0đ</div>
-            <div class="wallet-caption">Dùng chung với tài khoản ở trang chủ</div>
-          </div>
-          <button type="button" class="btn btn-ghost btn-sm" id="walletTopupBtn" onclick="toggleTopupPanel()">+ Nạp tiền</button>
-        </div>
+    window.setTimeout(() => redirectToSmm('unavailable', null), 6000);
 
-        <div id="topupPanel" class="topup-panel" style="display:none;">
-          <label for="topup_amount">Số tiền muốn nạp</label>
-          <div class="row2">
-            <input type="number" id="topup_amount" min="10000" step="10000" placeholder="50000">
-            <select id="topup_method" aria-label="Phương thức nạp tiền">
-              <option value="PayOS">⚡ Thanh toán tự động</option>
-      
-            </select>
-          </div>
-          <button type="button" class="btn btn-primary btn-sm" style="width:100%; margin-top:10px;" onclick="startTopup()">Tạo mã nạp tiền</button>
-          <div class="msg" id="topupMsg"></div>
-          <div id="topupResult" style="display:none; margin-top:14px; text-align:center;"></div>
-        </div>
-      </div>
-    </div>
-
-    <form id="boostForm">
-      <section class="form-section">
-        <div class="section-heading">
-          <span class="step-index">01</span>
-          <div><h3>Thông tin nhận đơn</h3><p>Dùng để nhận mã đơn và cập nhật tiến độ.</p></div>
-        </div>
-
-        <div class="form-grid two" id="guestFields">
-          <div class="field-group">
-            <label for="f_name">Họ tên</label>
-            <input type="text" id="f_name" placeholder="Nguyễn Văn A" autocomplete="name">
-          </div>
-          <div class="field-group">
-            <label for="f_phone">Số điện thoại / Zalo</label>
-            <input type="tel" id="f_phone" placeholder="09xxxxxxxx" autocomplete="tel">
-          </div>
-        </div>
-
-        <div id="guestEmailField" class="field-group">
-          <label for="f_email">Email <span class="optional">Không bắt buộc</span></label>
-          <input type="email" id="f_email" placeholder="ban@email.com" autocomplete="email">
-        </div>
-      </section>
-
-      <section class="form-section">
-        <div class="section-heading">
-          <span class="step-index">02</span>
-          <div><h3>Chọn gói tương tác</h3><p>Giá và điều kiện áp dụng hiển thị theo từng server.</p></div>
-        </div>
-
-        <div class="form-grid two">
-          <div class="field-group">
-            <label for="f_platform">Nền tảng</label>
-            <div class="select-wrap">
-              <select id="f_platform">
-                <option value="Facebook">Facebook</option>
-                <option value="Instagram">Instagram</option>
-                <option value="TikTok">TikTok</option>
-                <option value="YouTube">YouTube</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-group">
-            <label for="f_server">Server</label>
-            <div class="select-wrap">
-              <select id="f_server">
-                <option value="">— Chọn nền tảng trước —</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div id="serverNoteBox" class="server-note-box" style="display:none;"></div>
-
-        <div class="form-grid two">
-          <div class="field-group">
-            <label for="f_service">Loại tương tác</label>
-            <div class="select-wrap">
-              <select id="f_service">
-                <option value="Like">Tăng like</option>
-                <option value="Follow">Tăng follow</option>
-                <option value="Comment">Tăng bình luận</option>
-                <option value="Share">Tăng chia sẻ</option>
-                <option value="View">Tăng lượt xem</option>
-              </select>
-            </div>
-          </div>
-          <div class="field-group">
-            <label for="f_qty">Số lượng mong muốn</label>
-            <input type="number" id="f_qty" min="100" step="100" value="1000" required inputmode="numeric">
-            <span class="field-help">Tối thiểu 100 lượt, tăng theo bội số 100.</span>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label for="f_link">Link bài viết / trang cần chạy</label>
-          <div class="url-input-wrap">
-            <span aria-hidden="true">↗</span>
-            <input type="url" id="f_link" required placeholder="https://facebook.com/..." inputmode="url">
-          </div>
-          <span class="field-help">Hãy kiểm tra link đang ở chế độ công khai trước khi gửi đơn.</span>
-        </div>
-      </section>
-
-      <section class="form-section">
-        <div class="section-heading">
-          <span class="step-index">03</span>
-          <div><h3>Thời gian triển khai</h3><p>Chọn ngày bắt đầu và thêm yêu cầu nếu cần.</p></div>
-        </div>
-
-        <div class="form-grid schedule-grid">
-          <div class="field-group">
-            <label for="f_start">Ngày muốn bắt đầu</label>
-            <input type="date" id="f_start">
-          </div>
-          <div class="field-group note-field">
-            <label for="f_note">Ghi chú thêm <span class="optional">Không bắt buộc</span></label>
-            <textarea id="f_note" placeholder="Ví dụ: chạy từ từ..."></textarea>
-          </div>
-        </div>
-      </section>
-
-      <section class="form-section">
-        <div class="section-heading">
-          <span class="step-index">04</span>
-          <div><h3>Áp mã giảm giá</h3><p>Nhập mã ưu đãi nếu bạn đang có.</p></div>
-        </div>
-        <div class="field-group">
-          <label for="f_coupon">Mã giảm giá <span class="optional">Không bắt buộc</span></label>
-          <div style="display:flex; gap:10px; align-items:stretch;">
-            <input type="text" id="f_coupon" maxlength="32" autocomplete="off" placeholder="VD: CHAOHE2026" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_-]/g,''); clearSmmCouponIfChanged();">
-            <button type="button" class="btn btn-ghost btn-sm" id="applySmmCouponBtn" onclick="applySmmCoupon()" style="flex:none;">Áp dụng</button>
-          </div>
-          <div id="smmCouponFeedback" class="msg" style="margin-top:10px;"></div>
-        </div>
-      </section>
-
-      <section class="form-section payment-section">
-        <div class="section-heading">
-          <span class="step-index">05</span>
-          <div><h3>Chốt phương thức thanh toán</h3><p>Chọn cách thanh toán để hoàn tất đơn.</p></div>
-        </div>
-
-        <div class="service-pills payment-options" id="paymentPills">
-          <button type="button" class="service-pill" id="walletPaymentPill" data-payment="Ví" style="display:none;">
-            <span class="payment-icon">💰</span><span><b>Ví Phatdatagency</b><small>Dùng số dư hiện có</small></span>
-          </button>
-          <button type="button" class="service-pill" data-payment="PayOS">
-            <span class="payment-icon">⚡</span><span><b>Thanh toán tự động</b><small>Quét mã, xác nhận ngay</small></span>
-          </button>
-  
-        </div>
-        <p class="payment-hint" id="paymentHint"></p>
-      </section>
-
-      <div class="submit-area">
-        <div class="submit-note"><span>✓</span> Thành tiền là giá áp dụng theo server đã chọn. Điều kiện riêng, nếu có, hiển thị tại ghi chú server.</div>
-        <button type="submit" class="btn btn-primary submit-btn" id="submitBtn">
-          <span>Chốt đơn ngay</span><span aria-hidden="true">→</span>
-        </button>
-      </div>
-      <div class="msg" id="formMsg"></div>
-    </form>
-
-    <div id="successBox" class="success-box" style="display:none;">
-      <h2>Đã tạo đơn thành công 🎉</h2>
-      <div class="code" id="successCode">DH-000000-0000</div>
-
-      <div class="pay-amount-box" id="payAmountBox" style="display:none;">
-        Số tiền cần thanh toán: <b id="payAmountVal"></b>
-      </div>
-
-      <!-- Hiện khi chọn VietQR -->
-      <div id="payQrSection" style="display:none;">
-        <div class="pay-qr-wrap">
-          <img id="payQrImg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="QR thanh toán VietQR">
-          <div class="pay-info">
-            <div class="pi-row"><span>Ngân hàng</span><span id="payBankName">—</span></div>
-            <div class="pi-row"><span>Số tài khoản</span><span id="payAccNum">—</span></div>
-            <div class="pi-row"><span>Chủ tài khoản</span><span id="payAccName">—</span></div>
-            <div class="pi-row"><span>Nội dung CK</span><span id="payTransferNote">—</span></div>
-          </div>
-        </div>
-        <div class="pay-note">Quét mã QR bằng app ngân hàng để thanh toán. Lưu lại mã đơn để tra cứu tiến trình bất cứ lúc nào tại mục "Tra cứu đơn" trên trang chủ.</div>
-      </div>
-
-      <!-- Hiện khi chọn PayOS -->
-      <div id="payosSection" style="display:none;"></div>
-
-      <!-- Hiện khi chọn Thanh toán sau -->
-      <div id="payLaterSection" style="display:none;">
-        <div class="pay-note">Đơn đã được tạo thành công. Phatdatagency sẽ gửi hướng dẫn thanh toán qua số điện thoại/Zalo bạn cung cấp.</div>
-      </div>
-
-      <!-- Hiện tự động ngay khi hệ thống phát hiện đơn đã được thanh toán -->
-      <div id="receiptSection" class="receipt-box" style="display:none;">
-        <div class="receipt-check">✅</div>
-        <h3>Thanh toán thành công</h3>
-        <div class="receipt-paper" id="receiptPaper">
-          <div class="receipt-row"><span>Mã đơn</span><b id="rc_code">—</b></div>
-          <div class="receipt-row"><span>Dịch vụ</span><b id="rc_service">—</b></div>
-          <div class="receipt-row"><span>Nền tảng</span><b id="rc_platform">—</b></div>
-          <div class="receipt-row"><span>Số lượng</span><b id="rc_qty">—</b></div>
-          <div class="receipt-row"><span>Số tiền đã thanh toán</span><b id="rc_amount">—</b></div>
-          <div class="receipt-row"><span>Thời gian xác nhận</span><b id="rc_time">—</b></div>
-          <div class="receipt-row total"><span>Trạng thái</span><b>Đã xác nhận thanh toán</b></div>
-        </div>
-        <button type="button" class="btn btn-primary" id="printReceiptBtn" onclick="window.print()" style="margin-top:18px;">
-          🖨️ In biên lai
-        </button>
-        <button type="button" class="btn btn-ghost" id="downloadReceiptBtn" onclick="downloadReceiptPDF()" style="margin-top:18px; margin-left:10px;">
-          ⬇️ Tải PDF biên lai
-        </button>
-        <p style="margin-top:14px; font-size:12.5px; color:var(--ink-soft);">Đơn đã chuyển sang triển khai. Lưu mã đơn để tra cứu tiến trình bất cứ lúc nào.</p>
-      </div>
-
-      <div id="pollingHint" class="payment-hint" style="text-align:center; margin-top:16px;"></div>
-
-      <p style="margin-top:18px;">Bạn cũng có thể tra cứu tiến trình đơn tại mục <a href="/#lookup" style="color:var(--coral-deep); font-weight:600;">Tra cứu đơn</a> trên trang chủ.</p>
-    </div>
-  </div>
-
-  <!-- QUOTE SIDEBAR -->
-  <div class="card quote-card">
-    <div class="quote-live"><span></span> Giá cập nhật trực tiếp</div>
-    <h3>Thành tiền đơn hàng</h3>
-    <p class="sub">Giá áp dụng theo lựa chọn hiện tại</p>
-
-    <div class="quote-amount-box">
-      <span>Tổng thanh toán</span>
-      <strong id="q_total">0đ</strong>
-      <small>Giá theo server đã chọn</small>
-    </div>
-
-    <div class="quote-details">
-      <div class="quote-row"><span>Nền tảng</span><b id="q_platform">Facebook</b></div>
-      <div class="quote-row"><span>Server</span><b id="q_server">—</b></div>
-      <div class="quote-row"><span>Dịch vụ</span><b id="q_service">Tăng like</b></div>
-      <div class="quote-row"><span>Đơn giá / 1 lượt</span><b id="q_unit">—</b></div>
-      <div class="quote-row"><span>Số lượng</span><b id="q_qty">1.000</b></div>
-      <div class="quote-row" id="q_subtotalRow" style="display:none;"><span>Tạm tính</span><b id="q_subtotal">—</b></div>
-      <div class="quote-row" id="q_discountRow" style="display:none;"><span>Giảm giá</span><b id="q_discount" style="color:var(--sage);">—</b></div>
-    </div>
-
-    <div class="quote-note"><span>i</span><p>Đây là giá chốt cho server hiện tại. Nếu server có điều kiện riêng, nội dung sẽ hiển thị ngay dưới mục Server.</p></div>
-    <div class="quote-support">
-      <div class="support-avatar">PĐ</div>
-      <div><b>Chọn đúng server</b><span>Đọc ghi chú của từng server trước khi chốt đơn.</span></div>
-    </div>
-  </div>
-
-</main>
-
-<script src="script.js"></script>
+    client.auth.getSession()
+      .then(({ data, error }) => {
+        if(error) throw error;
+        const session = data?.session;
+        redirectToSmm(session ? 'authenticated' : 'guest', session || null);
+      })
+      .catch(() => redirectToSmm('unavailable', null));
+  })();
+  </script>
 </body>
 </html>

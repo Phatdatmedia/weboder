@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Đồng bộ phiên đăng nhập</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<script>
+(() => {
+  'use strict';
+
+  const ALLOWED_ORIGIN = 'https://smm.phatdatagency.id.vn';
+  const SUPABASE_URL = 'https://npsylbxggliczhtnzzgl.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wc3lsYnhnZ2xpY3podG56emdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTg0NTcsImV4cCI6MjA5ODQ3NDQ1N30.sSe3zD5A2EjOnwTmGLAifzPGOn0xQwMSYTqXbAKZrig';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  window.addEventListener('message', async (event) => {
+    if(event.origin !== ALLOWED_ORIGIN) return;
+    if(event.data?.type !== 'PDA_REQUEST_SESSION') return;
+
+    try{
+      const { data, error } = await client.auth.getSession();
+      if(error) throw error;
+
+      const session = data?.session;
+      event.source?.postMessage({
+        type: 'PDA_SESSION_RESPONSE',
+        session: session ? {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        } : null
+      }, ALLOWED_ORIGIN);
+    } catch(e){
+      event.source?.postMessage({
+        type: 'PDA_SESSION_RESPONSE',
+        session: null,
+        unavailable: true
+      }, ALLOWED_ORIGIN);
+    }
+  });
+})();
+</script>
+</body>
+</html>
