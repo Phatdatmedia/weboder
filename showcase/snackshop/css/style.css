@@ -177,71 +177,11 @@ h1, h2, h3, .display {
 
 .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
 
-
-/* ---------- ABOUT / FOOTER ---------- */
-.about-section { padding-top: 46px; padding-bottom: 34px; }
-.about-card { background: #fffdf7; border: 1px solid var(--line); border-radius: 22px; padding: clamp(24px, 4vw, 42px); box-shadow: var(--shadow); }
-.about-eyebrow { display:block; color:var(--turmeric); font-weight:700; font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
-.about-content { max-width: 860px; white-space: pre-line; color: rgba(32,41,31,.82); }
-
-.site-footer {
-  margin-top: 44px;
-  border-top: 1px solid var(--line);
-  background: #fbf8f3;
-  color: var(--ink);
-}
-.footer-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr 1fr 1.35fr;
-  gap: clamp(28px, 5vw, 64px);
-  padding-top: 48px;
-  padding-bottom: 42px;
-}
-.footer-column { min-width: 0; }
-.footer-grid h3 {
-  font-family: var(--font-body);
-  font-size: .96rem;
-  font-weight: 800;
-  margin: 0 0 18px;
-  color: var(--ink);
-}
-.footer-brand strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  line-height: 1.2;
-  color: var(--ink);
-  margin-bottom: 12px;
-}
-.footer-tagline { margin: 0 0 22px; color: rgba(32,41,31,.7); }
-.footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; }
-.footer-links a { text-decoration: none; color: rgba(32,41,31,.78); transition: color .18s ease; }
-.footer-links a:hover { color: var(--chili); }
-.footer-info p { margin: 0 0 10px; color: rgba(32,41,31,.76); line-height: 1.55; }
-.footer-contact-line a { color: var(--ink); text-decoration: none; }
-.footer-contact-line a:hover { color: var(--chili); }
-.footer-contact-label { font-weight: 700; color: var(--ink); }
-.social-links { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
-.social-link {
-  width: 34px; height: 34px;
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  border: 1px solid #d8d0c4;
-  border-radius: 50%;
-  background: #fff;
-  color: var(--ink);
-  text-decoration: none;
-  transition: transform .18s ease, border-color .18s ease, background .18s ease;
-}
-.social-link svg { width: 17px; height: 17px; display: block; }
-.social-link:hover { transform: translateY(-2px); border-color: var(--ink); background: #f4efe7; }
-.footer-bottom { border-top: 1px solid var(--line); padding: 17px 0; font-size: .8rem; color: rgba(32,41,31,.62); }
-
 /* ---------- HERO CAROUSEL ---------- */
 .hero-carousel {
   position: relative;
-  height: clamp(360px, 34vw, 520px);
-  min-height: 360px;
+  height: min(52vw, 460px);
+  min-height: 280px;
   overflow: hidden;
 }
 
@@ -252,7 +192,7 @@ h1, h2, h3, .display {
   z-index: 0;
   transition: opacity 0.6s ease;
   background-size: cover;
-  background-position: center center;
+  background-position: center;
   display: flex;
   align-items: center;
   padding: 0 clamp(24px, 6vw, 100px);
@@ -324,7 +264,7 @@ h1, h2, h3, .display {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .category-icon-item:hover .category-icon-badge { transform: translateY(-3px); border-color: var(--chili); }
-.category-icon-item.active .category-icon-badge { background: var(--turmeric); border-color: var(--turmeric); }
+.category-icon-item.active .category-icon-badge { background: var(--chili); border-color: var(--chili-dark); }
 
 .category-icon-label { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
 
@@ -478,7 +418,22 @@ h1, h2, h3, .display {
   border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; width: 24px;
 }
 
-/* ---------- FOOTER (base layout defined above) ---------- */
+/* ---------- FOOTER ---------- */
+.site-footer {
+  border-top: 2px solid var(--ink);
+  background: var(--paper-dark);
+  padding: 36px 0;
+  margin-top: 40px;
+  font-size: 0.9rem;
+}
+
+.site-footer .container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
 /* ---------- GENERIC PANEL (account/admin forms) ---------- */
 .panel {
   background: #fff;
@@ -682,8 +637,6 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 800px) {
-  .hero-carousel { height: clamp(330px, 62vw, 430px); min-height: 330px; }
-  .footer-grid { grid-template-columns: 1fr 1fr; gap: 30px 24px; }
   .nav-links { display: none; }
   .menu-toggle {
     display: inline-flex;
@@ -710,8 +663,4 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
   outline: 3px solid var(--turmeric);
   outline-offset: 2px;
-}
-
-@media (max-width: 520px) {
-  .footer-grid { grid-template-columns: 1fr; gap: 26px; padding-top: 36px; padding-bottom: 32px; }
 }

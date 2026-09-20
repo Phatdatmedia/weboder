@@ -119,3 +119,6 @@
 
 /* ---------- FILTER ROW ---------- */
 .filter-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+
+.traffic-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.traffic-card{background:#fffdf7;border:1px solid rgba(35,62,45,.18);border-radius:16px;padding:20px;box-shadow:0 5px 18px rgba(35,62,45,.06)}.traffic-card span{display:block;font-size:.9rem;color:#6f675c}.traffic-card strong{display:block;font-size:2rem;margin:8px 0 2px;color:#173f2e}.traffic-card small{color:#8b8175}.admin-page-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}.admin-page-head h1{margin:0}.admin-table{width:100%;border-collapse:collapse}.admin-table th,.admin-table td{padding:13px 15px;border-bottom:1px solid rgba(58,42,26,.12);text-align:left}.admin-table th{background:#f4ead5}.dash-loading{padding:12px 0;color:#766d61}@media(max-width:800px){.traffic-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page-head{align-items:flex-start;flex-direction:column}}@media(max-width:500px){.traffic-cards{grid-template-columns:1fr 1fr}.traffic-card{padding:14px}.traffic-card strong{font-size:1.5rem}}

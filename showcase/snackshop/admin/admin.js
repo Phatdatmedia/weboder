@@ -591,7 +591,6 @@ async function initSettingsPage() {
     `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/payos-webhook`;
 
   await loadBrandingAndBankForm();
-  await loadAboutForm();
   await loadPayosSecretForm();
   await loadBannersTable();
 
@@ -604,7 +603,6 @@ async function initSettingsPage() {
   });
 
   document.getElementById("branding-form").addEventListener("submit", saveBranding);
-  document.getElementById("about-form").addEventListener("submit", saveAboutForm);
   document.getElementById("bank-form").addEventListener("submit", saveBankInfo);
   document.getElementById("payos-form").addEventListener("submit", savePayosSecret);
 
@@ -635,40 +633,6 @@ async function loadBrandingAndBankForm() {
   document.getElementById("s-account-no").value = data.bank_account_no || "";
   document.getElementById("s-account-name").value = data.bank_account_name || "";
   document.getElementById("s-payos-enabled").checked = !!data.payos_enabled;
-}
-
-async function loadAboutForm() {
-  const { data } = await supabaseClient.from("site_settings").select("about_title, about_text, footer_description, contact_phone, contact_email, contact_address, facebook_url, tiktok_url").eq("id", 1).single();
-  if (!data) return;
-  document.getElementById("s-about-title").value = data.about_title || "";
-  document.getElementById("s-about-text").value = data.about_text || "";
-  document.getElementById("s-footer-description").value = data.footer_description || "";
-  document.getElementById("s-contact-address").value = data.contact_address || "";
-  document.getElementById("s-contact-phone").value = data.contact_phone || "";
-  document.getElementById("s-contact-email").value = data.contact_email || "";
-  document.getElementById("s-facebook-url").value = data.facebook_url || "";
-  document.getElementById("s-tiktok-url").value = data.tiktok_url || "";
-}
-
-async function saveAboutForm(e) {
-  e.preventDefault();
-  const alertBox = document.getElementById("about-alert");
-  const btn = document.getElementById("about-save");
-  btn.disabled = true; btn.textContent = "Đang lưu...";
-  const payload = {
-    about_title: document.getElementById("s-about-title").value.trim() || "Giới thiệu",
-    about_text: document.getElementById("s-about-text").value.trim(),
-    footer_description: document.getElementById("s-footer-description").value.trim(),
-    contact_address: document.getElementById("s-contact-address").value.trim(),
-    contact_phone: document.getElementById("s-contact-phone").value.trim(),
-    contact_email: document.getElementById("s-contact-email").value.trim(),
-    facebook_url: document.getElementById("s-facebook-url").value.trim(),
-    tiktok_url: document.getElementById("s-tiktok-url").value.trim(),
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await supabaseClient.from("site_settings").update(payload).eq("id", 1);
-  btn.disabled = false; btn.textContent = "Lưu giới thiệu & liên hệ";
-  showMsg(alertBox, error ? "Lưu thất bại: " + error.message : "Đã lưu giới thiệu và thông tin liên hệ.", error ? "error" : "success");
 }
 
 async function uploadSiteImage(file, prefix) {
@@ -925,3 +889,79 @@ function renderRevenueChart(rowsAscending) {
     },
   });
 }
+
+
+// ---------- THỐNG KÊ TRUY CẬP ----------
+async function initTrafficPage() {
+  if (!(await requireAdmin())) return;
+  const btn = document.getElementById('traffic-refresh');
+  btn?.addEventListener('click', loadTrafficStats);
+  await loadTrafficStats();
+}
+
+function trafficNum(value) {
+  return Number(value || 0).toLocaleString('vi-VN');
+}
+
+async function loadTrafficStats() {
+  const loading = document.getElementById('traffic-loading');
+  const errorBox = document.getElementById('traffic-error');
+  const tbody = document.getElementById('traffic-tbody');
+  if (!tbody) return;
+  loading && (loading.hidden = false);
+  errorBox && (errorBox.hidden = true);
+
+  const { data, error } = await supabaseClient.rpc('admin_traffic_summary');
+  if (error || !data) {
+    loading && (loading.hidden = true);
+    if (errorBox) {
+      errorBox.textContent = 'Không tải được dữ liệu truy cập. Hãy chạy phần SQL traffic trong Supabase trước.';
+      errorBox.hidden = false;
+    }
+    return;
+  }
+
+  const stats = data.stats || {};
+  document.getElementById('traffic-today').textContent = trafficNum(stats.today_views);
+  document.getElementById('traffic-7days').textContent = trafficNum(stats.last_7_days_views);
+  document.getElementById('traffic-30days').textContent = trafficNum(stats.last_30_days_views);
+  document.getElementById('traffic-unique').textContent = trafficNum(stats.last_30_days_unique);
+
+  const rows = data.daily || [];
+  tbody.innerHTML = rows.length ? rows.map(r => `
+    <tr>
+      <td>${r.date}</td>
+      <td>${trafficNum(r.views)}</td>
+      <td>${trafficNum(r.unique_visitors)}</td>
+    </tr>`).join('') : '<tr><td colspan="3">Chưa có dữ liệu truy cập.</td></tr>';
+  loading && (loading.hidden = true);
+}
+
+// Tự ghi nhận lượt truy cập ở các trang khách hàng.
+// Không lưu IP; visitor_id chỉ là mã ngẫu nhiên lưu trên trình duyệt.
+function trackPublicVisit() {
+  if (location.pathname.includes('/admin/')) return;
+  try {
+    const KEY = 'snackshop_visitor_id';
+    let visitorId = localStorage.getItem(KEY);
+    if (!visitorId) {
+      visitorId = (crypto.randomUUID ? crypto.randomUUID() : 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem(KEY, visitorId);
+    }
+    const sessionKey = 'snackshop_traffic_session';
+    let sessionId = sessionStorage.getItem(sessionKey);
+    if (!sessionId) {
+      sessionId = (crypto.randomUUID ? crypto.randomUUID() : 's-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      sessionStorage.setItem(sessionKey, sessionId);
+    }
+    supabaseClient.from('traffic_events').insert({
+      visitor_id: visitorId,
+      session_id: sessionId,
+      path: location.pathname || '/',
+      referrer: document.referrer || null
+    }).then(() => {}).catch(() => {});
+  } catch (_) {}
+}
+
+if (document.getElementById('traffic-page')) initTrafficPage();
+if (!document.getElementById('admin-login-form')) trackPublicVisit();

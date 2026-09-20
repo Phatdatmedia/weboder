@@ -14,6 +14,52 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
   },
 });
 
+// ---------- THỐNG KÊ LƯỢT TRUY CẬP ----------
+// Ghi nhận lượt xem qua RPC SECURITY DEFINER để khách chưa đăng nhập vẫn ghi được.
+// Không lưu IP. Admin cũng không được tính là lượt truy cập.
+function getTrafficId(key, storage = localStorage) {
+  try {
+    let value = storage.getItem(key);
+    if (!value) {
+      value = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+      storage.setItem(key, value);
+    }
+    return value;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+async function recordTrafficVisit() {
+  try {
+    // Không ghi các trang admin.
+    if (window.location.pathname.includes('/admin/')) return;
+
+    const visitorId = getTrafficId('snack_visitor_id');
+    const sessionId = getTrafficId('snack_session_id', sessionStorage);
+    const path = window.location.pathname + window.location.search;
+    const referrer = document.referrer || null;
+
+    const { error } = await supabaseClient.rpc('record_traffic_visit', {
+      p_visitor_id: visitorId,
+      p_session_id: sessionId,
+      p_path: path,
+      p_referrer: referrer
+    });
+
+    if (error) {
+      console.error('[Traffic] Không ghi được lượt truy cập:', error);
+    } else {
+      console.debug('[Traffic] Đã ghi lượt truy cập:', path);
+    }
+  } catch (error) {
+    console.error('[Traffic] Lỗi:', error);
+  }
+}
+
+// Chạy sau khi DOM sẵn sàng; supabase-client.js được nạp trên các trang khách.
+document.addEventListener('DOMContentLoaded', recordTrafficVisit);
+
 // Định dạng tiền VNĐ
 function formatVND(n) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
