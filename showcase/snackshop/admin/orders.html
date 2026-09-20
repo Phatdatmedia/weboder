@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý đơn hàng — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="admin-topbar">
+  <div class="container">
+    <a href="products.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a> <span class="admin-brand-tag">Admin</span>
+    <nav>
+      <ul class="admin-nav">
+        <li><a href="products.html">Sản phẩm</a></li>
+        <li><a href="orders.html" class="active">Đơn hàng</a></li>
+        <li><a href="payments.html">Thanh toán</a></li>
+        <li><a href="revenue.html">Doanh thu</a></li>
+        <li><a href="settings.html">Cấu hình</a></li>
+      </ul>
+    </nav>
+    <div>
+      <span data-admin-name style="margin-right:14px;"></span>
+      <button class="btn btn-outline btn-sm" id="admin-logout">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="container admin-main">
+  <div class="admin-page-head">
+    <h1>Đơn hàng</h1>
+    <select id="order-status-filter" class="status-select">
+      <option value="all">Tất cả trạng thái</option>
+      <option value="pending">Chờ xác nhận</option>
+      <option value="confirmed">Đã xác nhận</option>
+      <option value="shipping">Đang giao</option>
+      <option value="done">Hoàn tất</option>
+      <option value="cancelled">Đã huỷ</option>
+    </select>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Mã đơn</th><th>Khách hàng</th><th>Món</th><th>Tổng tiền</th><th>Thanh toán</th><th>Trạng thái</th><th>Ngày đặt</th></tr>
+      </thead>
+      <tbody id="orders-tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="admin.js"></script>
+<script>initOrdersPage();</script>
+</body>
+</html>

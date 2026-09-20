@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý thanh toán — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="admin-topbar">
+  <div class="container">
+    <a href="products.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a> <span class="admin-brand-tag">Admin</span>
+    <nav>
+      <ul class="admin-nav">
+        <li><a href="products.html">Sản phẩm</a></li>
+        <li><a href="orders.html">Đơn hàng</a></li>
+        <li><a href="payments.html" class="active">Thanh toán</a></li>
+        <li><a href="revenue.html">Doanh thu</a></li>
+        <li><a href="settings.html">Cấu hình</a></li>
+      </ul>
+    </nav>
+    <div>
+      <span data-admin-name style="margin-right:14px;"></span>
+      <button class="btn btn-outline btn-sm" id="admin-logout">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="container admin-main">
+  <h1>Quản lý thanh toán</h1>
+
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-label">Chưa thu</div>
+      <div class="stat-value" id="stat-unpaid-total">—</div>
+      <div class="stat-sub" id="stat-unpaid-count">—</div>
+    </div>
+    <div class="stat-card stat-card-accent">
+      <div class="stat-label">Đã thu</div>
+      <div class="stat-value" id="stat-paid-total">—</div>
+      <div class="stat-sub" id="stat-paid-count">—</div>
+    </div>
+  </div>
+
+  <div class="admin-page-head" style="margin-top:28px;">
+    <div class="filter-row">
+      <select id="filter-payment-status" class="status-select">
+        <option value="all">Tất cả trạng thái</option>
+        <option value="unpaid">Chưa thanh toán</option>
+        <option value="paid">Đã thanh toán</option>
+      </select>
+      <select id="filter-payment-method" class="status-select">
+        <option value="all">Tất cả phương thức</option>
+        <option value="cod">COD</option>
+        <option value="bank_transfer">Chuyển khoản QR</option>
+        <option value="payos">PayOS</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Mã đơn</th><th>Khách hàng</th><th>Phương thức</th><th>Tổng tiền</th><th>Trạng thái đơn</th><th>Thanh toán</th><th>Ngày đặt</th></tr>
+      </thead>
+      <tbody id="payments-tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="admin.js"></script>
+<script>initPaymentsPage();</script>
+</body>
+</html>

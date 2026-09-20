@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tài khoản của tôi — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body id="profile-page">
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="../index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" id="logout-btn">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="max-width:900px; padding-bottom:60px;">
+  <h1 style="margin-top:40px;">Tài khoản của tôi</h1>
+  <p style="color:rgba(58,42,26,0.7);" id="profile-email"></p>
+
+  <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:32px; align-items:start; margin-top:20px;">
+    <form class="panel" id="profile-form" style="margin:0;">
+      <h2>Thông tin cá nhân</h2>
+      <div class="alert" id="profile-alert"></div>
+      <div class="field">
+        <label for="p-name">Họ và tên</label>
+        <input type="text" id="p-name">
+      </div>
+      <div class="field">
+        <label for="p-phone">Số điện thoại</label>
+        <input type="tel" id="p-phone">
+      </div>
+      <div class="field">
+        <label for="p-address">Địa chỉ</label>
+        <textarea id="p-address" rows="3"></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Lưu thay đổi</button>
+    </form>
+
+    <div>
+      <h2>Đơn hàng của tôi</h2>
+      <div id="my-orders"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="account.js"></script>
+</body>
+</html>

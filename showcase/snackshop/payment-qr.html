@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thanh toán chuyển khoản — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="panel" style="text-align:center; max-width:420px;">
+    <h1>Quét mã để chuyển khoản</h1>
+    <div class="alert" id="qr-alert"></div>
+
+    <div id="qr-loading">Đang tải thông tin đơn hàng...</div>
+
+    <div id="qr-content" style="display:none;">
+      <img id="qr-image" alt="Mã QR chuyển khoản" style="width:100%; max-width:280px; border:2px solid var(--ink); border-radius:16px; margin:12px 0;">
+      <p style="font-weight:800; font-size:1.2rem; color:var(--chili);" id="qr-amount"></p>
+      <p style="font-size:0.85rem; color:rgba(58,42,26,0.7);">
+        Mở app ngân hàng bất kỳ → Quét mã QR → Giữ nguyên nội dung chuyển khoản
+        (đã điền sẵn mã đơn) để được xác nhận nhanh.
+      </p>
+      <p><strong>Mã đơn hàng:</strong> <span id="qr-order-id"></span></p>
+    </div>
+
+    <a href="track-order.html" class="btn btn-outline btn-block" id="qr-track-link" style="margin-top:16px;">Tôi đã chuyển khoản — Tra cứu đơn</a>
+    <a href="index.html" class="btn btn-primary btn-block" style="margin-top:10px;">Tiếp tục mua sắm</a>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/payment-config.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get("id") || "";
+  const phone = params.get("phone") || "";
+  document.getElementById("qr-track-link").href = `track-order.html?id=${orderId}&phone=${encodeURIComponent(phone)}`;
+
+  (async () => {
+    const alertBox = document.getElementById("qr-alert");
+    const { data, error } = await supabaseClient.rpc("track_order", {
+      p_order_id: orderId,
+      p_phone: phone,
+    });
+
+    document.getElementById("qr-loading").style.display = "none";
+
+    if (error || !data || !data.length) {
+      alertBox.textContent = "Không tải được thông tin đơn hàng để tạo mã QR. Vui lòng liên hệ shop.";
+      alertBox.className = "alert show alert-error";
+      return;
+    }
+
+    const order = data[0];
+    document.getElementById("qr-image").src = await buildVietQRUrl(order.total, order.id);
+    document.getElementById("qr-amount").textContent = formatVND(order.total);
+    document.getElementById("qr-order-id").textContent = order.id;
+    document.getElementById("qr-content").style.display = "block";
+  })();
+</script>
+</body>
+</html>

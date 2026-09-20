@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý sản phẩm — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="admin-topbar">
+  <div class="container">
+    <a href="products.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a> <span class="admin-brand-tag">Admin</span>
+    <nav>
+      <ul class="admin-nav">
+        <li><a href="products.html" class="active">Sản phẩm</a></li>
+        <li><a href="orders.html">Đơn hàng</a></li>
+        <li><a href="payments.html">Thanh toán</a></li>
+        <li><a href="revenue.html">Doanh thu</a></li>
+        <li><a href="settings.html">Cấu hình</a></li>
+      </ul>
+    </nav>
+    <div>
+      <span data-admin-name style="margin-right:14px;"></span>
+      <button class="btn btn-outline btn-sm" id="admin-logout">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="container admin-main">
+  <div class="admin-page-head">
+    <h1>Sản phẩm</h1>
+    <button class="btn btn-primary" id="add-product-btn">+ Thêm sản phẩm</button>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Ảnh</th><th>Tên món</th><th>Danh mục</th><th>Giá</th><th>Trạng thái</th><th>Thao tác</th></tr>
+      </thead>
+      <tbody id="products-tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- FORM THÊM/SỬA SẢN PHẨM -->
+<div class="modal-overlay" id="product-form-modal">
+  <div class="product-form-box">
+    <button class="modal-close" id="product-form-close" aria-label="Đóng">✕</button>
+    <h2 id="product-form-title">Thêm sản phẩm</h2>
+    <div class="alert" id="product-form-alert"></div>
+    <form id="product-form">
+      <div class="field">
+        <label>Ảnh sản phẩm (ảnh chính)</label>
+        <img class="img-preview" id="f-image-preview" alt="">
+        <input type="file" id="f-image-file" accept="image/*">
+      </div>
+      <div class="field">
+        <label>Ảnh phụ (gallery)</label>
+        <div class="gallery-admin-list" id="gallery-list"></div>
+        <input type="file" id="f-gallery-file" accept="image/*" multiple>
+      </div>
+      <div class="field">
+        <label for="f-name">Tên món</label>
+        <input type="text" id="f-name" required>
+      </div>
+      <div class="field">
+        <label for="f-category">Danh mục</label>
+        <select id="f-category"></select>
+      </div>
+      <div class="field">
+        <label for="f-price">Giá (VNĐ)</label>
+        <input type="number" id="f-price" min="0" required>
+      </div>
+      <div class="field">
+        <label>Phân loại (tuỳ chọn — vd: Hộp 4 bánh / Hộp 8 bánh)</label>
+        <div id="variant-rows"></div>
+        <button type="button" class="btn btn-outline btn-sm" id="add-variant-row" style="margin-top:6px;">+ Thêm phân loại</button>
+      </div>
+      <div class="field">
+        <label for="f-short">Mô tả ngắn (hiện ở danh sách)</label>
+        <input type="text" id="f-short" maxlength="120">
+      </div>
+      <div class="field">
+        <label for="f-desc">Giới thiệu chi tiết (hiện khi click vào ảnh)</label>
+        <textarea id="f-desc" rows="4"></textarea>
+      </div>
+      <div class="field checkbox-field">
+        <input type="checkbox" id="f-available" checked>
+        <label for="f-available" style="margin:0;">Đang bán</label>
+      </div>
+      <button class="btn btn-primary btn-block" id="product-form-save" type="submit">Lưu sản phẩm</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="admin.js"></script>
+<script>initProductsPage();</script>
+</body>
+</html>

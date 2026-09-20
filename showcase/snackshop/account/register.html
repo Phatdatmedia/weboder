@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng ký — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="../index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="../index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="container">
+  <form class="panel" id="register-form">
+    <h1>Tạo tài khoản</h1>
+    <div class="alert" id="register-alert"></div>
+    <div class="field">
+      <label for="r-name">Họ và tên</label>
+      <input type="text" id="r-name" required>
+    </div>
+    <div class="field">
+      <label for="r-email">Email</label>
+      <input type="email" id="r-email" required>
+    </div>
+    <div class="field">
+      <label for="r-password">Mật khẩu</label>
+      <input type="password" id="r-password" minlength="6" required>
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">Đăng ký</button>
+    <p class="form-note">Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+  </form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="account.js"></script>
+</body>
+</html>

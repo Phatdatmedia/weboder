@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đặt hàng thành công — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="panel" style="text-align:center; max-width:520px;">
+    <h1>🎉 Đặt hàng thành công!</h1>
+    <p>Cảm ơn bạn đã đặt hàng tại Vặt Ơi. Chúng tôi sẽ liên hệ xác nhận sớm.</p>
+    <p><strong>Mã đơn hàng:</strong><br><span id="order-id" style="word-break:break-all;"></span></p>
+    <p style="font-size:0.85rem; color:rgba(58,42,26,0.7);">Lưu lại mã này để tra cứu trạng thái đơn hàng.</p>
+    <a href="track-order.html" class="btn btn-outline btn-block" id="track-link">Tra cứu đơn hàng</a>
+    <a href="index.html" class="btn btn-primary btn-block" style="margin-top:10px;">Tiếp tục mua sắm</a>
+  </div>
+</main>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id") || "";
+  const phone = params.get("phone") || "";
+  document.getElementById("order-id").textContent = id;
+  document.getElementById("track-link").href = `track-order.html?id=${id}&phone=${encodeURIComponent(phone)}`;
+</script>
+</body>
+</html>

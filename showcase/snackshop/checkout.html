@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đặt hàng — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="container" style="max-width:900px; padding-bottom:60px;">
+  <h1 style="margin-top:40px;">Thông tin đặt hàng</h1>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;">
+    <form class="panel" id="checkout-form" style="margin:0;">
+      <div class="alert" id="checkout-alert"></div>
+
+      <div class="field">
+        <label for="f-name">Họ và tên</label>
+        <input type="text" id="f-name" required>
+      </div>
+      <div class="field">
+        <label for="f-phone">Số điện thoại</label>
+        <input type="tel" id="f-phone" required>
+      </div>
+      <div class="field">
+        <label for="f-address">Địa chỉ giao hàng</label>
+        <textarea id="f-address" rows="3" required></textarea>
+      </div>
+      <div class="field">
+        <label for="f-note">Ghi chú (tuỳ chọn)</label>
+        <textarea id="f-note" rows="2"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Phương thức thanh toán</label>
+        <div class="payment-options">
+          <label class="payment-option">
+            <input type="radio" name="payment_method" value="cod" checked>
+            <span>💵 Thanh toán khi nhận hàng (COD)</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment_method" value="bank_transfer">
+            <span>📱 Chuyển khoản qua mã QR</span>
+          </label>
+          <label class="payment-option payment-option-disabled">
+            <input type="radio" name="payment_method" value="payos" disabled>
+            <span>💳 Thanh toán online (PayOS) — sắp ra mắt</span>
+          </label>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="submit-order" type="submit">Đặt hàng</button>
+    </form>
+
+    <div class="panel" style="margin:0;">
+      <h2>Đơn hàng của bạn</h2>
+      <div id="checkout-items"></div>
+      <div class="cart-total-row" style="margin-top:14px;">
+        <span>Tổng cộng</span><span id="checkout-total">0₫</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/payment-config.js"></script>
+<script src="js/checkout.js"></script>
+</body>
+</html>

@@ -237,6 +237,54 @@ h1,h2,h3,h4{ font-family: var(--font-display); font-weight:600; line-height:1.08
 .ts-bar-track{ height:6px; background:var(--surface-2); border-radius:4px; overflow:hidden; }
 .ts-bar-fill{ height:100%; background:linear-gradient(90deg, var(--sage), #6f9860); border-radius:4px; }
 
+/* ====================== BÁO CÁO DOANH THU ====================== */
+.revenue-filter-grid{
+  display:grid; grid-template-columns:repeat(3,minmax(170px,1fr)) auto;
+  gap:14px; align-items:end;
+}
+.revenue-filter-grid label{
+  display:block; margin-bottom:7px; color:var(--ink-soft);
+  font-size:12px; font-weight:600;
+}
+.revenue-filter-actions{ display:flex; gap:8px; flex-wrap:wrap; padding-bottom:1px; }
+.revenue-report-preview{
+  margin-top:18px; border:1px solid var(--line); border-radius:12px;
+  background:rgba(255,252,246,.72); overflow:hidden;
+}
+.revenue-preview-head{
+  display:flex; align-items:center; justify-content:space-between; gap:18px;
+  padding:15px 18px; border-bottom:1px solid var(--line); background:var(--surface-2);
+}
+.revenue-preview-head > div{ display:grid; gap:3px; }
+.revenue-preview-head strong{ font-family:var(--font-display); font-size:15px; }
+.revenue-preview-head span{ color:var(--ink-soft); font-size:11.5px; }
+.revenue-preview-head > span{
+  flex-shrink:0; padding:5px 10px; border:1px solid var(--line); border-radius:999px;
+  background:var(--surface); font:600 10.5px var(--font-mono); color:var(--coral-deep);
+}
+.revenue-detail-wrap{ max-height:430px; overflow:auto; }
+.revenue-detail-table{ min-width:940px; }
+.revenue-detail-table th{ position:sticky; top:0; z-index:1; background:var(--paper-deep); }
+.revenue-detail-table td{ font-size:11.5px; vertical-align:top; }
+.revenue-detail-table td:first-child{ color:var(--ink-soft); text-align:center; }
+.revenue-detail-table td:last-child{ font-family:var(--font-mono); font-weight:700; white-space:nowrap; color:var(--sage); }
+.revenue-detail-table tfoot td{
+  position:sticky; bottom:0; background:var(--surface); border-top:2px solid var(--coral);
+  font-weight:700; text-align:right;
+}
+.revenue-detail-table tfoot td:last-child{ font-size:13px; }
+.revenue-detail-empty{ padding:34px 16px !important; text-align:center !important; color:var(--ink-soft) !important; }
+
+@media(max-width:1100px){
+  .revenue-filter-grid{ grid-template-columns:repeat(2,minmax(180px,1fr)); }
+}
+@media(max-width:680px){
+  .revenue-filter-grid{ grid-template-columns:1fr; }
+  .revenue-filter-actions{ display:grid; grid-template-columns:1fr 1fr; }
+  .revenue-filter-actions .btn{ width:100%; }
+  .revenue-preview-head{ align-items:flex-start; }
+}
+
 .quick-links{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:28px; }
 .quick-link-card{
   background:rgba(255,252,246,.92); border:1px solid var(--line); border-radius:var(--radius-md);

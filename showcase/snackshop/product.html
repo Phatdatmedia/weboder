@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chi tiết sản phẩm — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Trang chủ</a></li>
+        <li><a href="index.html#products">Sản phẩm</a></li>
+        <li><a href="track-order.html">Tra cứu đơn</a></li>
+        <li><a href="account/login.html">Tài khoản</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" data-open-cart aria-label="Giỏ hàng">
+        🛍️<span class="badge" data-cart-badge>0</span>
+      </button>
+      <button class="menu-toggle" id="menu-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <div class="product-detail" id="product-detail-wrap" style="display:none;">
+    <div>
+      <div class="gallery-main"><img id="gallery-main-img" src="" alt=""></div>
+      <div class="gallery-thumbs" id="gallery-thumbs"></div>
+    </div>
+
+    <div>
+      <div class="detail-category" id="detail-category"></div>
+      <h1 class="detail-name" id="detail-name"></h1>
+      <p class="detail-short" id="detail-short"></p>
+      <div class="rating-summary" id="detail-rating-summary"></div>
+
+      <div class="detail-price" id="detail-price"></div>
+
+      <div class="variant-group" id="variant-group"></div>
+
+      <div class="detail-actions">
+        <div class="qty-picker">
+          <button id="qty-minus" aria-label="Giảm số lượng">−</button>
+          <span id="detail-qty">1</span>
+          <button id="qty-plus" aria-label="Tăng số lượng">+</button>
+        </div>
+        <button class="btn btn-primary" id="add-to-cart-btn">Thêm vào giỏ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab-target="tab-panel-description">Mô tả</button>
+    <button class="tab-btn" data-tab-target="tab-panel-reviews">Đánh giá</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-panel-description">
+    <p id="tab-description"></p>
+  </div>
+
+  <div class="tab-panel" id="tab-panel-reviews">
+    <div class="rating-summary" id="rating-summary"></div>
+    <div id="reviews-list"></div>
+
+    <form class="review-form" id="review-form">
+      <h3>Viết đánh giá</h3>
+      <div class="alert" id="review-alert"></div>
+      <div class="field">
+        <label>Số sao</label>
+        <div class="star-input" id="star-input">
+          <span data-star="1">★</span>
+          <span data-star="2">★</span>
+          <span data-star="3">★</span>
+          <span data-star="4">★</span>
+          <span data-star="5">★</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rv-name">Tên của bạn</label>
+        <input type="text" id="rv-name" required>
+      </div>
+      <div class="field">
+        <label for="rv-comment">Nhận xét (tuỳ chọn)</label>
+        <textarea id="rv-comment" rows="3" maxlength="1000"></textarea>
+      </div>
+      <button class="btn btn-primary" type="submit">Gửi đánh giá</button>
+    </form>
+  </div>
+
+  <section class="related-section" id="related-section">
+    <div class="section-title"><h2>Sản phẩm liên quan</h2></div>
+    <div class="product-grid" id="related-grid"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div><strong>Vặt Ơi</strong><br>Đồ ăn vặt online — giao tận nơi.</div>
+    <div>
+      <a href="track-order.html">Tra cứu đơn hàng</a><br>
+      <a href="account/login.html">Đăng nhập / Đăng ký</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ================= CART DRAWER ================= -->
+<div class="scrim" id="scrim"></div>
+<aside class="cart-drawer" id="cart-drawer">
+  <div class="cart-drawer-head">
+    <strong>Giỏ hàng của bạn</strong>
+    <button class="modal-close" id="cart-close" aria-label="Đóng giỏ hàng">✕</button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-drawer-foot">
+    <div class="cart-total-row"><span>Tổng cộng</span><span id="cart-total">0₫</span></div>
+    <a href="checkout.html" class="btn btn-primary btn-block">Tiến hành đặt hàng</a>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/product.js"></script>
+<script>
+  // Giỏ hàng dùng lại phần drawer giống trang chủ
+  document.querySelectorAll("[data-open-cart]").forEach((el) =>
+    el.addEventListener("click", () => {
+      renderCartDrawerShared();
+      document.getElementById("cart-drawer").classList.add("open");
+      document.getElementById("scrim").classList.add("open");
+    })
+  );
+  document.getElementById("cart-close").addEventListener("click", closeCartShared);
+  document.getElementById("scrim").addEventListener("click", closeCartShared);
+  document.getElementById("cart-items").addEventListener("click", (e) => {
+    const rm = e.target.closest("[data-remove]");
+    if (rm) {
+      removeFromCart(rm.dataset.remove);
+      renderCartDrawerShared();
+    }
+  });
+  document.getElementById("menu-toggle")?.addEventListener("click", () => {
+    document.getElementById("nav-links").classList.toggle("show-mobile");
+  });
+
+  function renderCartDrawerShared() {
+    const cart = getCart();
+    const itemsWrap = document.getElementById("cart-items");
+    const totalEl = document.getElementById("cart-total");
+    if (!cart.length) {
+      itemsWrap.innerHTML = `<p class="empty-state">Giỏ hàng đang trống.<br>Chọn vài món ăn vặt nào!</p>`;
+    } else {
+      itemsWrap.innerHTML = cart
+        .map(
+          (i) => `
+        <div class="cart-item">
+          <img src="${i.image_url || 'https://placehold.co/120/f4e9d4/3a2a1a?text=Snack'}" alt="${i.name}">
+          <div class="cart-item-info">
+            <div>${i.name}</div>
+            <div>${i.quantity} × ${formatVND(i.price)}</div>
+            <button class="cart-item-remove" data-remove="${i.key}">Xoá</button>
+          </div>
+        </div>`
+        )
+        .join("");
+    }
+    totalEl.textContent = formatVND(cartTotal());
+  }
+
+  function closeCartShared() {
+    document.getElementById("cart-drawer").classList.remove("open");
+    document.getElementById("scrim").classList.remove("open");
+  }
+</script>
+</body>
+</html>

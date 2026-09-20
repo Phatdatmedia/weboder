@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cấu hình — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<header class="admin-topbar">
+  <div class="container">
+    <a href="products.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a> <span class="admin-brand-tag">Admin</span>
+    <nav>
+      <ul class="admin-nav">
+        <li><a href="products.html">Sản phẩm</a></li>
+        <li><a href="orders.html">Đơn hàng</a></li>
+        <li><a href="payments.html">Thanh toán</a></li>
+        <li><a href="revenue.html">Doanh thu</a></li>
+        <li><a href="settings.html" class="active">Cấu hình</a></li>
+      </ul>
+    </nav>
+    <div>
+      <span data-admin-name style="margin-right:14px;"></span>
+      <button class="btn btn-outline btn-sm" id="admin-logout">Đăng xuất</button>
+    </div>
+  </div>
+</header>
+
+<main class="container admin-main">
+  <div class="admin-page-head">
+    <h1>Cấu hình</h1>
+  </div>
+
+  <!-- ================= LOGO & BANNER ================= -->
+  <form class="panel" id="branding-form" style="margin-bottom:24px;">
+    <h2>Thương hiệu</h2>
+    <div class="alert" id="branding-alert"></div>
+
+    <div class="field">
+      <label>Logo</label>
+      <img class="img-preview" id="logo-preview" alt="">
+      <input type="file" id="logo-file" accept="image/*">
+      <p class="form-note">Để trống thì hiển thị chữ "Vặt Ơi" mặc định.</p>
+    </div>
+    <div class="field">
+      <label for="s-logo-text">Tên hiển thị (khi chưa có ảnh logo)</label>
+      <input type="text" id="s-logo-text" maxlength="60">
+    </div>
+
+    <button class="btn btn-primary" id="branding-save" type="submit">Lưu thương hiệu</button>
+  </form>
+
+  <!-- ================= GIỚI THIỆU & LIÊN HỆ ================= -->
+  <form class="panel" id="about-form" style="margin-bottom:24px;">
+    <h2>Giới thiệu &amp; liên hệ</h2>
+    <div class="alert" id="about-alert"></div>
+    <div class="field"><label for="s-about-title">Tiêu đề giới thiệu</label><input type="text" id="s-about-title" maxlength="100" placeholder="Giới thiệu"></div>
+    <div class="field"><label for="s-about-text">Nội dung giới thiệu</label><textarea id="s-about-text" rows="7" maxlength="3000" placeholder="Nhập nội dung giới thiệu về cửa hàng..."></textarea></div>
+    <div class="field"><label for="s-footer-description">Mô tả ngắn ở footer</label><input type="text" id="s-footer-description" maxlength="200"></div>
+    <div class="field"><label for="s-contact-address">Địa chỉ</label><input type="text" id="s-contact-address" maxlength="250"></div>
+    <div class="field"><label for="s-contact-phone">Số điện thoại</label><input type="text" id="s-contact-phone" maxlength="30"></div>
+    <div class="field"><label for="s-contact-email">Email</label><input type="email" id="s-contact-email" maxlength="120"></div>
+    <div class="field"><label for="s-facebook-url">Link Facebook</label><input type="url" id="s-facebook-url" placeholder="https://facebook.com/..." maxlength="500"></div>
+    <div class="field"><label for="s-tiktok-url">Link TikTok</label><input type="url" id="s-tiktok-url" placeholder="https://tiktok.com/@..." maxlength="500"></div>
+    <button class="btn btn-primary" id="about-save" type="submit">Lưu giới thiệu &amp; liên hệ</button>
+  </form>
+
+  <!-- ================= BANNER TRANG CHỦ ================= -->
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="admin-page-head" style="margin-bottom:14px;">
+      <h2 style="margin:0;">Banner trang chủ</h2>
+      <button class="btn btn-primary btn-sm" type="button" id="add-banner-btn">+ Thêm banner</button>
+    </div>
+    <p class="form-note" style="margin-top:0;">Nếu không thêm banner nào, trang chủ sẽ dùng 3 ảnh mặc định có sẵn.</p>
+    <div class="admin-table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Thứ tự</th><th>Thao tác</th></tr></thead>
+        <tbody id="banners-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= THANH TOÁN QR ================= -->
+  <form class="panel" id="bank-form" style="margin-bottom:24px;">
+    <h2>Chuyển khoản QR (VietQR)</h2>
+    <div class="alert" id="bank-alert"></div>
+    <p class="form-note" style="margin-top:0;">
+      Tra mã BIN ngân hàng tại <a href="https://api.vietqr.io/v2/banks" target="_blank" rel="noopener">api.vietqr.io/v2/banks</a>.
+      Thông tin này khách sẽ thấy khi chọn thanh toán chuyển khoản, nên không cần giữ bí mật.
+    </p>
+    <div class="field">
+      <label for="s-bank-id">Mã BIN ngân hàng</label>
+      <input type="text" id="s-bank-id" placeholder="vd: 970436 (Vietcombank)" required>
+    </div>
+    <div class="field">
+      <label for="s-account-no">Số tài khoản</label>
+      <input type="text" id="s-account-no" required>
+    </div>
+    <div class="field">
+      <label for="s-account-name">Tên chủ tài khoản (KHÔNG DẤU, IN HOA)</label>
+      <input type="text" id="s-account-name" required>
+    </div>
+    <button class="btn btn-primary" id="bank-save" type="submit">Lưu thông tin ngân hàng</button>
+  </form>
+
+  <!-- ================= PAYOS / WEBHOOK ================= -->
+  <form class="panel" id="payos-form">
+    <h2>PayOS &amp; Webhook</h2>
+    <div class="alert" id="payos-alert"></div>
+
+    <div class="field checkbox-field">
+      <input type="checkbox" id="s-payos-enabled">
+      <label for="s-payos-enabled" style="margin:0;">Bật thanh toán online qua PayOS ở trang đặt hàng</label>
+    </div>
+
+    <div class="field">
+      <label for="s-payos-client-id">Client ID</label>
+      <input type="text" id="s-payos-client-id" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="s-payos-api-key">API Key</label>
+      <input type="password" id="s-payos-api-key" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="s-payos-checksum-key">Checksum Key</label>
+      <input type="password" id="s-payos-checksum-key" autocomplete="off">
+    </div>
+
+    <div class="field" style="background:var(--paper-dark); border-radius:12px; padding:14px;">
+      <label style="margin-bottom:4px;">URL webhook cần khai báo trong PayOS Dashboard</label>
+      <code id="webhook-url-display" style="display:block; word-break:break-all; font-size:0.85rem;"></code>
+      <p class="form-note" style="margin-bottom:0;">
+        3 khoá trên chỉ admin xem được (KHÔNG public), dùng để Edge Function
+        <code>payos-webhook</code> xác minh chữ ký và tự động cập nhật trạng thái
+        thanh toán đơn hàng. Xem hướng dẫn deploy Edge Function trong README.
+      </p>
+    </div>
+
+    <button class="btn btn-primary" id="payos-save" type="submit">Lưu cấu hình PayOS</button>
+  </form>
+</main>
+
+<!-- FORM THÊM/SỬA BANNER -->
+<div class="modal-overlay" id="banner-form-modal">
+  <div class="product-form-box">
+    <button class="modal-close" id="banner-form-close" aria-label="Đóng">✕</button>
+    <h2 id="banner-form-title">Thêm banner</h2>
+    <div class="alert" id="banner-form-alert"></div>
+    <form id="banner-form">
+      <div class="field">
+        <label>Ảnh banner</label>
+        <img class="img-preview img-preview-banner" id="b-image-preview" alt="">
+        <input type="file" id="b-image-file" accept="image/*">
+        <p class="form-note" style="margin-top:6px;">
+          Bắt buộc dùng ảnh <strong>ngang toàn cảnh</strong> (không phải ảnh cận
+          cảnh/dọc) — tỉ lệ khoảng 16:6 đến 21:9, kích thước tối thiểu
+          1600×600px. Ảnh cận cảnh hoặc ảnh dọc sẽ bị crop/zoom rất gắt vì
+          khung banner đã được làm cao và cân đối hơn, nhưng vẫn nên ưu tiên ảnh ngang toàn cảnh để hiển thị đẹp.
+        </p>
+      </div>
+      <div class="field">
+        <label for="b-eyebrow">Nhãn nhỏ phía trên (vd: ✦ Bộ sưu tập ✦)</label>
+        <input type="text" id="b-eyebrow" maxlength="60">
+      </div>
+      <div class="field">
+        <label for="b-title">Tiêu đề</label>
+        <input type="text" id="b-title" maxlength="80">
+      </div>
+      <div class="field">
+        <label for="b-subtitle">Mô tả ngắn</label>
+        <input type="text" id="b-subtitle" maxlength="120">
+      </div>
+      <div class="field">
+        <label for="b-button-text">Chữ trên nút</label>
+        <input type="text" id="b-button-text" maxlength="40" value="Xem sản phẩm">
+      </div>
+      <div class="field">
+        <label for="b-button-link">Nút dẫn tới (vd: #products hoặc product.html?id=...)</label>
+        <input type="text" id="b-button-link" value="#products">
+      </div>
+      <div class="field">
+        <label for="b-sort">Thứ tự hiển thị (số nhỏ hiện trước)</label>
+        <input type="number" id="b-sort" value="0">
+      </div>
+      <button class="btn btn-primary btn-block" id="banner-form-save" type="submit">Lưu banner</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="admin.js"></script>
+<script>initSettingsPage();</script>
+</body>
+</html>

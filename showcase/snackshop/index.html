@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vặt Ơi — Đồ ăn vặt ngon mỗi ngày</title>
+<meta name="description" content="Vặt Ơi - cửa hàng đồ ăn vặt online: bánh snack, trái cây sấy, đồ ăn vặt cay, kẹo mứt giao tận nơi.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Trang chủ</a></li>
+        <li><a href="index.html#products">Sản phẩm</a></li>
+        <li><a href="index.html#about">Giới thiệu</a></li>
+        <li><a href="track-order.html">Tra cứu đơn</a></li>
+        <li><a href="account/login.html">Tài khoản</a></li>
+      </ul>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" data-open-cart aria-label="Giỏ hàng">
+        🛍️<span class="badge" data-cart-badge>0</span>
+      </button>
+      <button class="menu-toggle" id="menu-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero-carousel" id="hero-carousel">
+  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=1600&q=80')">
+    <div class="hero-slide-content">
+      <span class="hero-slide-eyebrow">✦ Bộ sưu tập ✦</span>
+      <h1>Đồ Ăn Vặt<br>Ngon Mỗi Ngày</h1>
+      <p>Tuyển chọn kỹ từ nguyên liệu đến hương vị</p>
+      <a href="#products" class="btn btn-primary">Xem sản phẩm</a>
+    </div>
+  </div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=1600&q=80')">
+    <div class="hero-slide-content">
+      <span class="hero-slide-eyebrow">✦ Ưu đãi ✦</span>
+      <h1>Trái Cây Sấy<br>Vị Ngọt Tự Nhiên</h1>
+      <p>Không chất bảo quản — giao nhanh trong ngày</p>
+      <a href="#products" class="btn btn-primary">Khám phá ngay</a>
+    </div>
+  </div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1613919113640-25732ec5e61f?w=1600&q=80')">
+    <div class="hero-slide-content">
+      <span class="hero-slide-eyebrow">✦ Mới về ✦</span>
+      <h1>Đồ Ăn Vặt Cay<br>Đã Miệng Đúng Điệu</h1>
+      <p>Cho hội mê cay chính hiệu</p>
+      <a href="#products" class="btn btn-primary">Đặt hàng</a>
+    </div>
+  </div>
+  <div class="hero-dots" id="hero-dots"></div>
+</section>
+
+<section class="category-section container">
+  <div class="section-title">
+    <h2>Danh mục</h2>
+  </div>
+  <div class="category-icon-grid" id="category-icon-grid"></div>
+</section>
+
+<main class="container" id="products">
+  <div class="section-title">
+    <h2>Món đang bán</h2>
+  </div>
+  <div class="product-grid" id="product-grid"></div>
+</main>
+
+<section class="about-section container" id="about">
+  <div class="about-card">
+    <div class="section-title">
+      <span class="about-eyebrow">Về chúng mình</span>
+      <h2 id="about-title">Giới thiệu</h2>
+    </div>
+    <div class="about-content" id="about-content">Đồ ăn vặt ngon mỗi ngày, được chọn lọc kỹ từ hương vị đến chất lượng.</div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-column footer-brand">
+      <strong data-footer-name>Vặt Ơi</strong>
+      <p class="footer-tagline" data-footer-description>Đồ ăn vặt online — giao tận nơi.</p>
+      <div class="social-links" id="footer-social-links" aria-label="Mạng xã hội"></div>
+    </div>
+
+    <div class="footer-column footer-links">
+      <h3>Liên kết</h3>
+      <a href="index.html">Trang chủ</a>
+      <a href="#products">Sản phẩm</a>
+      <a href="#about">Giới thiệu</a>
+      <a href="track-order.html">Tra cứu đơn hàng</a>
+    </div>
+
+    <div class="footer-column footer-links">
+      <h3>Tài khoản</h3>
+      <a href="account/login.html">Đăng nhập</a>
+      <a href="account/register.html">Đăng ký</a>
+      <a href="account/profile.html">Tài khoản của tôi</a>
+      <a href="track-order.html">Theo dõi đơn hàng</a>
+    </div>
+
+    <div class="footer-column footer-info">
+      <h3>Liên hệ</h3>
+      <p data-footer-address></p>
+      <p class="footer-contact-line"><span class="footer-contact-label">Hotline:</span> <a data-footer-phone href="#"></a></p>
+      <p class="footer-contact-line"><span class="footer-contact-label">Email:</span> <a data-footer-email href="#"></a></p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container"><span data-footer-copyright>© Vặt Ơi. All rights reserved.</span></div>
+  </div>
+</footer>
+
+<!-- ================= CART DRAWER ================= -->
+<div class="scrim" id="scrim"></div>
+<aside class="cart-drawer" id="cart-drawer">
+  <div class="cart-drawer-head">
+    <strong>Giỏ hàng của bạn</strong>
+    <button class="modal-close" id="cart-close" aria-label="Đóng giỏ hàng">✕</button>
+  </div>
+  <div class="cart-items" id="cart-items"></div>
+  <div class="cart-drawer-foot">
+    <div class="cart-total-row"><span>Tổng cộng</span><span id="cart-total">0₫</span></div>
+    <a href="checkout.html" class="btn btn-primary btn-block">Tiến hành đặt hàng</a>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

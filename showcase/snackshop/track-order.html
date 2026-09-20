@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tra cứu đơn hàng — Vặt Ơi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
+    <nav><ul class="nav-links"><li><a href="index.html">Trang chủ</a></li></ul></nav>
+    <div class="header-actions"></div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="panel">
+    <h1>Tra cứu đơn hàng</h1>
+    <div class="alert" id="track-alert"></div>
+    <form id="track-form">
+      <div class="field">
+        <label for="t-id">Mã đơn hàng</label>
+        <input type="text" id="t-id" required>
+      </div>
+      <div class="field">
+        <label for="t-phone">Số điện thoại đã đặt</label>
+        <input type="tel" id="t-phone" required>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Tra cứu</button>
+    </form>
+
+    <div id="track-result" style="margin-top:24px;"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  if (params.get("id")) document.getElementById("t-id").value = params.get("id");
+  if (params.get("phone")) document.getElementById("t-phone").value = params.get("phone");
+
+  const statusLabel = {
+    pending: "Chờ xác nhận", confirmed: "Đã xác nhận",
+    shipping: "Đang giao", done: "Hoàn tất", cancelled: "Đã huỷ",
+  };
+  const paymentMethodLabel = { cod: "Thanh toán khi nhận hàng", bank_transfer: "Chuyển khoản QR", payos: "PayOS" };
+  const paymentStatusLabel = { unpaid: "Chưa thanh toán", paid: "Đã thanh toán" };
+
+  document.getElementById("track-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const alertBox = document.getElementById("track-alert");
+    const resultBox = document.getElementById("track-result");
+    alertBox.className = "alert";
+    resultBox.innerHTML = "";
+
+    const id = document.getElementById("t-id").value.trim();
+    const phone = document.getElementById("t-phone").value.trim();
+
+    const { data, error } = await supabaseClient.rpc("track_order", {
+      p_order_id: id,
+      p_phone: phone,
+    });
+
+    if (error || !data || !data.length) {
+      alertBox.textContent = "Không tìm thấy đơn hàng. Kiểm tra lại mã đơn và số điện thoại.";
+      alertBox.className = "alert show alert-error";
+      return;
+    }
+
+    const order = data[0];
+    const items = (order.items || [])
+      .map((i) => `<div class="cart-item"><div class="cart-item-info"><div>${i.product_name}</div><div>${i.quantity} × ${formatVND(i.price)}</div></div></div>`)
+      .join("");
+
+    resultBox.innerHTML = `
+      <p><strong>Trạng thái:</strong> <span class="status-pill status-${order.status}">${statusLabel[order.status] || order.status}</span></p>
+      <p><strong>Thanh toán:</strong> ${paymentMethodLabel[order.payment_method] || order.payment_method} — ${paymentStatusLabel[order.payment_status] || order.payment_status}</p>
+      <p><strong>Tổng tiền:</strong> ${formatVND(order.total)}</p>
+      <p><strong>Ngày đặt:</strong> ${new Date(order.created_at).toLocaleString("vi-VN")}</p>
+      <div>${items}</div>
+    `;
+  });
+</script>
+</body>
+</html>

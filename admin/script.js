@@ -233,6 +233,7 @@ const STATUS_MAP = {
 };
 
 let allOrders = [];
+let currentRevenueReport = null;
 
 async function loadDashboard(){
   const tableBody = document.getElementById('dashTableBody');
@@ -530,16 +531,100 @@ function parseRevenueDate(value, endOfDay = false){
   return parsed;
 }
 
+function formatRevenueMoney(value){
+  return (Number(value) || 0).toLocaleString('vi-VN') + 'đ';
+}
+
+function buildRevenueReport(fromValue, toValue){
+  const fromDate = parseRevenueDate(fromValue, false);
+  const toDate = parseRevenueDate(toValue, true);
+
+  if(!fromDate || !toDate){
+    return { error: 'Vui lòng chọn đầy đủ Từ ngày và Đến ngày.' };
+  }
+  if(fromDate > toDate){
+    return { error: 'Từ ngày không được lớn hơn Đến ngày.' };
+  }
+
+  const matchedOrders = allOrders
+    .filter(order => {
+      if(!order["_createdAtRaw"]) return false;
+      const createdAt = new Date(order["_createdAtRaw"]);
+      return !Number.isNaN(createdAt.getTime()) && createdAt >= fromDate && createdAt <= toDate;
+    })
+    .sort((a, b) => new Date(a["_createdAtRaw"]) - new Date(b["_createdAtRaw"]));
+
+  const ordersWithRevenue = matchedOrders.filter(order => Number(order["Doanh thu thực"]) > 0);
+  const totalRevenue = matchedOrders.reduce(
+    (sum, order) => sum + (Number(order["Doanh thu thực"]) || 0),
+    0
+  );
+
+  const isSameMonth =
+    fromDate.getFullYear() === toDate.getFullYear() &&
+    fromDate.getMonth() === toDate.getMonth();
+  const lastDayOfMonth = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0).getDate();
+  const isFullMonth = isSameMonth && fromDate.getDate() === 1 && toDate.getDate() === lastDayOfMonth;
+  const periodLabel = isFullMonth
+    ? 'Tháng ' + String(fromDate.getMonth() + 1).padStart(2, '0') + '/' + fromDate.getFullYear()
+    : 'Từ ' + fromDate.toLocaleDateString('vi-VN') + ' đến ' + toDate.toLocaleDateString('vi-VN');
+
+  return {
+    fromDate,
+    toDate,
+    matchedOrders,
+    ordersWithRevenue,
+    totalRevenue,
+    periodLabel
+  };
+}
+
+function renderRevenueDetailPreview(report){
+  const body = document.getElementById('revenueDetailTableBody');
+  const caption = document.getElementById('revenueDetailCaption');
+  const count = document.getElementById('revenueDetailCount');
+  const total = document.getElementById('revenueDetailTotal');
+  if(!body || !caption || !count || !total) return;
+
+  caption.textContent = report.periodLabel;
+  count.textContent = report.matchedOrders.length + ' đơn';
+  total.textContent = formatRevenueMoney(report.totalRevenue);
+
+  if(!report.matchedOrders.length){
+    body.innerHTML = '<tr><td colspan="8" class="revenue-detail-empty">Không có đơn hàng trong thời gian đã chọn.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = report.matchedOrders.map((order, index) => {
+    const revenue = Number(order["Doanh thu thực"]) || 0;
+    return '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td style="white-space:nowrap;">' + escapeHtml(order["Thời gian đặt"] || '') + '</td>' +
+      '<td class="dt-code">' + escapeHtml(order["Mã đơn"] || '') + '</td>' +
+      '<td>' + escapeHtml(order["Họ tên"] || '—') + '</td>' +
+      '<td>' + escapeHtml(order["Loại dịch vụ"] || 'Khác') + '</td>' +
+      '<td>' + escapeHtml(order["Phương thức TT"] || '—') + '</td>' +
+      '<td>' + escapeHtml(order["Trạng thái"] || '—') + '</td>' +
+      '<td>' + (revenue > 0 ? formatRevenueMoney(revenue) : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
 function initRevenueDateRange(){
+  const monthInput = document.getElementById('revenueMonth');
   const fromInput = document.getElementById('revenueDateFrom');
   const toInput = document.getElementById('revenueDateTo');
   if(!fromInput || !toInput) return;
 
   if(!fromInput.value || !toInput.value){
     const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    fromInput.value = formatDateInputLocal(firstDay);
-    toInput.value = formatDateInputLocal(today);
+    if(monthInput){
+      monthInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+      applyRevenueMonthSelection();
+      return;
+    }
+    fromInput.value = formatDateInputLocal(new Date(today.getFullYear(), today.getMonth(), 1));
+    toInput.value = formatDateInputLocal(new Date(today.getFullYear(), today.getMonth() + 1, 0));
   }
   lookupRevenueByDate();
 }
@@ -554,45 +639,143 @@ function lookupRevenueByDate(){
   if(!fromInput || !toInput || !errorBox || !labelBox || !metaBox || !totalBox) return;
 
   errorBox.classList.remove('show');
-  const fromDate = parseRevenueDate(fromInput.value, false);
-  const toDate = parseRevenueDate(toInput.value, true);
-
-  if(!fromDate || !toDate){
-    errorBox.textContent = 'Vui lòng chọn đầy đủ Từ ngày và Đến ngày.';
+  const report = buildRevenueReport(fromInput.value, toInput.value);
+  if(report.error){
+    currentRevenueReport = null;
+    errorBox.textContent = report.error;
     errorBox.classList.add('show');
-    return;
-  }
-  if(fromDate > toDate){
-    errorBox.textContent = 'Từ ngày không được lớn hơn Đến ngày.';
-    errorBox.classList.add('show');
-    return;
+    return false;
   }
 
-  const matchedOrders = allOrders.filter(order => {
-    if(!order["_createdAtRaw"]) return false;
-    const createdAt = new Date(order["_createdAtRaw"]);
-    return !Number.isNaN(createdAt.getTime()) && createdAt >= fromDate && createdAt <= toDate;
-  });
-  const ordersWithRevenue = matchedOrders.filter(order => Number(order["Doanh thu thực"]) > 0);
-  const totalRevenue = matchedOrders.reduce(
-    (sum, order) => sum + (Number(order["Doanh thu thực"]) || 0),
-    0
-  );
+  currentRevenueReport = report;
+  labelBox.textContent = 'Doanh thu ' + report.periodLabel.toLowerCase();
+  metaBox.textContent = report.matchedOrders.length + ' đơn trong khoảng · ' +
+    report.ordersWithRevenue.length + ' đơn đã ghi nhận doanh thu thực';
+  totalBox.textContent = formatRevenueMoney(report.totalRevenue);
+  renderRevenueDetailPreview(report);
+  return true;
+}
 
-  labelBox.textContent = `Doanh thu từ ${fromDate.toLocaleDateString('vi-VN')} đến ${toDate.toLocaleDateString('vi-VN')}`;
-  metaBox.textContent = `${matchedOrders.length} đơn trong khoảng · ${ordersWithRevenue.length} đơn đã ghi nhận doanh thu thực`;
-  totalBox.textContent = totalRevenue.toLocaleString('vi-VN') + 'đ';
+function applyRevenueMonthSelection(){
+  const monthInput = document.getElementById('revenueMonth');
+  const fromInput = document.getElementById('revenueDateFrom');
+  const toInput = document.getElementById('revenueDateTo');
+  if(!monthInput || !fromInput || !toInput || !/^\d{4}-\d{2}$/.test(monthInput.value)) return;
+
+  const parts = monthInput.value.split('-').map(Number);
+  const year = parts[0];
+  const month = parts[1];
+  fromInput.value = formatDateInputLocal(new Date(year, month - 1, 1));
+  toInput.value = formatDateInputLocal(new Date(year, month, 0));
+  lookupRevenueByDate();
 }
 
 function resetRevenueDateRange(){
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthInput = document.getElementById('revenueMonth');
   const fromInput = document.getElementById('revenueDateFrom');
   const toInput = document.getElementById('revenueDateTo');
   if(!fromInput || !toInput) return;
-  fromInput.value = formatDateInputLocal(firstDay);
-  toInput.value = formatDateInputLocal(today);
+  if(monthInput){
+    monthInput.value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+    applyRevenueMonthSelection();
+    return;
+  }
+  fromInput.value = formatDateInputLocal(new Date(today.getFullYear(), today.getMonth(), 1));
+  toInput.value = formatDateInputLocal(new Date(today.getFullYear(), today.getMonth() + 1, 0));
   lookupRevenueByDate();
+}
+
+function printRevenueReport(){
+  if(!lookupRevenueByDate() || !currentRevenueReport) return;
+
+  const report = currentRevenueReport;
+  const serviceTotals = {};
+  const dailyTotals = {};
+
+  report.matchedOrders.forEach(order => {
+    const amount = Number(order["Doanh thu thực"]) || 0;
+    const service = order["Loại dịch vụ"] || 'Khác';
+    const day = new Date(order["_createdAtRaw"]).toLocaleDateString('vi-VN');
+    serviceTotals[service] = (serviceTotals[service] || 0) + amount;
+    dailyTotals[day] = (dailyTotals[day] || 0) + amount;
+  });
+
+  const serviceRows = Object.entries(serviceTotals)
+    .filter(item => item[1] > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map((item, index) =>
+      '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(item[0]) + '</td><td class="money">' +
+      formatRevenueMoney(item[1]) + '</td></tr>'
+    ).join('') || '<tr><td colspan="3" class="empty">Chưa có doanh thu thực được ghi nhận.</td></tr>';
+
+  const dailyRows = Object.entries(dailyTotals)
+    .map((item, index) =>
+      '<tr><td>' + (index + 1) + '</td><td>' + escapeHtml(item[0]) + '</td><td class="money">' +
+      formatRevenueMoney(item[1]) + '</td></tr>'
+    ).join('') || '<tr><td colspan="3" class="empty">Không có dữ liệu.</td></tr>';
+
+  const orderRows = report.matchedOrders.map((order, index) => {
+    const amount = Number(order["Doanh thu thực"]) || 0;
+    return '<tr>' +
+      '<td>' + (index + 1) + '</td>' +
+      '<td>' + escapeHtml(order["Thời gian đặt"] || '') + '</td>' +
+      '<td class="code">' + escapeHtml(order["Mã đơn"] || '') + '</td>' +
+      '<td>' + escapeHtml(order["Họ tên"] || '—') + '</td>' +
+      '<td>' + escapeHtml(order["Loại dịch vụ"] || 'Khác') + '</td>' +
+      '<td>' + escapeHtml(order["Phương thức TT"] || '—') + '</td>' +
+      '<td>' + escapeHtml(order["Trạng thái"] || '—') + '</td>' +
+      '<td class="money">' + (amount > 0 ? formatRevenueMoney(amount) : '—') + '</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="8" class="empty">Không có đơn hàng trong thời gian đã chọn.</td></tr>';
+
+  const generatedAt = new Date().toLocaleString('vi-VN');
+  const adminEmail = currentAdmin && currentAdmin.email ? currentAdmin.email : 'admin';
+  const reportWindow = window.open('', '_blank', 'width=1180,height=820');
+  if(!reportWindow){
+    showToast('Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup rồi thử lại.');
+    return;
+  }
+  reportWindow.opener = null;
+
+  const reportHtml = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Báo cáo doanh thu - ' + escapeHtml(report.periodLabel) + '</title>' +
+    '<style>' +
+      '@page{size:A4 landscape;margin:12mm}' +
+      '*{box-sizing:border-box}body{margin:0;color:#211e19;font-family:Arial,sans-serif;font-size:10px;line-height:1.45}' +
+      '.report{max-width:1120px;margin:0 auto}.head{display:flex;justify-content:space-between;gap:30px;padding-bottom:14px;border-bottom:2px solid #211e19}' +
+      '.brand{font-size:25px;font-weight:800;letter-spacing:-.7px}.brand i{color:#a8782d;font-style:normal}.title{text-align:right}.title h1{margin:0 0 4px;font-size:19px}.title p,.meta p{margin:2px 0;color:#625b51}' +
+      '.meta{display:flex;justify-content:space-between;gap:20px;margin:12px 0}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:13px 0 18px}' +
+      '.summary div{padding:11px;border:1px solid #d7cfbf;background:#f7f3ea}.summary span{display:block;color:#6e665b;text-transform:uppercase;font-size:8px;letter-spacing:.5px}.summary strong{display:block;margin-top:4px;font-size:17px}' +
+      '.summary .total{border-color:#9a773c}.summary .total strong{color:#5e7d65}.split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}' +
+      'h2{margin:0 0 8px;font-size:13px}table{width:100%;border-collapse:collapse;page-break-inside:auto}thead{display:table-header-group}tr{page-break-inside:avoid}' +
+      'th,td{padding:6px 7px;border:1px solid #d8d1c4;text-align:left;vertical-align:top}th{background:#eee8dc;font-size:8px;text-transform:uppercase;letter-spacing:.35px}' +
+      '.money{text-align:right;white-space:nowrap;font-weight:700}.code{white-space:nowrap;font-family:monospace}.empty{text-align:center;color:#777;padding:16px}' +
+      '.total-row td{font-weight:800;border-top:2px solid #9a773c;background:#f7f3ea}.foot{display:flex;justify-content:space-between;margin-top:15px;padding-top:10px;border-top:1px solid #d8d1c4;color:#71695e;font-size:9px}' +
+      '.no-print{position:fixed;right:18px;bottom:18px;padding:10px 16px;border:0;border-radius:8px;background:#211e19;color:white;font-weight:700;cursor:pointer}' +
+      '@media print{.no-print{display:none}}' +
+    '</style></head><body><main class="report">' +
+      '<header class="head"><div><div class="brand">Phatdatagency<i>.</i></div><p>Báo cáo quản trị nội bộ</p></div>' +
+      '<div class="title"><h1>BÁO CÁO DOANH THU CHI TIẾT</h1><p>' + escapeHtml(report.periodLabel) + '</p></div></header>' +
+      '<section class="meta"><div><p><b>Người lập:</b> ' + escapeHtml(adminEmail) + '</p><p><b>Thời gian xuất:</b> ' + escapeHtml(generatedAt) + '</p></div>' +
+      '<div><p><b>Nguồn số liệu:</b> orders.actual_revenue</p><p>Chỉ sử dụng cho quản trị nội bộ.</p></div></section>' +
+      '<section class="summary"><div><span>Đơn phát sinh</span><strong>' + report.matchedOrders.length + '</strong></div>' +
+      '<div><span>Đơn có doanh thu thực</span><strong>' + report.ordersWithRevenue.length + '</strong></div>' +
+      '<div class="total"><span>Tổng doanh thu thực</span><strong>' + formatRevenueMoney(report.totalRevenue) + '</strong></div></section>' +
+      '<section class="split"><div><h2>Doanh thu theo dịch vụ</h2><table><thead><tr><th>STT</th><th>Dịch vụ</th><th>Doanh thu</th></tr></thead><tbody>' + serviceRows + '</tbody></table></div>' +
+      '<div><h2>Doanh thu theo ngày</h2><table><thead><tr><th>STT</th><th>Ngày</th><th>Doanh thu</th></tr></thead><tbody>' + dailyRows + '</tbody></table></div></section>' +
+      '<section><h2>Chi tiết từng đơn hàng</h2><table><thead><tr><th>STT</th><th>Thời gian</th><th>Mã đơn</th><th>Khách hàng</th><th>Dịch vụ</th><th>Thanh toán</th><th>Trạng thái</th><th>Doanh thu thực</th></tr></thead>' +
+      '<tbody>' + orderRows + '</tbody><tfoot><tr class="total-row"><td colspan="7">TỔNG DOANH THU THỰC</td><td class="money">' + formatRevenueMoney(report.totalRevenue) + '</td></tr></tfoot></table></section>' +
+      '<footer class="foot"><span>Phatdatagency · Báo cáo quản trị</span><span>' + escapeHtml(report.periodLabel) + '</span></footer>' +
+    '</main><button class="no-print" onclick="window.print()">In / Lưu PDF</button></body></html>';
+
+  reportWindow.document.open();
+  reportWindow.document.write(reportHtml);
+  reportWindow.document.close();
+  reportWindow.focus();
+  logAdminAction('In báo cáo doanh thu', report.periodLabel + ' · ' + formatRevenueMoney(report.totalRevenue));
+  setTimeout(() => reportWindow.print(), 350);
 }
 
 /* Cập nhật lại các thẻ tổng doanh thu (gọi sau khi sửa Doanh thu thực để không cần tải lại toàn trang) */
@@ -2095,15 +2278,23 @@ async function loadTrafficStats(){
 
   const since30 = new Date(Date.now() - 30*24*60*60*1000).toISOString();
   let rows = [];
+  let totalAllTime = 0;
   try{
-    const { data, error } = await sb
-      .from('page_views')
-      .select('created_at, device, browser, referrer')
-      .gte('created_at', since30)
-      .order('created_at', { ascending: false })
-      .limit(20000);
-    if(error) throw error;
-    rows = data || [];
+    const [recentResult, totalResult] = await Promise.all([
+      sb
+        .from('page_views')
+        .select('created_at, device, browser, referrer')
+        .gte('created_at', since30)
+        .order('created_at', { ascending: false })
+        .limit(20000),
+      sb
+        .from('page_views')
+        .select('id', { count: 'exact', head: true })
+    ]);
+    if(recentResult.error) throw recentResult.error;
+    if(totalResult.error) throw totalResult.error;
+    rows = recentResult.data || [];
+    totalAllTime = totalResult.count ?? 0;
   } catch(e){
     document.getElementById('tfChart').innerHTML =
       `<span style="color:var(--coral-deep);">Không tải được dữ liệu: ${escapeHtml(e.message)}<br>
@@ -2121,7 +2312,7 @@ async function loadTrafficStats(){
   const todayStr = now.toLocaleDateString('vi-VN');
   const weekAgo = new Date(now.getTime() - 7*24*60*60*1000);
 
-  document.getElementById('tfTotal').textContent = rows.length.toLocaleString('vi-VN');
+  document.getElementById('tfTotal').textContent = totalAllTime.toLocaleString('vi-VN');
   document.getElementById('tfToday').textContent = rows.filter(r =>
     new Date(r.created_at).toLocaleDateString('vi-VN') === todayStr
   ).length.toLocaleString('vi-VN');
