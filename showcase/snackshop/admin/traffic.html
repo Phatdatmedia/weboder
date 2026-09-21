@@ -1,42 +1,6 @@
 <!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lượng truy cập — Vặt Ơi Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/style.css">
-<link rel="stylesheet" href="admin.css">
-</head>
-<body>
-<header class="admin-header">
-  <div class="admin-brand"><img src="../assets/logo.png" onerror="this.style.display='none'"> <span>Vặt Ơi</span><small>Admin</small></div>
-  <nav><ul class="admin-nav">
-    <li><a href="products.html">Sản phẩm</a></li>
-    <li><a href="orders.html">Đơn hàng</a></li>
-    <li><a href="payments.html">Thanh toán</a></li>
-    <li><a href="revenue.html">Doanh thu</a></li>
-    <li><a href="traffic.html" class="active">Truy cập</a></li>
-    <li><a href="settings.html">Cấu hình</a></li>
-  </ul></nav>
-</header>
-<main class="container" id="traffic-page">
-  <div class="admin-page-head"><div><h1>Lượng truy cập</h1><p class="form-note">Theo dõi lượt xem và số khách truy cập trên website.</p></div><button id="traffic-refresh" class="btn btn-primary">↻ Làm mới</button></div>
-  <div id="traffic-error" class="alert alert-error" hidden></div>
-  <div id="traffic-loading" class="dash-loading">Đang tải dữ liệu...</div>
-  <section class="traffic-cards">
-    <div class="traffic-card"><span>Hôm nay</span><strong id="traffic-today">0</strong><small>lượt xem</small></div>
-    <div class="traffic-card"><span>7 ngày qua</span><strong id="traffic-7days">0</strong><small>lượt xem</small></div>
-    <div class="traffic-card"><span>30 ngày qua</span><strong id="traffic-30days">0</strong><small>lượt xem</small></div>
-    <div class="traffic-card"><span>Khách duy nhất</span><strong id="traffic-unique">0</strong><small>30 ngày qua</small></div>
-  </section>
-  <section class="panel" style="margin-top:22px;overflow:hidden">
-    <h2>Chi tiết theo ngày</h2>
-    <table class="admin-table"><thead><tr><th>Ngày</th><th>Lượt xem</th><th>Khách duy nhất</th></tr></thead><tbody id="traffic-tbody"></tbody></table>
-  </section>
-</main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../js/supabase-client.js"></script>
-<script src="admin.js"></script>
-</body>
-</html>
+<html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Lượt truy cập — Vặt Ơi Admin</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="admin.css"></head><body>
+<header class="admin-topbar"><div class="container"><a href="products.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a><span class="admin-brand-tag">Admin</span><nav><ul class="admin-nav"><li><a href="products.html">Sản phẩm</a></li><li><a href="orders.html">Đơn hàng</a></li><li><a href="payments.html">Thanh toán</a></li><li><a href="revenue.html">Doanh thu</a></li><li><a href="traffic.html" class="active">Truy cập</a></li><li><a href="settings.html">Cấu hình</a></li></ul></nav><div><span data-admin-name style="margin-right:14px;"></span><button class="btn btn-outline btn-sm" id="admin-logout">Đăng xuất</button></div></div></header>
+<main class="container admin-main"><div class="admin-page-head"><div><h1>Lượt truy cập</h1><p style="color:rgba(58,42,26,.65);margin-top:-8px;">Theo dõi lượt xem trang và số khách truy cập ước tính.</p></div><button class="btn btn-primary" id="traffic-refresh">↻ Làm mới</button></div><div class="stat-cards"><div class="stat-card"><div class="stat-label">Hôm nay</div><div class="stat-value" id="traffic-today">—</div><div class="stat-label">lượt xem</div></div><div class="stat-card"><div class="stat-label">7 ngày qua</div><div class="stat-value" id="traffic-7">—</div><div class="stat-label">lượt xem</div></div><div class="stat-card"><div class="stat-label">30 ngày qua</div><div class="stat-value" id="traffic-30">—</div><div class="stat-label">lượt xem</div></div><div class="stat-card stat-card-accent"><div class="stat-label">Khách duy nhất</div><div class="stat-value" id="traffic-unique">—</div><div class="stat-label">30 ngày qua</div></div></div><div class="panel" style="max-width:none;margin:24px 0;"><div class="admin-page-head"><h2 style="margin:0;">Chi tiết theo ngày</h2><span id="traffic-updated" style="font-size:.8rem;color:rgba(58,42,26,.6);"></span></div><div class="admin-table-wrap"><table class="data-table"><thead><tr><th>Ngày</th><th>Lượt xem</th><th>Khách duy nhất</th></tr></thead><tbody id="traffic-tbody"><tr><td colspan="3">Đang tải...</td></tr></tbody></table></div></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="../js/supabase-client.js"></script><script src="admin.js"></script><script>
+(async()=>{if(!(await requireAdmin()))return;async function load(){const b=document.getElementById('traffic-tbody');b.innerHTML='<tr><td colspan="3">Đang tải...</td></tr>';const {data,error}=await supabaseClient.rpc('admin_traffic_summary');if(error){b.innerHTML='<tr><td colspan="3">Lỗi: '+String(error.message).replace(/[<>&]/g,'')+'</td></tr>';return;}document.getElementById('traffic-today').textContent=Number(data.today||0).toLocaleString('vi-VN');document.getElementById('traffic-7').textContent=Number(data.last7||0).toLocaleString('vi-VN');document.getElementById('traffic-30').textContent=Number(data.last30||0).toLocaleString('vi-VN');document.getElementById('traffic-unique').textContent=Number(data.unique30||0).toLocaleString('vi-VN');const rows=Array.isArray(data.daily)?data.daily:[];b.innerHTML=rows.length?rows.map(r=>'<tr><td>'+r.day+'</td><td>'+Number(r.views||0).toLocaleString('vi-VN')+'</td><td>'+Number(r.unique_visitors||0).toLocaleString('vi-VN')+'</td></tr>').join(''):'<tr><td colspan="3">Chưa có dữ liệu truy cập.</td></tr>';document.getElementById('traffic-updated').textContent='Cập nhật lúc '+new Date().toLocaleTimeString('vi-VN');}document.getElementById('traffic-refresh').addEventListener('click',load);await load();})();</script></body></html>

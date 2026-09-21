@@ -580,6 +580,48 @@ function monthLabel(ym) {
   return `Tháng ${Number(m)}/${y}`;
 }
 
+
+
+async function loadSiteInfoForm() {
+  const { data } = await supabaseClient.from('site_settings').select('*').eq('id', 1).single();
+  if (!data) return;
+  const map = {
+    's-about-text': data.about_text || '',
+    's-contact-address': data.contact_address || '',
+    's-contact-phone': data.contact_phone || '',
+    's-contact-email': data.contact_email || '',
+    's-contact-hours': data.contact_hours || '',
+    's-facebook': data.facebook_url || '',
+    's-instagram': data.instagram_url || '',
+    's-tiktok': data.tiktok_url || '',
+    's-zalo': data.zalo_url || ''
+  };
+  Object.entries(map).forEach(([id, value]) => { const el=document.getElementById(id); if(el) el.value=value; });
+}
+
+async function saveSiteInfo(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById('site-info-alert');
+  const btn = document.getElementById('site-info-save');
+  btn.disabled = true; btn.textContent = 'Đang lưu...';
+  const payload = {
+    about_text: document.getElementById('s-about-text').value.trim(),
+    contact_address: document.getElementById('s-contact-address').value.trim(),
+    contact_phone: document.getElementById('s-contact-phone').value.trim(),
+    contact_email: document.getElementById('s-contact-email').value.trim(),
+    contact_hours: document.getElementById('s-contact-hours').value.trim(),
+    facebook_url: document.getElementById('s-facebook').value.trim(),
+    instagram_url: document.getElementById('s-instagram').value.trim(),
+    tiktok_url: document.getElementById('s-tiktok').value.trim(),
+    zalo_url: document.getElementById('s-zalo').value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await supabaseClient.from('site_settings').update(payload).eq('id', 1);
+  btn.disabled = false; btn.textContent = 'Lưu thông tin';
+  if (error) { showMsg(alertBox, 'Lưu thất bại: ' + error.message, 'error'); return; }
+  showMsg(alertBox, 'Đã lưu giới thiệu, liên hệ và mạng xã hội.', 'success');
+}
+
 // ---------- CẤU HÌNH (settings.html) ----------
 let editingBannerId = null;
 let bannersCache = [];
@@ -591,6 +633,7 @@ async function initSettingsPage() {
     `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/payos-webhook`;
 
   await loadBrandingAndBankForm();
+  await loadSiteInfoForm();
   await loadPayosSecretForm();
   await loadBannersTable();
 
@@ -889,79 +932,3 @@ function renderRevenueChart(rowsAscending) {
     },
   });
 }
-
-
-// ---------- THỐNG KÊ TRUY CẬP ----------
-async function initTrafficPage() {
-  if (!(await requireAdmin())) return;
-  const btn = document.getElementById('traffic-refresh');
-  btn?.addEventListener('click', loadTrafficStats);
-  await loadTrafficStats();
-}
-
-function trafficNum(value) {
-  return Number(value || 0).toLocaleString('vi-VN');
-}
-
-async function loadTrafficStats() {
-  const loading = document.getElementById('traffic-loading');
-  const errorBox = document.getElementById('traffic-error');
-  const tbody = document.getElementById('traffic-tbody');
-  if (!tbody) return;
-  loading && (loading.hidden = false);
-  errorBox && (errorBox.hidden = true);
-
-  const { data, error } = await supabaseClient.rpc('admin_traffic_summary');
-  if (error || !data) {
-    loading && (loading.hidden = true);
-    if (errorBox) {
-      errorBox.textContent = 'Không tải được dữ liệu truy cập. Hãy chạy phần SQL traffic trong Supabase trước.';
-      errorBox.hidden = false;
-    }
-    return;
-  }
-
-  const stats = data.stats || {};
-  document.getElementById('traffic-today').textContent = trafficNum(stats.today_views);
-  document.getElementById('traffic-7days').textContent = trafficNum(stats.last_7_days_views);
-  document.getElementById('traffic-30days').textContent = trafficNum(stats.last_30_days_views);
-  document.getElementById('traffic-unique').textContent = trafficNum(stats.last_30_days_unique);
-
-  const rows = data.daily || [];
-  tbody.innerHTML = rows.length ? rows.map(r => `
-    <tr>
-      <td>${r.date}</td>
-      <td>${trafficNum(r.views)}</td>
-      <td>${trafficNum(r.unique_visitors)}</td>
-    </tr>`).join('') : '<tr><td colspan="3">Chưa có dữ liệu truy cập.</td></tr>';
-  loading && (loading.hidden = true);
-}
-
-// Tự ghi nhận lượt truy cập ở các trang khách hàng.
-// Không lưu IP; visitor_id chỉ là mã ngẫu nhiên lưu trên trình duyệt.
-function trackPublicVisit() {
-  if (location.pathname.includes('/admin/')) return;
-  try {
-    const KEY = 'snackshop_visitor_id';
-    let visitorId = localStorage.getItem(KEY);
-    if (!visitorId) {
-      visitorId = (crypto.randomUUID ? crypto.randomUUID() : 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2));
-      localStorage.setItem(KEY, visitorId);
-    }
-    const sessionKey = 'snackshop_traffic_session';
-    let sessionId = sessionStorage.getItem(sessionKey);
-    if (!sessionId) {
-      sessionId = (crypto.randomUUID ? crypto.randomUUID() : 's-' + Date.now() + '-' + Math.random().toString(36).slice(2));
-      sessionStorage.setItem(sessionKey, sessionId);
-    }
-    supabaseClient.from('traffic_events').insert({
-      visitor_id: visitorId,
-      session_id: sessionId,
-      path: location.pathname || '/',
-      referrer: document.referrer || null
-    }).then(() => {}).catch(() => {});
-  } catch (_) {}
-}
-
-if (document.getElementById('traffic-page')) initTrafficPage();
-if (!document.getElementById('admin-login-form')) trackPublicVisit();

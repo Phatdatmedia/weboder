@@ -264,7 +264,7 @@ h1, h2, h3, .display {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .category-icon-item:hover .category-icon-badge { transform: translateY(-3px); border-color: var(--chili); }
-.category-icon-item.active .category-icon-badge { background: var(--chili); border-color: var(--chili-dark); }
+.category-icon-item.active .category-icon-badge { background: var(--turmeric); border-color: #a9822d; color: var(--ink); }
 
 .category-icon-label { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
 
@@ -664,3 +664,32 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   outline: 3px solid var(--turmeric);
   outline-offset: 2px;
 }
+
+
+/* ---------- GIỚI THIỆU + FOOTER ---------- */
+.about-section { padding-top: 34px; }
+.about-card {
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  padding: 26px 30px;
+  box-shadow: var(--shadow);
+}
+.about-card .section-title { margin-bottom: 8px; }
+.about-card p { margin: 0; max-width: 900px; color: rgba(32,41,31,.78); }
+.site-footer { margin-top: 60px; padding: 46px 0 0; background: var(--paper-dark); border-top: 2px solid var(--ink); }
+.footer-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr 1.25fr; gap: 42px; padding-bottom: 38px; }
+.footer-col { display:flex; flex-direction:column; gap:9px; font-size:.9rem; }
+.footer-col h3 { font-family:var(--font-display); font-size:1.15rem; margin:0 0 8px; color:var(--ink); }
+.footer-col a { text-decoration:none; color:rgba(32,41,31,.78); }
+.footer-col a:hover { color:var(--chili); }
+.footer-col p { margin:0; color:rgba(32,41,31,.78); }
+.footer-logo { display:inline-flex; align-items:center; width:max-content; text-decoration:none; font-family:var(--font-display); font-size:1.65rem; font-weight:800; color:var(--chili); }
+.footer-logo span { color:var(--ink); }
+.footer-brand p { margin:4px 0 10px; }
+.footer-socials { display:flex; flex-wrap:wrap; gap:8px; }
+.footer-socials a { border:1px solid rgba(32,41,31,.28); border-radius:999px; padding:6px 10px; font-size:.78rem; background:rgba(255,255,255,.55); }
+.footer-socials a[hidden] { display:none; }
+.footer-bottom { border-top:1px solid rgba(32,41,31,.18); padding:16px 0 20px; text-align:center; font-size:.82rem; color:rgba(32,41,31,.65); }
+@media (max-width: 800px) { .footer-grid { grid-template-columns:repeat(2,1fr); gap:28px; } }
+@media (max-width: 520px) { .footer-grid { grid-template-columns:1fr; } .about-card { padding:22px; } }

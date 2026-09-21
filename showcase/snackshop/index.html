@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vặt Ơi — Đồ ăn vặt ngon mỗi ngày</title>
-<meta name="description" content="Vặt Ơi - cửa hàng đồ ăn vặt online: bánh snack, trái cây sấy, đồ ăn vặt cay, kẹo mứt giao tận nơi.">
+<meta name="description" content="Vặt Ơi - cửa hàng đồ ăn vặt online: bánh snack, đồ ăn vặt cay giao tận nơi.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -16,10 +16,10 @@
     <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
     <nav>
       <ul class="nav-links" id="nav-links">
-        <li><a href="index.html">Trang chủ</a></li>
-        <li><a href="index.html#products">Sản phẩm</a></li>
+        <li><a href="#">Trang chủ</a></li>
+        <li><a href="#products">Sản phẩm</a></li>
         <li><a href="track-order.html">Tra cứu đơn</a></li>
-        <li><a href="account/login.html">Tài khoản</a></li>
+        <li><a href="account/">Tài khoản</a></li>
       </ul>
     </nav>
     <div class="header-actions">
@@ -66,6 +66,13 @@
   <div class="category-icon-grid" id="category-icon-grid"></div>
 </section>
 
+<section class="about-section container" id="about">
+  <div class="about-card">
+    <div class="section-title"><h2>Giới thiệu</h2></div>
+    <p id="about-text">Đồ ăn vặt online — tuyển chọn những món ngon, đóng gói cẩn thận và giao tận nơi.</p>
+  </div>
+</section>
+
 <main class="container" id="products">
   <div class="section-title">
     <h2>Món đang bán</h2>
@@ -74,15 +81,42 @@
 </main>
 
 <footer class="site-footer">
-  <div class="container">
-    <div>
-      <strong>Vặt Ơi</strong><br>
-      Đồ ăn vặt online — giao tận nơi.
+  <div class="container footer-grid">
+    <div class="footer-col footer-brand">
+      <a href="index.html" class="footer-logo" data-site-logo>Vặt<span>Ơi</span></a>
+      <p id="footer-about-short">Đồ ăn vặt online — giao tận nơi.</p>
+      <div class="footer-socials">
+        <a data-social="facebook" href="#" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>
+        <a data-social="instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
+        <a data-social="tiktok" href="#" target="_blank" rel="noopener" aria-label="TikTok">TikTok</a>
+        <a data-social="zalo" href="#" target="_blank" rel="noopener" aria-label="Zalo">Zalo</a>
+      </div>
     </div>
-    <div>
-      <a href="track-order.html">Tra cứu đơn hàng</a><br>
-      <a href="account/login.html">Đăng nhập / Đăng ký</a>
+    <div class="footer-col">
+      <h3>Liên kết</h3>
+      <a href="index.html">Trang chủ</a>
+      <a href="index.html#products">Sản phẩm</a>
+      <a href="index.html#about">Giới thiệu</a>
+      <a href="track-order.html">Tra cứu đơn hàng</a>
+      <a href="index.html#faq">FAQ</a>
     </div>
+    <div class="footer-col">
+      <h3>Tài khoản</h3>
+      <a href="account/">Đăng nhập</a>
+      <a href="account/register.html">Đăng ký</a>
+      <a href="account/profile.html">Tài khoản của tôi</a>
+      <a href="checkout.html">Giỏ hàng / Đặt hàng</a>
+    </div>
+    <div class="footer-col">
+      <h3>Liên hệ</h3>
+      <p id="contact-address">Chưa cập nhật địa chỉ</p>
+      <p id="contact-phone">Chưa cập nhật hotline</p>
+      <p id="contact-email">Chưa cập nhật email</p>
+      <p id="contact-hours">Chưa cập nhật giờ mở cửa</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="container">© <span id="footer-year"></span> Vặt Ơi. All rights reserved.</div>
   </div>
 </footer>
 
@@ -103,5 +137,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
+<script>document.getElementById("footer-year")?.append(new Date().getFullYear());</script>
 </body>
 </html>

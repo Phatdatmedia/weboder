@@ -4,6 +4,7 @@
 
 let allProducts = [];
 let activeCategorySlug = "all";
+const HIDDEN_CATEGORY_SLUGS = new Set(["trai-cay-say", "keo-mut"]);
 
 async function loadCategories() {
   const { data, error } = await supabaseClient
@@ -13,6 +14,7 @@ async function loadCategories() {
 
   const wrap = document.getElementById("category-chips");
   if (error || !data) return;
+  const visibleData = data.filter((cat) => !HIDDEN_CATEGORY_SLUGS.has(cat.slug));
 
   const allChip = document.createElement("button");
   allChip.className = "chip active";
@@ -20,7 +22,7 @@ async function loadCategories() {
   allChip.dataset.slug = "all";
   wrap.appendChild(allChip);
 
-  data.forEach((cat) => {
+  visibleData.forEach((cat) => {
     const chip = document.createElement("button");
     chip.className = "chip";
     chip.textContent = cat.name;
@@ -62,13 +64,14 @@ async function loadCategoryIconGrid() {
     .order("sort_order", { ascending: true });
 
   if (error || !data || !wrap) return;
+  const visibleData = data.filter((cat) => !HIDDEN_CATEGORY_SLUGS.has(cat.slug));
 
   wrap.innerHTML = `
     <div class="category-icon-item active" data-icon-slug="all">
       <div class="category-icon-badge">🍽️</div>
       <div class="category-icon-label">Tất cả</div>
     </div>
-    ${data
+    ${visibleData
       .map(
         (cat) => `
       <div class="category-icon-item" data-icon-slug="${cat.slug}">
@@ -245,8 +248,35 @@ function closeCart() {
   document.getElementById("scrim").classList.remove("open");
 }
 
+
+
+async function loadSiteContent() {
+  const s = await getSiteSettings();
+  const about = document.getElementById('about-text');
+  if (about) about.textContent = s.about_text || 'Đồ ăn vặt online — tuyển chọn những món ngon, đóng gói cẩn thận và giao tận nơi.';
+  const map = {
+    'contact-address': s.contact_address,
+    'contact-phone': s.contact_phone,
+    'contact-email': s.contact_email,
+    'contact-hours': s.contact_hours
+  };
+  Object.entries(map).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el && value) el.textContent = value;
+  });
+  const links = { facebook: s.facebook_url, instagram: s.instagram_url, tiktok: s.tiktok_url, zalo: s.zalo_url };
+  Object.entries(links).forEach(([key, url]) => {
+    const el = document.querySelector(`[data-social="${key}"]`);
+    if (el) {
+      if (url) { el.href = url; el.hidden = false; }
+      else el.hidden = true;
+    }
+  });
+}
+
 // ---------- EVENT WIRING ----------
 document.addEventListener("DOMContentLoaded", async () => {
+  await loadSiteContent();
   await loadHeroBanners();
   initHeroCarousel();
   loadCategoryIconGrid();
