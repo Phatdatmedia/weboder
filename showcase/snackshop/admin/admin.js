@@ -580,48 +580,6 @@ function monthLabel(ym) {
   return `Tháng ${Number(m)}/${y}`;
 }
 
-
-
-async function loadSiteInfoForm() {
-  const { data } = await supabaseClient.from('site_settings').select('*').eq('id', 1).single();
-  if (!data) return;
-  const map = {
-    's-about-text': data.about_text || '',
-    's-contact-address': data.contact_address || '',
-    's-contact-phone': data.contact_phone || '',
-    's-contact-email': data.contact_email || '',
-    's-contact-hours': data.contact_hours || '',
-    's-facebook': data.facebook_url || '',
-    's-instagram': data.instagram_url || '',
-    's-tiktok': data.tiktok_url || '',
-    's-zalo': data.zalo_url || ''
-  };
-  Object.entries(map).forEach(([id, value]) => { const el=document.getElementById(id); if(el) el.value=value; });
-}
-
-async function saveSiteInfo(e) {
-  e.preventDefault();
-  const alertBox = document.getElementById('site-info-alert');
-  const btn = document.getElementById('site-info-save');
-  btn.disabled = true; btn.textContent = 'Đang lưu...';
-  const payload = {
-    about_text: document.getElementById('s-about-text').value.trim(),
-    contact_address: document.getElementById('s-contact-address').value.trim(),
-    contact_phone: document.getElementById('s-contact-phone').value.trim(),
-    contact_email: document.getElementById('s-contact-email').value.trim(),
-    contact_hours: document.getElementById('s-contact-hours').value.trim(),
-    facebook_url: document.getElementById('s-facebook').value.trim(),
-    instagram_url: document.getElementById('s-instagram').value.trim(),
-    tiktok_url: document.getElementById('s-tiktok').value.trim(),
-    zalo_url: document.getElementById('s-zalo').value.trim(),
-    updated_at: new Date().toISOString()
-  };
-  const { error } = await supabaseClient.from('site_settings').update(payload).eq('id', 1);
-  btn.disabled = false; btn.textContent = 'Lưu thông tin';
-  if (error) { showMsg(alertBox, 'Lưu thất bại: ' + error.message, 'error'); return; }
-  showMsg(alertBox, 'Đã lưu giới thiệu, liên hệ và mạng xã hội.', 'success');
-}
-
 // ---------- CẤU HÌNH (settings.html) ----------
 let editingBannerId = null;
 let bannersCache = [];
@@ -633,7 +591,6 @@ async function initSettingsPage() {
     `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/payos-webhook`;
 
   await loadBrandingAndBankForm();
-  await loadSiteInfoForm();
   await loadPayosSecretForm();
   await loadBannersTable();
 
@@ -646,6 +603,7 @@ async function initSettingsPage() {
   });
 
   document.getElementById("branding-form").addEventListener("submit", saveBranding);
+  document.getElementById("about-form")?.addEventListener("submit", saveAboutSettings);
   document.getElementById("bank-form").addEventListener("submit", saveBankInfo);
   document.getElementById("payos-form").addEventListener("submit", savePayosSecret);
 
@@ -666,6 +624,8 @@ async function loadBrandingAndBankForm() {
   if (!data) return;
 
   document.getElementById("s-logo-text").value = data.logo_text || "";
+  document.getElementById("s-about-title") && (document.getElementById("s-about-title").value = data.about_title || "Giới thiệu");
+  document.getElementById("s-about-text") && (document.getElementById("s-about-text").value = data.about_text || "");
   const logoPreview = document.getElementById("logo-preview");
   if (data.logo_url) {
     logoPreview.src = data.logo_url;
@@ -676,6 +636,29 @@ async function loadBrandingAndBankForm() {
   document.getElementById("s-account-no").value = data.bank_account_no || "";
   document.getElementById("s-account-name").value = data.bank_account_name || "";
   document.getElementById("s-payos-enabled").checked = !!data.payos_enabled;
+}
+
+
+async function saveAboutSettings(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById("about-alert");
+  const btn = document.getElementById("about-save");
+  btn.disabled = true;
+  btn.textContent = "Đang lưu...";
+  try {
+    const { error } = await supabaseClient.from("site_settings").update({
+      about_title: document.getElementById("s-about-title").value.trim() || "Giới thiệu",
+      about_text: document.getElementById("s-about-text").value.trim() || "",
+      updated_at: new Date().toISOString(),
+    }).eq("id", 1);
+    if (error) throw error;
+    showMsg(alertBox, "Đã lưu nội dung giới thiệu.", "success");
+  } catch (err) {
+    showMsg(alertBox, "Lưu thất bại: " + err.message, "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Lưu nội dung giới thiệu";
+  }
 }
 
 async function uploadSiteImage(file, prefix) {

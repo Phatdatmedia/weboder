@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vặt Ơi — Đồ ăn vặt ngon mỗi ngày</title>
-<meta name="description" content="Vặt Ơi - cửa hàng đồ ăn vặt online: bánh snack, đồ ăn vặt cay giao tận nơi.">
+<title>Góc ăn vặt VHU — Đồ ăn vặt ngon mỗi ngày</title>
+<meta name="description" content="Vặt Ơi - cửa hàng đồ ăn vặt online: bánh snack, trái cây sấy, đồ ăn vặt cay, kẹo mứt giao tận nơi.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -16,10 +16,11 @@
     <a href="index.html" class="logo" data-site-logo>Vặt<span>Ơi</span></a>
     <nav>
       <ul class="nav-links" id="nav-links">
-        <li><a href="#">Trang chủ</a></li>
-        <li><a href="#products">Sản phẩm</a></li>
+        <li><a href="index.html">Trang chủ</a></li>
+        <li><a href="index.html#products">Sản phẩm</a></li>
+        <li><a href="intro.html">Giới thiệu</a></li>
         <li><a href="track-order.html">Tra cứu đơn</a></li>
-        <li><a href="account/">Tài khoản</a></li>
+        <li><a href="account/login.html">Tài khoản</a></li>
       </ul>
     </nav>
     <div class="header-actions">
@@ -66,13 +67,6 @@
   <div class="category-icon-grid" id="category-icon-grid"></div>
 </section>
 
-<section class="about-section container" id="about">
-  <div class="about-card">
-    <div class="section-title"><h2>Giới thiệu</h2></div>
-    <p id="about-text">Đồ ăn vặt online — tuyển chọn những món ngon, đóng gói cẩn thận và giao tận nơi.</p>
-  </div>
-</section>
-
 <main class="container" id="products">
   <div class="section-title">
     <h2>Món đang bán</h2>
@@ -82,41 +76,37 @@
 
 <footer class="site-footer">
   <div class="container footer-grid">
-    <div class="footer-col footer-brand">
-      <a href="index.html" class="footer-logo" data-site-logo>Vặt<span>Ơi</span></a>
-      <p id="footer-about-short">Đồ ăn vặt online — giao tận nơi.</p>
-      <div class="footer-socials">
-        <a data-social="facebook" href="#" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>
-        <a data-social="instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>
-        <a data-social="tiktok" href="#" target="_blank" rel="noopener" aria-label="TikTok">TikTok</a>
-        <a data-social="zalo" href="#" target="_blank" rel="noopener" aria-label="Zalo">Zalo</a>
-      </div>
+    <div class="footer-column footer-brand">
+      <strong data-footer-name>Vặt Ơi</strong>
+      <p class="footer-tagline" data-footer-description>Đồ ăn vặt online — giao tận nơi.</p>
+      <div class="social-links" id="footer-social-links" aria-label="Mạng xã hội"></div>
     </div>
-    <div class="footer-col">
+
+    <div class="footer-column footer-links">
       <h3>Liên kết</h3>
       <a href="index.html">Trang chủ</a>
-      <a href="index.html#products">Sản phẩm</a>
-      <a href="index.html#about">Giới thiệu</a>
+      <a href="#products">Sản phẩm</a>
+      <a href="intro.html">Giới thiệu</a>
       <a href="track-order.html">Tra cứu đơn hàng</a>
-      <a href="index.html#faq">FAQ</a>
     </div>
-    <div class="footer-col">
+
+    <div class="footer-column footer-links">
       <h3>Tài khoản</h3>
-      <a href="account/">Đăng nhập</a>
+      <a href="account/login.html">Đăng nhập</a>
       <a href="account/register.html">Đăng ký</a>
       <a href="account/profile.html">Tài khoản của tôi</a>
-      <a href="checkout.html">Giỏ hàng / Đặt hàng</a>
+      <a href="track-order.html">Theo dõi đơn hàng</a>
     </div>
-    <div class="footer-col">
+
+    <div class="footer-column footer-info">
       <h3>Liên hệ</h3>
-      <p id="contact-address">Chưa cập nhật địa chỉ</p>
-      <p id="contact-phone">Chưa cập nhật hotline</p>
-      <p id="contact-email">Chưa cập nhật email</p>
-      <p id="contact-hours">Chưa cập nhật giờ mở cửa</p>
+      <p data-footer-address></p>
+      <p class="footer-contact-line"><span class="footer-contact-label">Hotline:</span> <a data-footer-phone href="#"></a></p>
+      <p class="footer-contact-line"><span class="footer-contact-label">Email:</span> <a data-footer-email href="#"></a></p>
     </div>
   </div>
   <div class="footer-bottom">
-    <div class="container">© <span id="footer-year"></span> Vặt Ơi. All rights reserved.</div>
+    <div class="container"><span data-footer-copyright>©2026 Góc Ăn Vặt VHU.</span><span class="footer-dev"> by dev <a href="https://phatdatagency.id.vn" target="_blank" rel="noopener noreferrer">Phatdatagency</a></span></div>
   </div>
 </footer>
 
@@ -137,6 +127,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
-<script>document.getElementById("footer-year")?.append(new Date().getFullYear());</script>
 </body>
 </html>

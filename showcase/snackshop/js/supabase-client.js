@@ -124,31 +124,3 @@ async function applySiteLogo() {
 }
 
 document.addEventListener("DOMContentLoaded", applySiteLogo);
-
-
-// ---------- THỐNG KÊ TRUY CẬP ----------
-(function initTrafficTracking(){
-  if (location.pathname.includes('/admin/')) return;
-  const keyVisitor = 'snackshop_visitor_id';
-  const keySession = 'snackshop_session_id';
-  let visitorId = localStorage.getItem(keyVisitor);
-  if (!visitorId) {
-    visitorId = (crypto.randomUUID ? crypto.randomUUID() : 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2));
-    localStorage.setItem(keyVisitor, visitorId);
-  }
-  let sessionId = sessionStorage.getItem(keySession);
-  if (!sessionId) {
-    sessionId = (crypto.randomUUID ? crypto.randomUUID() : 's-' + Date.now() + '-' + Math.random().toString(36).slice(2));
-    sessionStorage.setItem(keySession, sessionId);
-  }
-  const pageUrl = location.pathname + location.search;
-  supabaseClient.rpc('record_traffic_visit', {
-    p_visitor_id: visitorId,
-    p_session_id: sessionId,
-    p_page_url: pageUrl,
-    p_referrer: document.referrer || null
-  }).then(({error}) => {
-    if (error) console.warn('[Traffic] Không ghi được lượt truy cập:', error.message);
-    else console.log('[Traffic] Đã ghi lượt truy cập:', pageUrl);
-  });
-})();

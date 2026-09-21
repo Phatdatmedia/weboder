@@ -177,11 +177,66 @@ h1, h2, h3, .display {
 
 .btn-sm { padding: 8px 16px; font-size: 0.85rem; }
 
+
+/* ---------- FOOTER ---------- */
+.site-footer {
+  margin-top: 44px;
+  border-top: 1px solid var(--line);
+  background: #fbf8f3;
+  color: var(--ink);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 1.35fr;
+  gap: clamp(28px, 5vw, 64px);
+  padding-top: 48px;
+  padding-bottom: 42px;
+}
+.footer-column { min-width: 0; }
+.footer-grid h3 {
+  font-family: var(--font-body);
+  font-size: .96rem;
+  font-weight: 800;
+  margin: 0 0 18px;
+  color: var(--ink);
+}
+.footer-brand strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.footer-tagline { margin: 0 0 22px; color: rgba(32,41,31,.7); }
+.footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; }
+.footer-links a { text-decoration: none; color: rgba(32,41,31,.78); transition: color .18s ease; }
+.footer-links a:hover { color: var(--chili); }
+.footer-info p { margin: 0 0 10px; color: rgba(32,41,31,.76); line-height: 1.55; }
+.footer-contact-line a { color: var(--ink); text-decoration: none; }
+.footer-contact-line a:hover { color: var(--chili); }
+.footer-contact-label { font-weight: 700; color: var(--ink); }
+.social-links { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.social-link {
+  width: 34px; height: 34px;
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  border: 1px solid #d8d0c4;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+.social-link svg { width: 17px; height: 17px; display: block; }
+.social-link:hover { transform: translateY(-2px); border-color: var(--ink); background: #f4efe7; }
+.footer-bottom { border-top: 1px solid var(--line); padding: 17px 0; font-size: .8rem; color: rgba(32,41,31,.62); }
+
 /* ---------- HERO CAROUSEL ---------- */
 .hero-carousel {
   position: relative;
-  height: min(52vw, 460px);
-  min-height: 280px;
+  height: clamp(360px, 34vw, 520px);
+  min-height: 360px;
   overflow: hidden;
 }
 
@@ -192,7 +247,7 @@ h1, h2, h3, .display {
   z-index: 0;
   transition: opacity 0.6s ease;
   background-size: cover;
-  background-position: center;
+  background-position: center center;
   display: flex;
   align-items: center;
   padding: 0 clamp(24px, 6vw, 100px);
@@ -264,7 +319,7 @@ h1, h2, h3, .display {
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 .category-icon-item:hover .category-icon-badge { transform: translateY(-3px); border-color: var(--chili); }
-.category-icon-item.active .category-icon-badge { background: var(--turmeric); border-color: #a9822d; color: var(--ink); }
+.category-icon-item.active .category-icon-badge { background: var(--turmeric); border-color: var(--turmeric); }
 
 .category-icon-label { font-size: 0.8rem; font-weight: 600; line-height: 1.25; }
 
@@ -418,22 +473,7 @@ h1, h2, h3, .display {
   border: none; background: none; font-size: 1.1rem; font-weight: 800; cursor: pointer; width: 24px;
 }
 
-/* ---------- FOOTER ---------- */
-.site-footer {
-  border-top: 2px solid var(--ink);
-  background: var(--paper-dark);
-  padding: 36px 0;
-  margin-top: 40px;
-  font-size: 0.9rem;
-}
-
-.site-footer .container {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
+/* ---------- FOOTER (base layout defined above) ---------- */
 /* ---------- GENERIC PANEL (account/admin forms) ---------- */
 .panel {
   background: #fff;
@@ -637,6 +677,8 @@ table.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 800px) {
+  .hero-carousel { height: clamp(330px, 62vw, 430px); min-height: 330px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 30px 24px; }
   .nav-links { display: none; }
   .menu-toggle {
     display: inline-flex;
@@ -665,31 +707,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   outline-offset: 2px;
 }
 
-
-/* ---------- GIỚI THIỆU + FOOTER ---------- */
-.about-section { padding-top: 34px; }
-.about-card {
-  background: #fff;
-  border: 2px solid var(--ink);
-  border-radius: 18px;
-  padding: 26px 30px;
-  box-shadow: var(--shadow);
+@media (max-width: 520px) {
+  .footer-grid { grid-template-columns: 1fr; gap: 26px; padding-top: 36px; padding-bottom: 32px; }
 }
-.about-card .section-title { margin-bottom: 8px; }
-.about-card p { margin: 0; max-width: 900px; color: rgba(32,41,31,.78); }
-.site-footer { margin-top: 60px; padding: 46px 0 0; background: var(--paper-dark); border-top: 2px solid var(--ink); }
-.footer-grid { display: grid; grid-template-columns: 1.35fr 1fr 1fr 1.25fr; gap: 42px; padding-bottom: 38px; }
-.footer-col { display:flex; flex-direction:column; gap:9px; font-size:.9rem; }
-.footer-col h3 { font-family:var(--font-display); font-size:1.15rem; margin:0 0 8px; color:var(--ink); }
-.footer-col a { text-decoration:none; color:rgba(32,41,31,.78); }
-.footer-col a:hover { color:var(--chili); }
-.footer-col p { margin:0; color:rgba(32,41,31,.78); }
-.footer-logo { display:inline-flex; align-items:center; width:max-content; text-decoration:none; font-family:var(--font-display); font-size:1.65rem; font-weight:800; color:var(--chili); }
-.footer-logo span { color:var(--ink); }
-.footer-brand p { margin:4px 0 10px; }
-.footer-socials { display:flex; flex-wrap:wrap; gap:8px; }
-.footer-socials a { border:1px solid rgba(32,41,31,.28); border-radius:999px; padding:6px 10px; font-size:.78rem; background:rgba(255,255,255,.55); }
-.footer-socials a[hidden] { display:none; }
-.footer-bottom { border-top:1px solid rgba(32,41,31,.18); padding:16px 0 20px; text-align:center; font-size:.82rem; color:rgba(32,41,31,.65); }
-@media (max-width: 800px) { .footer-grid { grid-template-columns:repeat(2,1fr); gap:28px; } }
-@media (max-width: 520px) { .footer-grid { grid-template-columns:1fr; } .about-card { padding:22px; } }

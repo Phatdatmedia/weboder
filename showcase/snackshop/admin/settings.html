@@ -19,7 +19,6 @@
         <li><a href="orders.html">Đơn hàng</a></li>
         <li><a href="payments.html">Thanh toán</a></li>
         <li><a href="revenue.html">Doanh thu</a></li>
-        <li><a href="traffic.html">Truy cập</a></li>
         <li><a href="settings.html" class="active">Cấu hình</a></li>
       </ul>
     </nav>
@@ -54,20 +53,20 @@
     <button class="btn btn-primary" id="branding-save" type="submit">Lưu thương hiệu</button>
   </form>
 
-  <!-- ================= GIỚI THIỆU + LIÊN HỆ ================= -->
-  <form class="panel" id="site-info-form" style="margin-bottom:24px;">
-    <h2>Giới thiệu, liên hệ & mạng xã hội</h2>
-    <div class="alert" id="site-info-alert"></div>
-    <div class="field"><label for="s-about-text">Nội dung Giới thiệu</label><textarea id="s-about-text" rows="4" placeholder="Giới thiệu về cửa hàng..."></textarea></div>
-    <div class="field"><label for="s-contact-address">Địa chỉ</label><input id="s-contact-address" type="text"></div>
-    <div class="field"><label for="s-contact-phone">Hotline</label><input id="s-contact-phone" type="text"></div>
-    <div class="field"><label for="s-contact-email">Email</label><input id="s-contact-email" type="email"></div>
-    <div class="field"><label for="s-contact-hours">Giờ mở cửa</label><input id="s-contact-hours" type="text" placeholder="08:00 — 22:00 mỗi ngày"></div>
-    <div class="field"><label for="s-facebook">Facebook</label><input id="s-facebook" type="url" placeholder="https://facebook.com/..."></div>
-    <div class="field"><label for="s-instagram">Instagram</label><input id="s-instagram" type="url"></div>
-    <div class="field"><label for="s-tiktok">TikTok</label><input id="s-tiktok" type="url"></div>
-    <div class="field"><label for="s-zalo">Zalo</label><input id="s-zalo" type="url"></div>
-    <button class="btn btn-primary" id="site-info-save" type="submit">Lưu thông tin</button>
+  <!-- ================= GIỚI THIỆU ================= -->
+  <form class="panel" id="about-form" style="margin-bottom:24px;">
+    <h2>Trang Giới thiệu</h2>
+    <div class="alert" id="about-alert"></div>
+    <p class="form-note" style="margin-top:0;">Nội dung này sẽ hiển thị riêng tại <code>intro.html</code>, không còn hiển thị dưới phần Danh mục ở trang chủ.</p>
+    <div class="field">
+      <label for="s-about-title">Tiêu đề</label>
+      <input type="text" id="s-about-title" maxlength="120" placeholder="Giới thiệu">
+    </div>
+    <div class="field">
+      <label for="s-about-text">Nội dung giới thiệu</label>
+      <textarea id="s-about-text" rows="10" placeholder="Nhập nội dung giới thiệu về cửa hàng..."></textarea>
+    </div>
+    <button class="btn btn-primary" id="about-save" type="submit">Lưu nội dung giới thiệu</button>
   </form>
 
   <!-- ================= BANNER TRANG CHỦ ================= -->
